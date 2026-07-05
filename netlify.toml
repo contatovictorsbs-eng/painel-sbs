@@ -1,0 +1,48 @@
+# ==========================================================
+# SBS Green Seeds — configuração de deploy (Netlify)
+# Dois ambientes: STAGING (teste) e PRODUÇÃO
+# ==========================================================
+
+[build]
+  # site estático (arquivo único) — nada para compilar
+  publish     = "."
+  functions   = "functions"
+  command     = "echo 'sem build — site estático'"
+
+# Página inicial: abre o painel direto na raiz do site
+[[redirects]]
+  from   = "/"
+  to     = "/painel-sbs.html"
+  status = 200
+
+# ----------------------------------------------------------
+# PRODUÇÃO  →  branch  main   (ex: painel-sbs.netlify.app)
+# ----------------------------------------------------------
+[context.production]
+  [context.production.environment]
+    APP_ENV = "producao"
+
+# ----------------------------------------------------------
+# STAGING / TESTE  →  branch  staging
+#   URL: staging--painel-sbs.netlify.app
+#   Use este ambiente para validar antes de subir para produção.
+# ----------------------------------------------------------
+[context.staging]
+  [context.staging.environment]
+    APP_ENV = "staging"
+
+# Qualquer outra branch (feature/*) vira um preview isolado
+[context.branch-deploy.environment]
+  APP_ENV = "preview"
+
+# Deploy previews de Pull Requests
+[context.deploy-preview.environment]
+  APP_ENV = "preview"
+
+# Cabeçalhos de segurança básicos
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"

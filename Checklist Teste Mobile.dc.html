@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  doc-page:not(:defined){visibility:hidden}
+  .ck{width:20px;height:20px;border:2px solid #0B6B61;border-radius:5px;flex:none;margin-top:1px}
+  .row{display:flex;gap:11px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #eef2f0}
+  .row:last-child{border-bottom:none}
+  .row p{margin:0;font:500 13.5px/1.45 'Plus Jakarta Sans';color:#243b36}
+  .row p b{font-weight:700;color:#0c3b37}
+  .sec{break-inside:avoid;margin:22px 0 6px}
+  .sechd{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .sechd .n{width:26px;height:26px;border-radius:8px;background:#0B6B61;color:#fff;font:800 13px 'Plus Jakarta Sans';display:flex;align-items:center;justify-content:center;flex:none}
+  .sechd h2{margin:0;font:800 16px 'Plus Jakarta Sans';color:#0c3b37;white-space:nowrap;text-wrap:nowrap}
+  .sechd .role{margin-left:auto;font:700 10px 'Plus Jakarta Sans';letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+  .note{background:#f4f8f4;border-left:3px solid #6FA331;padding:10px 14px;border-radius:0 8px 8px 0;font:500 12.5px/1.5 'Plus Jakarta Sans';color:#3a4a44;margin:6px 0 2px}
+</style>
+</helmet>
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.7in" hint-size="100%,100%">
+  <div slot="header" style="display:flex;align-items:center;justify-content:space-between;font:700 10px 'Plus Jakarta Sans';color:#9bb0aa;letter-spacing:.08em;text-transform:uppercase;padding-bottom:2px">
+    <span>SBS Green Seeds · Checklist de teste mobile</span>
+    <span>v1.22</span>
+  </div>
+  <div slot="footer" style="display:flex;align-items:center;justify-content:space-between;font:600 10px 'Plus Jakarta Sans';color:#9bb0aa;padding-top:2px">
+    <span>Rodar no aparelho após publicar o painel</span>
+    <span>Testado por: ____________  Data: ____ /____ /______</span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:14px;border-bottom:3px solid #0B6B61;padding-bottom:16px;margin-bottom:6px">
+    <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(150deg,#0B6B61,#0c3b37);display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6FA331" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5-3 8-7 8-12V5l-8-3-8 3v5c0 5 3 9 8 12Z"/><path d="m9 12 2 2 4-4"/></svg>
+    </div>
+    <div>
+      <h1 style="margin:0;font:800 25px 'Plus Jakarta Sans';color:#0c3b37;letter-spacing:-.01em">Checklist de teste no celular</h1>
+      <p style="margin:3px 0 0;font:500 13px 'Plus Jakarta Sans';color:#5b6f69">Passe por cada item no seu aparelho. Marque ✓ o que passou; anote ao lado o que falhar.</p>
+    </div>
+  </div>
+
+  <div class="note"><b style="color:#0c3b37">Antes de começar:</b> abra o link publicado no navegador do celular (Chrome/Safari), em rede de dados (não só Wi-Fi), e — se quiser — adicione à tela inicial para testar como app.</div>
+
+  <div class="sec">
+    <div class="sechd"><span class="n">1</span><h2>Acesso e login</h2><span class="role" style="background:#e7f0ee;color:#0B6B61">Todos</span></div>
+    <div class="row"><span class="ck"></span><p>A <b>tela de login</b> abre inteira, sem cortar campos nem estourar para os lados (sem barra de rolagem horizontal).</p></div>
+    <div class="row"><span class="ck"></span><p>O teclado do celular <b>não cobre</b> o botão <b>Entrar</b> ao tocar nos campos.</p></div>
+    <div class="row"><span class="ck"></span><p>Login com <b>e-mail + senha</b> corretos entra no painel; senha errada mostra aviso e <b>não</b> entra.</p></div>
+    <div class="row"><span class="ck"></span><p>Cada perfil vê <b>somente o seu painel</b>; o admin master vê e troca entre todos.</p></div>
+    <div class="row"><span class="ck"></span><p>O botão <b>Sair</b> volta para o login.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><span class="n">2</span><h2>Navegação do painel</h2><span class="role" style="background:#eaf1e2;color:#4d7020">Mkt · Gerente · CEO · Intel.</span></div>
+    <div class="row"><span class="ck"></span><p>O <b>menu (☰)</b> abre e fecha o painel lateral; tocar num item leva à tela certa e fecha o menu.</p></div>
+    <div class="row"><span class="ck"></span><p>Percorra <b>todos os itens do menu</b> de cada perfil: nenhuma tela abre em branco ou com erro.</p></div>
+    <div class="row"><span class="ck"></span><p>Cartões, tabelas e gráficos <b>cabem na largura</b> da tela — sem precisar arrastar para o lado.</p></div>
+    <div class="row"><span class="ck"></span><p>O <b>sino de notificações</b> abre a lista e mostra o contador quando há avisos.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><span class="n">3</span><h2>App do Vendedor</h2><span class="role" style="background:#fdece0;color:#c2564b">Campo</span></div>
+    <div class="row"><span class="ck"></span><p>A <b>barra inferior</b> (Início, Leads, Orçam., Avisos, Check-in) fica fixa e todos os ícones são fáceis de tocar.</p></div>
+    <div class="row"><span class="ck"></span><p><b>Capturar lead</b>: preencher o formulário e salvar; o lead aparece na lista.</p></div>
+    <div class="row"><span class="ck"></span><p>Tocar num lead abre o detalhe; dá para <b>mover o status</b> na esteira e <b>registrar perda</b> com motivo.</p></div>
+    <div class="row"><span class="ck"></span><p><b>Abrir orçamento</b> para um lead: escolher produto, quantidade, ajustar o <b>desconto</b> e enviar.</p></div>
+    <div class="row"><span class="ck"></span><p><b>Registrar venda</b> e <b>Check-in</b> funcionam sem barra de rolagem lateral nos formulários.</p></div>
+    <div class="row"><span class="ck"></span><p><b>Ficha técnica & materiais</b> mostra só os produtos da <b>campanha ativa</b>.</p></div>
+    <div class="row"><span class="ck"></span><p><b>Política & Manual</b> abre e o texto é legível sem zoom.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><span class="n">4</span><h2>Fluxo ponta a ponta</h2><span class="role" style="background:#e7f0ee;color:#0B6B61">Integração</span></div>
+    <div class="row"><span class="ck"></span><p>Lead criado no app <b>aparece</b> na Esteira de leads do painel (Marketing/Gerente).</p></div>
+    <div class="row"><span class="ck"></span><p>Orçamento com desconto criado no app <b>chega</b> em Aprovações do gerente; ao <b>Liberar</b>, o status muda.</p></div>
+    <div class="row"><span class="ck"></span><p>Cadastro de vendedor <b>dispara notificação</b> para Inteligência, Marketing e Gerente.</p></div>
+    <div class="row"><span class="ck"></span><p>Criar <b>app de parceiro</b> (logo + paleta + evento) conclui com mensagem de sucesso, sem erro.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><span class="n">5</span><h2>Dados de teste</h2><span class="role" style="background:#f3e9d6;color:#9a6a12">CEO</span></div>
+    <div class="row"><span class="ck"></span><p>O <b>banner de aviso</b> no topo do painel do CEO mostra a contagem de registros de teste.</p></div>
+    <div class="row"><span class="ck"></span><p><b>Excluir dados de teste</b> remove os exemplos; o banner some quando não há mais nenhum.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sechd"><span class="n">6</span><h2>Desempenho e conforto</h2><span class="role" style="background:#e7f0ee;color:#0B6B61">Geral</span></div>
+    <div class="row"><span class="ck"></span><p>As telas <b>carregam em poucos segundos</b> na rede de dados do celular.</p></div>
+    <div class="row"><span class="ck"></span><p>Textos <b>legíveis sem zoom</b>; botões e links com área de toque confortável (nada minúsculo).</p></div>
+    <div class="row"><span class="ck"></span><p>Girar o celular (retrato ↔ paisagem) <b>não quebra</b> o layout.</p></div>
+    <div class="row"><span class="ck"></span><p>Voltar/avançar do navegador e recarregar a página <b>não perdem</b> o login nem travam.</p></div>
+  </div>
+
+  <div style="margin-top:26px;break-inside:avoid">
+    <div style="font:800 14px 'Plus Jakarta Sans';color:#0c3b37;margin-bottom:8px">Anotações de falhas</div>
+    <div style="border:1.5px solid #d6e0dc;border-radius:10px;padding:2px 14px">
+      <div style="height:30px;border-bottom:1px dashed #d6e0dc"></div>
+      <div style="height:30px;border-bottom:1px dashed #d6e0dc"></div>
+      <div style="height:30px;border-bottom:1px dashed #d6e0dc"></div>
+      <div style="height:30px"></div>
+    </div>
+    <p style="margin:10px 0 0;font:500 11.5px 'Plus Jakarta Sans';color:#8a9c96">Aparelho e navegador testados: __________________________   ·   Versão do painel: v1.22</p>
+  </div>
+</x-import>
+</x-dc>
+</body>
+</html>

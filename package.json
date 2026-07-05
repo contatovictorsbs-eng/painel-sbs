@@ -1,0 +1,17 @@
+{
+  "name": "painel-sbs-green-seeds",
+  "version": "1.9.0",
+  "private": true,
+  "description": "Plataforma SBS Green Seeds — painéis (Marketing, Gerente Nacional, CEO, Inteligência, TI) + App de Eventos e backend em Netlify Functions.",
+  "scripts": {
+    "dev": "netlify dev",
+    "deploy:staging": "git push origin HEAD:staging",
+    "deploy:prod": "git push origin HEAD:main"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

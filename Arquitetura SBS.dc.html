@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#eef1ee}
+  *{box-sizing:border-box}
+</style>
+<script src="./backend/manifest.js"></script>
+</helmet>
+<div style="min-height:100vh;background:#eef1ee;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#16201a;display:flex;justify-content:center;padding:34px 20px 80px">
+  <div style="width:100%;max-width:1000px">
+
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+      <div style="width:44px;height:44px;border-radius:12px;background:#0B6B61;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px">SBS</div>
+      <div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#0B6B61">Documentação viva · atualiza sozinha</div>
+        <div style="font-size:26px;font-weight:800;color:#0c3b37;line-height:1.1">Arquitetura da Plataforma</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0 26px">
+      <span style="display:inline-flex;align-items:center;gap:7px;background:#0c3b37;color:#fff;font-weight:700;font-size:12px;padding:7px 13px;border-radius:20px">versão {{ versao }}</span>
+      <span style="display:inline-flex;align-items:center;gap:7px;background:#E4F5EC;color:#0B8A5E;font-weight:700;font-size:12px;padding:7px 13px;border-radius:20px">atualizado em {{ atualizadoEm }}</span>
+      <span style="font-size:12.5px;color:#5a6b64;flex:1;min-width:200px">Fonte única: <code style="background:#e4ebe8;border-radius:5px;padding:1px 6px;font-size:11px">backend/manifest.js</code> — mude lá e tudo aqui reflete.</span>
+    </div>
+
+    <!-- Perfis -->
+    <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0B6B61;margin:0 0 12px">Perfis de acesso</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:34px">
+      <sc-for list="{{ perfis }}" as="p" hint-placeholder-count="6">
+        <div style="background:#fff;border:1px solid #e2e8e4;border-radius:14px;padding:15px 16px">
+          <div style="font-weight:800;font-size:14px;color:#0c3b37">{{ p.nome }}</div>
+          <div style="font-size:12px;color:#5a6b64;margin:3px 0 8px">{{ p.responsavel }}</div>
+          <code style="display:inline-block;background:#eef3f1;border:1px solid #dce6e2;border-radius:6px;padding:2px 8px;font-size:11px;color:#0B6B61">{{ p.login }}</code>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Fluxo em 3 camadas -->
+    <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0B6B61;margin:0 0 12px">Como funciona — 3 camadas</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:34px">
+      <div style="background:#fff;border:1px solid #e2e8e4;border-radius:14px;padding:16px">
+        <div style="width:30px;height:30px;border-radius:9px;background:#0B6B61;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:9px">1</div>
+        <div style="font-weight:800;font-size:14px;color:#0c3b37;margin-bottom:3px">Painel (navegador)</div>
+        <div style="font-size:12.5px;color:#5a6b64;line-height:1.55">Só lê e mostra. Nenhum segredo. Publicado como site estático.</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2e8e4;border-radius:14px;padding:16px">
+        <div style="width:30px;height:30px;border-radius:9px;background:#0B6B61;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:9px">2</div>
+        <div style="font-weight:800;font-size:14px;color:#0c3b37;margin-bottom:3px">Funções de servidor</div>
+        <div style="font-size:12.5px;color:#5a6b64;line-height:1.55">Netlify Functions guardam as chaves e buscam os dados. <code style="background:#eef3f1;border-radius:5px;padding:1px 5px;font-size:10.5px">/.netlify/functions/*</code></div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2e8e4;border-radius:14px;padding:16px">
+        <div style="width:30px;height:30px;border-radius:9px;background:#0B6B61;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:9px">3</div>
+        <div style="font-weight:800;font-size:14px;color:#0c3b37;margin-bottom:3px">Fontes de dados</div>
+        <div style="font-size:12.5px;color:#5a6b64;line-height:1.55">CRM/ERP, cotações, clima, concorrentes — cada função conversa com uma fonte.</div>
+      </div>
+    </div>
+
+    <!-- Módulos -->
+    <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0B6B61;margin:0 0 12px">Módulos do front <span style="color:#8b968f;font-weight:600">({{ nModulos }})</span></div>
+    <div style="background:#fff;border:1px solid #e2e8e4;border-radius:14px;overflow:hidden;margin-bottom:34px">
+      <sc-for list="{{ modulos }}" as="m" hint-placeholder-count="8">
+        <div style="display:flex;gap:14px;padding:13px 16px;border-bottom:1px solid #eef2f0;align-items:flex-start">
+          <span style="flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#0B6B61;background:#E9F3EF;border-radius:20px;padding:4px 10px;min-width:132px;text-align:center">{{ m.painel }}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13.5px;color:#16201a">{{ m.nome }}</div>
+            <div style="font-size:12px;color:#5a6b64;line-height:1.5;margin-top:2px">{{ m.desc }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Funções -->
+    <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0B6B61;margin:0 0 12px">Funções de servidor <span style="color:#8b968f;font-weight:600">({{ nFuncoes }})</span></div>
+    <div style="overflow-x:auto;margin-bottom:34px">
+      <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8e4;border-radius:14px;overflow:hidden">
+        <thead>
+          <tr>
+            <th style="text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;background:#0c3b37;color:#fff;padding:10px 12px">Função</th>
+            <th style="text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;background:#0c3b37;color:#fff;padding:10px 12px">Métodos</th>
+            <th style="text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;background:#0c3b37;color:#fff;padding:10px 12px">Descrição</th>
+            <th style="text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;background:#0c3b37;color:#fff;padding:10px 12px">Coleção</th>
+            <th style="text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;background:#0c3b37;color:#fff;padding:10px 12px">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ funcoes }}" as="f" hint-placeholder-count="10">
+            <tr style="border-bottom:1px solid #eef2f0">
+              <td style="padding:9px 12px;font-size:12px"><code style="background:#eef3f1;border-radius:5px;padding:1px 6px;font-size:11px;color:#0B6B61">{{ f.nome }}</code></td>
+              <td style="padding:9px 12px;font-size:12px;color:#3a4a44">{{ f.metodos }}</td>
+              <td style="padding:9px 12px;font-size:12px;color:#5a6b64">{{ f.desc }}</td>
+              <td style="padding:9px 12px;font-size:12px;color:#3a4a44">{{ f.coleção }}</td>
+              <td style="padding:9px 12px;font-size:12px"><span style="font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:20px;background:{{ f.statusBg }};color:{{ f.statusFg }}">{{ f.status }}</span></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Ambientes -->
+    <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0B6B61;margin:0 0 12px">Ambientes</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:34px">
+      <sc-for list="{{ ambientes }}" as="a" hint-placeholder-count="2">
+        <div style="background:#fff;border:1px solid #e2e8e4;border-radius:14px;padding:15px 16px">
+          <div style="font-weight:800;font-size:14px;color:#0c3b37">{{ a.nome }}</div>
+          <div style="font-size:12px;color:#5a6b64;margin:3px 0 8px">branch <code style="background:#eef3f1;border-radius:5px;padding:1px 6px;font-size:11px;color:#0B6B61">{{ a.branch }}</code></div>
+          <div style="font-size:12.5px;color:#0B6B61;font-weight:600">{{ a.url }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Changelog -->
+    <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0B6B61;margin:0 0 12px">Histórico de mudanças</div>
+    <div style="background:#fff;border:1px solid #e2e8e4;border-radius:14px;padding:6px 18px 10px">
+      <sc-for list="{{ changelog }}" as="c" hint-placeholder-count="5">
+        <div style="display:flex;gap:16px;padding:14px 0;border-bottom:1px solid #eef2f0">
+          <div style="flex:0 0 auto;width:78px">
+            <div style="font-weight:800;font-size:13px;color:#0c3b37">{{ c.versao }}</div>
+            <div style="font-size:11px;color:#8b968f">{{ c.data }}</div>
+          </div>
+          <div style="flex:1">
+            <sc-for list="{{ c.itens }}" as="it" hint-placeholder-count="2">
+              <div style="font-size:12.5px;color:#3a4a44;line-height:1.55;padding-left:14px;position:relative">
+                <span style="position:absolute;left:0;top:7px;width:6px;height:6px;border-radius:3px;background:#6FA331"></span>{{ it }}
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="margin-top:26px;font-size:11px;color:#8b968f;line-height:1.6">
+      Esta página é gerada a partir de <code style="background:#e4ebe8;border-radius:5px;padding:1px 6px">backend/manifest.js</code>.
+      Toda vez que uma funcionalidade muda, atualizamos o manifesto (módulo + função + coleção + changelog) e a documentação inteira se atualiza — sem retrabalho.
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    const M = (typeof window!=='undefined' && window.SBS_MANIFEST) ? window.SBS_MANIFEST : {};
+    const statusColor = (s)=>{
+      if(s==='pronta')    return {statusBg:'#E4F5EC', statusFg:'#0B8A5E'};
+      if(s==='ligada')    return {statusBg:'#E4F5EC', statusFg:'#0B8A5E'};
+      if(s==='existente') return {statusBg:'#E9F3EF', statusFg:'#0B6B61'};
+      return {statusBg:'#FBEFE0', statusFg:'#C0710F'}; // stub
+    };
+    const funcoes = (M.funcoes||[]).map(f=>Object.assign({}, f, statusColor(f.status)));
+    return {
+      versao: M.versao || '—',
+      atualizadoEm: M.atualizadoEm || '—',
+      perfis: M.perfis || [],
+      modulos: M.modulos || [],
+      nModulos: (M.modulos||[]).length,
+      funcoes,
+      nFuncoes: funcoes.length,
+      coleções: M.coleções || [],
+      ambientes: M.ambientes || [],
+      changelog: M.changelog || []
+    };
+  }
+}
+</script>
+</body>
+</html>
