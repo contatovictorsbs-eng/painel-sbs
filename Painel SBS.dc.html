@@ -286,15 +286,17 @@ class Component extends DCLogic {
   loadReal(){
     if(this.state.role==='app') return; // no app o vendedor usa a rota pública quando publicado
     const PG={limite:500};
-    this.apiGet('leads',PG).then(rows=>{ if(Array.isArray(rows)&&rows.length) this.setState({leads:rows, backend:'online'}); })
+    const on=()=>{ if(this.state.backend!=='online') this.setState({backend:'online'}); };
+    // qualquer resposta bem-sucedida (mesmo lista vazia) confirma que o backend está no ar
+    this.apiGet('leads',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({leads:rows}); })
       .catch(()=>{});
-    this.apiGet('orcamentos',PG).then(rows=>{ if(Array.isArray(rows)&&rows.length) this.setState({orcamentos:rows, backend:'online'}); })
+    this.apiGet('orcamentos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({orcamentos:rows}); })
       .catch(()=>{});
-    this.apiGet('vendedores',PG).then(rows=>{ if(Array.isArray(rows)&&rows.length) this.setState({vendedoresReal:rows, backend:'online'}); })
-      .catch(()=> this.setState({backend: this.state.backend||'demo'}));
-    this.apiGet('produtos',PG).then(rows=>{ if(Array.isArray(rows)&&rows.length) this.setState({catalogo:rows, backend:'online'}); }).catch(()=>{});
+    this.apiGet('vendedores',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({vendedoresReal:rows}); })
+      .catch(()=> this.setState({backend: this.state.backend==='online'?'online':'demo'}));
+    this.apiGet('produtos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({catalogo:rows}); }).catch(()=>{});
     if(!this.state.eventos) this.setState({eventos:(this.data().events||[]).slice()});
-    this.apiGet('eventos',PG).then(rows=>{ if(Array.isArray(rows)&&rows.length) this.setState({eventos:rows, backend:'online'}); }).catch(()=>{});
+    this.apiGet('eventos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({eventos:rows}); }).catch(()=>{});
     this.apiGet('tenants').then(rows=>{ if(Array.isArray(rows)&&rows.length){ const parts=rows.map(t=>({id:t.slug,slug:t.slug,nome:t.nome,cor:t.cor,logo:t.logo,sigla:(t.nome||'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(),produtos:t.produtos||[],politica:t.politica||'',status:t.status,evento:'—',local:'—',vendedores:0,fat:0,eventos:0,leads:0,roi:0})); this.setState({partners:parts, backend:'online'}); } }).catch(()=>{});
   }
   // ---------- PAGINAÇÃO SOB DEMANDA (escala p/ 1000+ registros) ----------
@@ -1496,8 +1498,10 @@ class Component extends DCLogic {
       criadoPor:this.state.role, criadoPorNome:isAdmin?'Admin master':(meta.name||this.state.role),
       criadoEm:new Date().toISOString(), aprovacao:false };
     this.setState({eventos:[ev,...this.evAll()], evNovo:false});
-    try{ this.apiSend('eventos','POST',ev).catch(()=>{}); }catch(e){}
-    this.showToast('Evento criado — visível para Marketing, Gerência, Vendas e Inteligência');
+    this.showToast('Salvando evento…');
+    this.apiSend('eventos','POST',ev)
+      .then(()=>{ this.setState({backend:'online'}); this.showToast('Evento salvo no banco ✓ — visível para todos os perfis'); })
+      .catch((e)=>{ this.showToast('Evento criado localmente — NÃO salvou no banco: '+((e&&e.message)||'sem conexão')); });
   }
   fmtDataBR(s){ try{ const d=new Date(s); if(isNaN(d)) return s; return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }catch(e){ return s; } }
   parseBR(s){ return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0; }

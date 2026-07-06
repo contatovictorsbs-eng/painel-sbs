@@ -69,7 +69,16 @@ async function sbRemove(nome, id){
    este import, então @netlify/blobs nunca é empacotado no runtime Workers.
    Só o Netlify (Node real) resolve em runtime — e apenas quando NÃO há Supabase. */
 let _blobsMod;
-async function blobsPkg(){ if (!_blobsMod) { const n = '@netlify/' + 'blobs'; _blobsMod = await import(n); } return _blobsMod; }
+async function blobsPkg(){
+  if (!_blobsMod) {
+    // Sem Supabase configurado E sem Netlify Blobs (ex.: Cloudflare/Vercel) → erro claro.
+    try { const n = '@netlify/' + 'blobs'; _blobsMod = await import(n); }
+    catch (e) {
+      throw new Error('Banco não configurado: defina SUPABASE_URL e SUPABASE_SERVICE_KEY nas variáveis de ambiente do site (Production e Preview) e refaça o deploy.');
+    }
+  }
+  return _blobsMod;
+}
 async function blobCol(nome){
   const mod = await blobsPkg();
   const getStore = mod.getStore || (mod.default && mod.default.getStore);
