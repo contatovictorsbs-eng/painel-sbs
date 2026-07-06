@@ -6,7 +6,7 @@
 [build]
   # site estático (arquivo único) — nada para compilar
   publish     = "."
-  functions   = "functions"
+  functions   = "server"
   command     = "echo 'sem build — site estático'"
 
 # Página inicial: abre o painel direto na raiz do site

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": ".",
+  "framework": null,
+  "functions": {
+    "api/[fn].js": {
+      "includeFiles": "server/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/painel-sbs.html" },
+    { "source": "/.netlify/functions/:fn", "destination": "/api/:fn" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ],
+  "crons": [
+    { "path": "/api/coletor-concorrentes", "schedule": "0 9 * * *" },
+    { "path": "/api/alertas", "schedule": "0 10 * * *" }
+  ]
+}
