@@ -1,6 +1,6 @@
 /* Login / sessão por perfil (server-side).
-   POST /.netlify/functions/auth  { email, senha }         → { token, perfil, nome, precisaTrocar }
-   GET  /.netlify/functions/auth  (Authorization: Bearer)  → { perfil, nome, email }
+   POST /api/auth  { email, senha }         → { token, perfil, nome, precisaTrocar }
+   GET  /api/auth  (Authorization: Bearer)  → { perfil, nome, email }
 
    Usuários vivem na coleção `usuarios` (Supabase/Blobs) para que a senha seja
    POR USUÁRIO e TROCÁVEL. Na primeira vez, a coleção é semeada a partir de:
@@ -17,17 +17,19 @@ function hash(senha){ return crypto.createHash('sha256').update(String(senha) + 
 
 /* Equipe interna SBS — semeada com senha inicial 12345678 (precisaTrocar=true). */
 const PADRAO = [
-  { email:'franca@sbsgreen.com.br',        perfil:'marketing', nome:'França' },
-  { email:'victorhugo@sbsgreen.com.br',    perfil:'mercado',   nome:'Victor Hugo' },
+  { email:'franz@sbsgreen.com.br',         perfil:'marketing', nome:'Franz' },
+  { email:'medina@sbsgreen.com.br',        perfil:'gerente',   nome:'Medina' },
   { email:'tiago.mascheto@sbsgreen.com.br',perfil:'ceo',       nome:'Tiago Mascheto' },
+  { email:'victorhugo@sbsgreen.com.br',    perfil:'mercado',   nome:'Victor Hugo' },
   { email:'ti@sbsgreen.com.br',            perfil:'ti',        nome:'TI' },
   { email:'admin@sbsgreen.com.br',         perfil:'admin',     nome:'Admin master' }
 ];
 
-/* Semeia a coleção `usuarios` se estiver vazia. Idempotente. */
+/* Garante que os usuários canônicos existam. É um TOP-UP idempotente:
+   cria só os que faltam e NUNCA sobrescreve senha/perfil de quem já existe
+   (preserva trocas de senha feitas pelos usuários). Assim, ao adicionar um
+   novo membro à lista PADRAO (ou via USERS_JSON), basta o próximo login. */
 async function semear(){
-  const existentes = await list('usuarios', null, { limit: 1 });
-  if (existentes && existentes.length) return;
   let base = PADRAO;
   try {
     const raw = process.env.USERS_JSON;
@@ -36,6 +38,9 @@ async function semear(){
   const inicial = hash('12345678');
   for (const u of base){
     const email = (u.email || '').toLowerCase();
+    if (!email) continue;
+    const existe = await get('usuarios', email);
+    if (existe) continue; // já cadastrado — não mexe (preserva senha trocada)
     await put('usuarios', {
       id: email,
       email,
