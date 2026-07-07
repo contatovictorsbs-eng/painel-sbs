@@ -1,11 +1,10 @@
 /* ============================================================
    Cloudflare Pages Function — roteador único para /api/*
-   Executa as funções do backend (server/*.js, formato Netlify:
+   Executa as funções do backend (server/*.js, no formato clássico
    exports.handler = async (event) => ({ statusCode, headers, body }))
    dentro do runtime do Cloudflare (Workers + nodejs_compat).
 
-   O front chama /.netlify/functions/<nome>; o arquivo _redirects
-   reescreve para /api/<nome>, que casa com esta rota ([[path]]).
+   O front chama /api/<nome> direto, que casa com esta rota ([[path]]).
 
    Armazenamento: Supabase (via fetch) — configure SUPABASE_URL e
    SUPABASE_SERVICE_KEY nas variáveis do projeto Pages.
@@ -24,6 +23,7 @@ import * as fEventos from '../../server/eventos.js';
 import * as fIaGroq from '../../server/ia-groq.js';
 import * as fLeads from '../../server/leads.js';
 import * as fLimparTeste from '../../server/limpar-teste.js';
+import * as fMercado from '../../server/mercado.js';
 import * as fMonitoramento from '../../server/monitoramento.js';
 import * as fNotificacoes from '../../server/notificacoes.js';
 import * as fOrcamentos from '../../server/orcamentos.js';
@@ -50,6 +50,7 @@ const HANDLERS = {
   'ia-groq': pick(fIaGroq),
   'leads': pick(fLeads),
   'limpar-teste': pick(fLimparTeste),
+  'mercado': pick(fMercado),
   'monitoramento': pick(fMonitoramento),
   'notificacoes': pick(fNotificacoes),
   'orcamentos': pick(fOrcamentos),
