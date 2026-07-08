@@ -3537,7 +3537,7 @@ class Component extends DCLogic {
   roleName(r){ return {marketing:'Marketing',gerente:'Gerente Nacional',ceo:'Diretoria (CEO)',mercado:'Inteligência de Mercado'}[r]||''; }
   mercConcorrentes(){
     const d=this.data();
-    const robots=this.state.robots;
+    const robots=this.state.robots||[];
     const robotSection=[
       React.createElement('div',{key:'rbhd',style:{display:'flex',alignItems:'center',gap:12,marginTop:4}},
         React.createElement('div',{style:{flex:1}},React.createElement('div',{style:{font:'800 15px Archivo',color:'#0c3b37',display:'flex',alignItems:'center',gap:8}},React.createElement('span',{style:{color:'#8b5cf6'}},this.ic(this.icons().gauge)),'Monitoramento por robô'),React.createElement('div',{style:{font:'500 12px Manrope',color:'#5c6b67'}},robots.filter(r=>r.status==='Ativo').length+' robôs ativos buscando dados automaticamente')),
@@ -3547,8 +3547,8 @@ class Component extends DCLogic {
           React.createElement('span',{style:{display:'inline-flex',alignItems:'center',gap:6,font:'700 11px Manrope',color:'#00867f'}},React.createElement('span',{style:{width:7,height:7,borderRadius:4,background:'#00867f'}}),r.status),
           React.createElement('span',{style:{font:'700 11px Manrope',color:'#8b5cf6'}},r.freq)),
         React.createElement('div',{style:{font:'800 15px Archivo',color:'#0c3b37',marginBottom:8}},r.alvo),
-        React.createElement('div',{style:{font:'700 10px Manrope',letterSpacing:'.04em',textTransform:'uppercase',color:'#8a9a94',marginBottom:6}},'Fontes que o robô lê ('+r.fontes.length+')'),
-        React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:6,marginBottom:12}},r.fontes.length?r.fontes.map((f,i)=>React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',gap:8,background:'#f7f4fe',borderRadius:9,padding:'7px 9px'}},
+        React.createElement('div',{style:{font:'700 10px Manrope',letterSpacing:'.04em',textTransform:'uppercase',color:'#8a9a94',marginBottom:6}},'Fontes que o robô lê ('+((r.fontes||[]).length)+')'),
+        React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:6,marginBottom:12}},(r.fontes||[]).length?(r.fontes||[]).map((f,i)=>React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',gap:8,background:'#f7f4fe',borderRadius:9,padding:'7px 9px'}},
           React.createElement('div',{style:{flex:1,minWidth:0}},
             React.createElement('div',{style:{font:'700 10.5px Manrope',color:'#4b3a7a'}},f.tipo),
             React.createElement('a',{href:this.fonteHref(f.ref),target:'_blank',rel:'noreferrer',title:f.ref,style:{display:'block',font:'500 11px Manrope',color:'#2b7bce',textDecoration:'none',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},f.ref)),
@@ -3574,7 +3574,7 @@ class Component extends DCLogic {
           React.createElement('div',{style:{display:'flex',alignItems:'center',gap:7,font:'600 12px Manrope',color:'#c2564b'}},this.ic(this.icons().arrowDown),c.fraqueza)),
         React.createElement('div',{style:{borderTop:'1px solid rgba(12,59,55,.08)',paddingTop:10}},
           React.createElement('div',{style:{font:'700 10px Manrope',letterSpacing:'.04em',textTransform:'uppercase',color:'#8a9a94',marginBottom:8}},'Movimentos rastreados'),
-          React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8}},c.mov.map((m,i)=>React.createElement('div',{key:i,style:{display:'flex',gap:8,alignItems:'flex-start'}},
+          React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8}},(c.mov||[]).map((m,i)=>React.createElement('div',{key:i,style:{display:'flex',gap:8,alignItems:'flex-start'}},
             React.createElement('span',{style:{font:'700 10px Manrope',color:m.cor,background:m.cor+'18',padding:'2px 7px',borderRadius:20,flex:'none',whiteSpace:'nowrap'}},m.tipo),
             React.createElement('span',{style:{font:'500 12px Manrope',color:'#12211e',lineHeight:1.4,flex:1}},m.texto),
             React.createElement('span',{style:{font:'500 11px Manrope',color:'#8a9a94',flex:'none'}},m.data)))))]))),
@@ -4333,7 +4333,8 @@ class Component extends DCLogic {
   mercadoFinanceiro(){
     const tab=this.state.mfTab||'commodities';
     const isCeo=this.state.role==='ceo';
-    const tabs=[['commodities','Commodities'],['acoes','Ações (bolsa)'],['macro','Câmbio & macro'],['sinais','Sinais de decisão']];
+    const tabs=[['commodities','Commodities'],['acoes','Ações (bolsa)'],['macro','Câmbio & macro'],['sinais','Sinais de decisão']].filter(t=>!(isCeo&&t[0]==='sinais'));
+    const tabAtiva=(isCeo&&tab==='sinais')?'commodities':tab;
     const commodities=[['Soja (CBOT)','US¢/bu','1.052','+1,4%',1],['Soja (saca MT)','R$/sc','128,50','+2,8%',1],['Milho (saca MT)','R$/sc','62,30','-2,8%',0],['Boi gordo','R$/@','312,00','+2,3%',1],['Trigo (CBOT)','US¢/bu','598','-0,7%',0],['Café (NY)','US¢/lb','242','+3,1%',1],['Açúcar (NY)','US¢/lb','19,8','+1,2%',1],['Algodão','US¢/lb','71,4','-0,4%',0]];
     const acoes=[['SLC Agrícola','SLCE3','21,40','+1,8%',1],['BrasilAgro','AGRO3','24,10','-0,6%',0],['3tentos','TTEN3','12,85','+2,1%',1],['Boa Safra','SOJA3','10,30','+0,9%',1],['São Martinho','SMTO3','28,70','+0,4%',1],['JBS','JBSS3','34,20','+1,2%',1],['Marfrig','MRFG3','11,90','-1,1%',0],['AgroGalaxy','AGXY3','1,15','-3,5%',0]];
     const macro=[['Dólar comercial','R$','5,42','-0,3%',0],['Euro','R$','5,88','-0,2%',0],['Ibovespa','pts','128.400','+0,7%',1],['Índice do Agro','pts','2.940','+0,9%',1],['Selic','% a.a.','10,5','estável',1],['Brent','US$','82,3','+0,6%',1]];
@@ -4347,11 +4348,11 @@ class Component extends DCLogic {
         React.createElement('span',{style:{font:'700 13px Manrope',color:'#12211e',textAlign:'right'}},r[2]),
         varSpan(r[3],r[4])))
     ]);
-    const tabBar=React.createElement('div',{style:{display:'flex',gap:8,flexWrap:'wrap',overflowX:'auto'}},tabs.map(t=>React.createElement('button',{key:t[0],onClick:()=>this.set({mfTab:t[0]}),style:{border:'none',cursor:'pointer',borderRadius:20,padding:'8px 15px',font:'700 12px Manrope',whiteSpace:'nowrap',background:tab===t[0]?'#0c3b37':'#eef1ee',color:tab===t[0]?'#fff':'#5c6b67'}},t[1])));
+    const tabBar=React.createElement('div',{style:{display:'flex',gap:8,flexWrap:'wrap',overflowX:'auto'}},tabs.map(t=>React.createElement('button',{key:t[0],onClick:()=>this.set({mfTab:t[0]}),style:{border:'none',cursor:'pointer',borderRadius:20,padding:'8px 15px',font:'700 12px Manrope',whiteSpace:'nowrap',background:tabAtiva===t[0]?'#0c3b37':'#eef1ee',color:tabAtiva===t[0]?'#fff':'#5c6b67'}},t[1])));
     let body;
-    if(tab==='commodities') body=mkTable(['Commodity','Unidade','Preço','Variação'],commodities);
-    else if(tab==='acoes') body=mkTable(['Ação (B3)','Ticker','Cotação R$','Variação'],acoes);
-    else if(tab==='macro') body=mkTable(['Indicador','Unid.','Valor','Variação'],macro);
+    if(tabAtiva==='commodities') body=mkTable(['Commodity','Unidade','Preço','Variação'],commodities);
+    else if(tabAtiva==='acoes') body=mkTable(['Ação (B3)','Ticker','Cotação R$','Variação'],acoes);
+    else if(tabAtiva==='macro') body=mkTable(['Indicador','Unid.','Valor','Variação'],macro);
     else body=this.grid(2,16,sinais.map((s,i)=>React.createElement('div',{key:i,style:{background:'#fff',border:'1px solid rgba(12,59,55,.08)',borderLeft:'4px solid '+s.cor,borderRadius:14,padding:16,boxShadow:'0 1px 2px rgba(12,59,55,.04)'}},
       React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:8}},
         React.createElement('span',{style:{font:'700 14px Archivo',color:'#0c3b37'}},s.t),
