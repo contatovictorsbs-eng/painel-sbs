@@ -1,4 +1,5 @@
-/* ============================================================
+/* build: v1.41.0 — inclui rota "mercado" (força recompilação das Functions)
+   ============================================================
    Cloudflare Pages Function — roteador único para /api/*
    Executa as funções do backend (server/*.js, no formato clássico
    exports.handler = async (event) => ({ statusCode, headers, body }))
