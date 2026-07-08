@@ -2,7 +2,7 @@
    Remove de todas as coleções os registros marcados com { teste:true }.
    Uso: depois de subir para produção, chame uma vez para zerar os exemplos.
 
-   POST /.netlify/functions/limpar-teste   { escopo?: 'todos' | ['leads','vendas',...] }
+   POST /api/limpar-teste   { escopo?: 'todos' | ['leads','vendas',...] }
    Resposta: { ok, data:{ removidos:{colecao:n,...}, total } }
 
    Só CEO ou admin (perfil no token) podem executar.

@@ -3,9 +3,9 @@
    (cada produto do catálogo com o preço específico daquela campanha). É essa
    tabela que o App do Vendedor lê para registrar vendas.
    A meta é POR CAMPANHA (não por vendedor) e aparece para todos os vendedores.
-   GET   /.netlify/functions/campanhas
-   POST  /.netlify/functions/campanhas   { id?, nome, gtn, inicio, fim, meta, canal, premios[], produtos:[{produtoId,preco}] }
-   PATCH /.netlify/functions/campanhas   { id, ...campos }  // ex.: encerrar → { id, status:'Encerrada' }
+   GET   /api/campanhas
+   POST  /api/campanhas   { id?, nome, gtn, inicio, fim, meta, canal, premios[], produtos:[{produtoId,preco}] }
+   PATCH /api/campanhas   { id, ...campos }  // ex.: encerrar → { id, status:'Encerrada' }
    Coleção: "campanhas".
 */
 const { list, get, put, ok, fail } = require('./_lib/store');

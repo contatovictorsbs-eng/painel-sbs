@@ -1,6 +1,6 @@
 /* Notificações — Central de mensagens → vendedores. Espelha a tela "Notificações".
-   GET  /.netlify/functions/notificacoes?destino=regiao&valor=MT
-   POST /.netlify/functions/notificacoes  { titulo, texto, tipo, destino, destinoValor }
+   GET  /api/notificacoes?destino=regiao&valor=MT
+   POST /api/notificacoes  { titulo, texto, tipo, destino, destinoValor }
    POST .../notificacoes?acao=lida  { id, vendedorId }   → marca leitura
 */
 const { list, get, put, ok, fail } = require('./_lib/store');

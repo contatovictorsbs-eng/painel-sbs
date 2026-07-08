@@ -13,10 +13,9 @@ Substitua `SEU-SITE` pela URL real (ex.: `painel-sbs.pages.dev`).
 
 ## B. As funções respondem (teste rápido pela URL)
 Abra cada link numa aba. Deve retornar **JSON** (não erro 404/500):
-- [ ] `https://SEU-SITE/.netlify/functions/vendedores` → `{"ok":true,"data":...}`
-- [ ] `https://SEU-SITE/.netlify/functions/eventos` → JSON
-- [ ] `https://SEU-SITE/.netlify/functions/campanhas` → JSON
-- [ ] `https://SEU-SITE/api/vendedores` → mesmo JSON (rota direta funciona igual)
+- [ ] `https://SEU-SITE/api/vendedores` → `{"ok":true,"data":...}`
+- [ ] `https://SEU-SITE/api/eventos` → JSON
+- [ ] `https://SEU-SITE/api/campanhas` → JSON
 
 > Se aqui vier JSON, o roteador + Supabase estão de pé.
 

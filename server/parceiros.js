@@ -1,6 +1,6 @@
 /* Apps de parceiros (co-branded white-label). Espelha "Apps de parceiros".
-   GET  /.netlify/functions/parceiros
-   POST /.netlify/functions/parceiros  { nome, cor, logo(base64|url), evento, local, produtos[] }
+   GET  /api/parceiros
+   POST /api/parceiros  { nome, cor, logo(base64|url), evento, local, produtos[] }
    Logo: no MVP aceita dataURL/base64; em produção subir para storage e salvar a URL.
 */
 const { list, put, remove, ok, fail } = require('./_lib/store');

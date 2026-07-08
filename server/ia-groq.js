@@ -1,5 +1,5 @@
 /* Assistente IA (Groq) para Marketing e Inteligência de Mercado.
-   POST /.netlify/functions/ia-groq  { area, messages:[{role,content}] }
+   POST /api/ia-groq  { area, messages:[{role,content}] }
    -> { reply, contexto:{...} }
    Requer variável de ambiente GROQ_API_KEY (console.groq.com/keys).
    Modelo padrão: llama-3.1-8b-instant (rápido e no free tier).

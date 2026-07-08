@@ -6,7 +6,7 @@
    functions/auth.js consome em produção. O hash é o MESMO que
    o login verifica: sha256(senha + AUTH_SECRET).
 
-   IMPORTANTE: use o MESMO AUTH_SECRET que estará na Netlify.
+   IMPORTANTE: use o MESMO AUTH_SECRET que estará no Cloudflare Pages.
    Se o segredo mudar, os hashes deixam de validar.
 
    Uso:
@@ -50,7 +50,7 @@ if (fracas.length) {
   fracas.forEach(u => console.error('  - ' + u.email));
 }
 
-console.log('\n# Cole este valor em Netlify → Environment variables → USERS_JSON');
+console.log('\n# Cole este valor em Cloudflare → Pages → Settings → Environment variables → USERS_JSON');
 console.log('# (uma única linha)\n');
 console.log(JSON.stringify(saida));
 console.log('');

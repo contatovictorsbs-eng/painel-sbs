@@ -6,9 +6,9 @@ Uso comercial permitido. Banco: **Supabase** (via fetch — funciona no runtime 
 
 ## Como o projeto está montado para o Cloudflare
 - Site estático: `painel-sbs.html` na raiz (o `_redirects` abre em `/`).
-- Backend: as 22 funções ficam em `server/*.js` (formato Netlify, sem alteração).
+- Backend: as 22 funções ficam em `server/*.js` (um handler `exports.handler` por recurso).
 - Roteador: `functions/api/[[path]].js` (Pages Function) executa cada `server/<nome>.js`.
-- `_redirects`: reescreve `/.netlify/functions/<nome>` → `/api/<nome>` (o front não muda).
+- `_redirects`: `/` → o painel e bloqueio de `/server/*` e `/backend/*`. O front chama `/api/<nome>` direto (sem alias legado).
 - `wrangler.toml`: liga `nodejs_compat` (necessário p/ `process.env` e o HMAC do login).
 
 ---
@@ -71,6 +71,6 @@ crie um **Cloudflare Worker** com Cron Trigger chamando `https://painel-sbs.page
 (Opcional — hoje essas funções são stubs.)
 
 ## Observações
-- `netlify.toml` e `vercel.json` seguem no projeto: dá para usar Netlify ou Vercel sem mudar código.
+- Hospedagem única: **Cloudflare Pages** (site + Pages Functions). Não há dependência de Netlify nem Vercel.
 - Segredos **nunca** em arquivo/commit — só nas Environment variables do Cloudflare.
 - LGPD: toda escrita registra em `sbs_auditoria` (quem/o quê/quando), visível só a admin/TI.

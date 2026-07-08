@@ -20,7 +20,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   // Nunca cachear o backend
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/.netlify/')) return;
+  if (url.pathname.startsWith('/api/')) return;
 
   // Navegação (HTML): network-first, cai no cache se offline
   if (req.mode === 'navigate') {

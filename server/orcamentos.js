@@ -2,9 +2,9 @@
    gerente regional. O vendedor abre um orçamento atrelado a um lead e solicita
    desconto/bonificação; o gerente regional negocia (libera mais ou menos) e a
    decisão volta para o app.
-   GET   /.netlify/functions/orcamentos?status=Solicitado&regiao=PR&vendedor=...
-   POST  /.netlify/functions/orcamentos   { leadId, produto, qtd, precoTabela, descontoSolic, bonifSolic, justificativa, vendedor, regiao }
-   PATCH /.netlify/functions/orcamentos   { id, aprovar:true|false, descontoAprov, bonifAprov, notaGerente }
+   GET   /api/orcamentos?status=Solicitado&regiao=PR&vendedor=...
+   POST  /api/orcamentos   { leadId, produto, qtd, precoTabela, descontoSolic, bonifSolic, justificativa, vendedor, regiao }
+   PATCH /api/orcamentos   { id, aprovar:true|false, descontoAprov, bonifAprov, notaGerente }
    Coleção: "orcamentos". Alçada de desconto por perfil pode vir de env DESCONTO_ALCADA.
 */
 const { ok, fail, audit, clientIp, tenantStore, pageOpts } = require('./_lib/store');
@@ -64,6 +64,21 @@ exports.handler = async (event) => {
       }
       o.decididoEm = new Date().toISOString();
       const saved = await db.put('orcamentos', o);
+      // Notifica o vendedor: grava um aviso direcionado (aparece na central de Avisos do app).
+      try {
+        const aprovado = o.status === 'Aprovado' || o.status === 'Ajustado';
+        await db.put('notificacoes', {
+          id: 'orc' + o.id + '-' + Date.now(),
+          titulo: aprovado ? ('Desconto liberado — ' + (o.leadNome || 'seu orçamento'))
+                           : ('Orçamento não liberado — ' + (o.leadNome || '')),
+          texto: aprovado
+            ? ('O gerente liberou ' + (o.descontoAprov||0) + '% de desconto' + (o.bonifAprov ? (' e bonificação ' + o.bonifAprov) : '') + ' para ' + (o.produto || 'o produto') + '.')
+            : (o.notaGerente || 'Não foi possível liberar o desconto no momento.'),
+          tipo: aprovado ? 'campanha' : 'urgente',
+          destino: 'vendedor', destinoValor: o.vendedor || '',
+          ts: Date.now(), lidoPor: []
+        });
+      } catch (e) { /* não bloqueia a decisão se a notificação falhar */ }
       const u = fromEvent(event) || {};
       await audit({ usuario:u.sub, perfil:u.perfil, acao:'editou', entidade:'orcamentos', entidadeId:o.id, ip:clientIp(event) });
       return ok({ ...saved, valorFinal: valorFinal(saved) });

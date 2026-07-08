@@ -1,8 +1,8 @@
 # SBS Green Seeds — Modelo de dados (backend)
 
-Fonte da verdade das coleções usadas pelas Netlify Functions. Cada coleção é
-gravada via `functions/_lib/store.js` (Netlify Blobs no MVP; trocável por
-Postgres/Supabase sem mudar o front).
+Fonte da verdade das coleções usadas pelas funções de servidor (`server/*.js`,
+roteadas em `/api/*` por `functions/api/[[path]].js`). Cada coleção é gravada via
+`server/_lib/store.js` (Supabase/Postgres — banco único da stack).
 
 ## Coleções
 
@@ -55,10 +55,27 @@ evento e ele entra na esteira de aprovação (vira projeto). Isolado por `tenant
 
 ### notificacoes
 Central de mensagens → vendedores.
-| id, titulo, texto, tipo(aviso/campanha/urgente), destino(all/regiao/evento), destinoValor, ts, lidoPor[] |
+| id, titulo, texto, tipo(aviso/campanha/urgente), destino(all/regiao/evento/vendedor), destinoValor, ts, lidoPor[] |
+Além dos comunicados manuais, `orcamentos.js` grava aqui uma notificação `destino:'vendedor'`
+(destinoValor = nome do vendedor) sempre que um desconto é liberado/recusado — chega na aba Avisos do app.
+
+### demandas
+Quadro (kanban) compartilhado entre Marketing, Gerência Nacional, Inteligência e CEO.
+Função **`demandas.js`**: `GET /api/demandas?destino=&status=` · `POST /api/demandas` (criar)
+· `POST /api/demandas?acao=status {id,status}` (mover) · `POST /api/demandas?acao=excluir {id}` (remover).
+Menções `@Marketing/@CEO/@Inteligência/@Gerente Nacional` no campo `envolvidos` são
+extraídas para `mencoes[]` e geram um registro em **alertas** (tipo `mencao`) para a área marcada.
+| id, tipo, destino, solic, origem, regiao, area, prio(Alta/Média/Baixa), status(Solicitado→Em análise→Em desenvolvimento→Aguardando aprovação→Finalizado), resp, prazo, desc, envolvidos[], mencoes[], ts |
 
 ### mi_cotacoes / mi_concorrentes / mi_cc_movimentos / mi_regioes / mi_tendencias
-Inteligência de Mercado (ver mi-data.js do projeto original).
+Inteligência de Mercado. Lidas/gravadas pela função **`mercado.js`**:
+`GET /api/mercado?tipo=cotacoes|concorrentes|regioes|tendencias|movimentos` (sem
+`tipo` retorna todas agrupadas) · `POST /api/mercado {tipo, ...item}`.
+Formatos (o que as telas leem):
+- cotacoes: `{produto, praca, preco, anterior, un, fonte, auto}`
+- concorrentes: `{nome, seg, regiao, posicao, forca, fraqueza, monitorar, mov[]}`
+- regioes: `{regiao, cultura, uf, potencial, participacao, tendencia, obs}`
+- tendencias: `{titulo, categoria, impacto(alto/médio/baixo), horizonte, data, desc}`
 
 ### aprovacoes
 Fluxo de estudo colaborativo por setor.
@@ -139,14 +156,14 @@ aqui — sem deploy. Excluir = soft delete (status Inativo). Ver `arquitetura-mu
 > carimba por tenant automaticamente via `tenantStore(tenant)`.
 
 ## Convenção de API
-Todas as funções: `/.netlify/functions/<nome>`
+Todas as funções: `/api/<nome>`
 - `GET` → lista/consulta (querystring para filtro)
 - `POST` → cria/atualiza (JSON no corpo)
 - Resposta: `{ ok:true, data:… }` ou `{ ok:false, erro:"…" }`
 - Segredos por `process.env` (AV_KEY, AI_KEY, ERP_TOKEN…).
 
 ## Autenticação & LGPD
-- Login server-side em `/.netlify/functions/auth` → token HMAC (12h) no header `Authorization: Bearer`.
+- Login server-side em `/api/auth` → token HMAC (12h) no header `Authorization: Bearer`.
 - Guard `requireAuth(event, [perfis])` protege rotas sensíveis (ex.: `auditoria` só admin/TI).
 - Toda escrita (vendedores, vendas, leads, orçamentos) grava um registro em `auditoria`.
 - Dados pessoais (nome, telefone, CNPJ, CPF) marcados como LGPD no schema; acesso por perfil + trilha de auditoria.

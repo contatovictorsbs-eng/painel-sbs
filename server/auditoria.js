@@ -1,6 +1,6 @@
 /* Auditoria LGPD — trilha de acessos e alterações.
-   GET /.netlify/functions/auditoria           → últimos registros (admin/TI)
-   GET /.netlify/functions/auditoria?usuario=x  → filtra por usuário
+   GET /api/auditoria           → últimos registros (admin/TI)
+   GET /api/auditoria?usuario=x  → filtra por usuário
    Requer token de perfil 'admin' ou 'ti'. */
 const { list, ok, fail } = require('./_lib/store');
 const { requireAuth } = require('./_lib/auth');

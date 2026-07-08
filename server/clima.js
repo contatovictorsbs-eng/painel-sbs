@@ -1,5 +1,5 @@
 /* Clima — proxy Open-Meteo (grátis, sem chave). Espelha a tela "Clima & tempo".
-   GET /.netlify/functions/clima?lat=-12.545&lon=-55.711
+   GET /api/clima?lat=-12.545&lon=-55.711
    Retorna condição atual + previsão 7 dias. */
 exports.handler = async (event) => {
   try {

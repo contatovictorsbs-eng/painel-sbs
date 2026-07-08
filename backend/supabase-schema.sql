@@ -3,7 +3,8 @@
 -- Modelo do store.js: cada coleção é a tabela sbs_<nome> com
 --   id text PK, data jsonb (o item inteiro), updated_at timestamptz.
 -- Rode este arquivo no SQL Editor do Supabase (uma vez).
--- Depois defina SUPABASE_URL e SUPABASE_SERVICE_KEY na Netlify.
+-- Depois defina SUPABASE_URL e SUPABASE_SERVICE_KEY nas Environment
+-- variables do Cloudflare Pages (Settings → Environment variables).
 -- ============================================================
 
 -- Função utilitária: cria a tabela padrão + índices se não existir.
@@ -31,7 +32,7 @@ select sbs_criar_colecao(n) from unnest(array[
 ]) as n;
 
 -- ------------------------------------------------------------
--- Segurança: as Netlify Functions usam a SERVICE_KEY (bypassa RLS).
+-- Segurança: as Cloudflare Pages Functions usam a SERVICE_KEY (bypassa RLS).
 -- Mantemos RLS LIGADO e SEM políticas públicas → nenhum acesso
 -- anônimo direto ao banco; todo tráfego passa pelas funções (que já
 -- validam token + tenant). Ative o RLS em cada tabela:

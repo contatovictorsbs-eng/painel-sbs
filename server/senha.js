@@ -1,7 +1,7 @@
 /* Senha — troca e redefinição (sem bloqueio por tentativas).
    Guarda o hash na coleção `usuarios`. hash = sha256(senha + AUTH_SECRET).
 
-   POST /.netlify/functions/senha
+   POST /api/senha
      { acao:'trocar',    senhaAtual, novaSenha }   (Authorization: Bearer)  → troca a própria senha
      { acao:'solicitar', email }                    → gera código de redefinição (validade 30 min)
      { acao:'redefinir', email, codigo, novaSenha } → aplica a nova senha usando o código

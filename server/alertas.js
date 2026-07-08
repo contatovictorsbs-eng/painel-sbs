@@ -1,7 +1,7 @@
 /* Alertas internos da equipe (Inteligência / Marketing / Gerência).
    Disparado quando um vendedor conclui o cadastro pelo app, entre outros.
-   GET  /.netlify/functions/alertas
-   POST /.netlify/functions/alertas  { tipo, titulo, texto, areas:["Inteligência","Marketing","Gerência"] }
+   GET  /api/alertas
+   POST /api/alertas  { tipo, titulo, texto, areas:["Inteligência","Marketing","Gerência"] }
 */
 const { list, put, ok, fail } = require('./_lib/store');
 

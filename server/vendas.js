@@ -1,6 +1,6 @@
 /* Vendas do App de Eventos — grava de volta na base (sentido duplo).
-   GET  /.netlify/functions/vendas?eventoId=..&vendedorId=..
-   POST /.netlify/functions/vendas  { vendedorId, eventoId, cnpjCliente, produto, quantidade, valor, parceira }
+   GET  /api/vendas?eventoId=..&vendedorId=..
+   POST /api/vendas  { vendedorId, eventoId, cnpjCliente, produto, quantidade, valor, parceira }
 */
 const { ok, fail, audit, clientIp, tenantStore, pageOpts } = require('./_lib/store');
 const { fromEvent, tenantFromEvent } = require('./_lib/auth');

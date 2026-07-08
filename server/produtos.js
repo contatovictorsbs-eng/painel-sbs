@@ -1,9 +1,9 @@
 /* Catálogo de produtos SBS — nome, cultura, saco, preço, foto, ficha técnica (specs)
    e materiais de apoio (vídeo/PDF/Excel/texto/link) que o vendedor consulta no app.
-   GET   /.netlify/functions/produtos
-   POST  /.netlify/functions/produtos   { id?, nome, cultura, saco, preco, foto?, specs?, materiais?[{tipo,titulo,url}] }
-   PATCH /.netlify/functions/produtos   { id, ...campos }
-   DELETE/.netlify/functions/produtos?id=...
+   GET   /api/produtos
+   POST  /api/produtos   { id?, nome, cultura, saco, preco, foto?, specs?, materiais?[{tipo,titulo,url}] }
+   PATCH /api/produtos   { id, ...campos }
+   DELETE/api/produtos?id=...
    Coleção: "produtos".
 */
 const { list, get, put, remove, ok, fail } = require('./_lib/store');

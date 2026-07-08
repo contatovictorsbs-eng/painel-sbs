@@ -1,10 +1,10 @@
 /* Monitoramento de concorrentes — robôs de coleta com FONTES referenciadas.
    Cada robô guarda exatamente as fontes (com link/@) que deve ler, para que a
    origem de cada achado seja rastreável e a fonte possa ser removida.
-   GET    /.netlify/functions/monitoramento
-   POST   /.netlify/functions/monitoramento   { alvo, freq, fontes:[{tipo, ref}] }
-   PATCH  /.netlify/functions/monitoramento   { id, fontes:[...] }   -> atualiza/adiciona/remove fontes
-   DELETE /.netlify/functions/monitoramento?id=...
+   GET    /api/monitoramento
+   POST   /api/monitoramento   { alvo, freq, fontes:[{tipo, ref}] }
+   PATCH  /api/monitoramento   { id, fontes:[...] }   -> atualiza/adiciona/remove fontes
+   DELETE /api/monitoramento?id=...
    Coletor real: functions/coletor-concorrentes.js (Scheduled) grava os "achados"
    por robô, cada achado carregando { fonte, ref } de origem.
 */

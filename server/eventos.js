@@ -2,11 +2,11 @@
    Todos leem e escrevem a MESMA coleção `eventos`, então o calendário reflete para todos.
    Isolamento por tenant (parceira) via token; SBS (super-tenant) enxerga todos.
 
-   GET    /.netlify/functions/eventos?limite=&pagina=      → lista (paginada)
-   POST   /.netlify/functions/eventos   { ...evento }       → cria/atualiza
-   POST   /.netlify/functions/eventos   { acaoEvento:'aprovacao', id }  → manda p/ esteira de aprovação
-   PATCH  /.netlify/functions/eventos   { id, ...campos }    → atualiza campos
-   DELETE /.netlify/functions/eventos?id=...
+   GET    /api/eventos?limite=&pagina=      → lista (paginada)
+   POST   /api/eventos   { ...evento }       → cria/atualiza
+   POST   /api/eventos   { acaoEvento:'aprovacao', id }  → manda p/ esteira de aprovação
+   PATCH  /api/eventos   { id, ...campos }    → atualiza campos
+   DELETE /api/eventos?id=...
    Escreve trilha LGPD em `auditoria` a cada mudança. */
 const { tenantStore, pageOpts, audit, clientIp, ok, fail } = require('./_lib/store');
 const { fromEvent, tenantFromEvent } = require('./_lib/auth');

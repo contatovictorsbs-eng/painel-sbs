@@ -5,18 +5,19 @@
 
 Para cada funcionalidade nova do painel/app, entregar em conjunto:
 1. **Front** — a tela/DC (como já é feito).
-2. **Função de servidor** — arquivo em `functions/` (Netlify Function, Node.js) que lê/grava os dados reais.
+2. **Função de servidor** — arquivo em `server/` (função Node.js no formato `exports.handler`), roteada em `/api/<nome>` por `functions/api/[[path]].js` (Cloudflare Pages Function), que lê/grava os dados reais.
 3. **Modelo de dados** — a coleção/tabela e os campos que aquela função usa (documentar em `backend/schema.md`).
 4. **Contrato de API** — endpoint, método, entrada e saída (documentar junto à função).
 5. **Documentação viva** — atualizar `backend/manifest.js` (módulo + função + coleção + entrada no `changelog`, subindo a `versao`). A página `Arquitetura SBS.dc.html` e os guias leem desse manifesto, então a documentação e a arquitetura se atualizam a partir desse ponto único. NUNCA deixar o manifesto defasado do que foi construído.
 
-O front deve chamar a função por `/.netlify/functions/<nome>` em vez de dados locais de exemplo (mantendo fallback para o modo demonstração enquanto não publicado).
+O front deve chamar a função por `/api/<nome>` em vez de dados locais de exemplo (mantendo fallback para o modo demonstração enquanto não publicado).
 
 ## Stack de backend
-- Hospedagem: **Netlify** (site estático + Netlify Functions + Scheduled Functions).
-- Chaves/segredos: **variáveis de ambiente** na Netlify — nunca no navegador.
+- Hospedagem: **Cloudflare Pages** (site estático + Pages Functions + Cron Triggers). **Sem Netlify/Vercel.**
+- Chaves/segredos: **variáveis de ambiente** no Cloudflare Pages — nunca no navegador.
+- Banco: **Supabase/Postgres** (via `server/_lib/store.js`).
 - Fontes reais por módulo: ver `Guia Tecnico Dados Reais.dc.html`.
-- Já existem: `functions/coletor-concorrentes.js`, `functions/preco-concorrente.js`.
+- Robôs agendados existem em `functions/` (ex.: `coletor-concorrentes.js`, `preco-concorrente.js`).
 
 ## Identidade visual
 - Cores: teal `#0B6B61`, verde profundo `#0c3b37`, lima `#6FA331`.

@@ -1,8 +1,8 @@
 /* Leads — esteira/pipeline. Liga o App do Vendedor ao painel (Marketing/Gerente).
-   GET   /.netlify/functions/leads?status=Novo&vendedor=...&evento=...
-   POST  /.netlify/functions/leads            { nome, prop, ha, fone, produto, potencial, vendedor, evento }
-   PATCH /.netlify/functions/leads            { id, status }                     -> move na esteira
-   PATCH /.netlify/functions/leads?perda=1    { id, motivoPerda, swot:{...} }    -> registra perda + SWOT
+   GET   /api/leads?status=Novo&vendedor=...&evento=...
+   POST  /api/leads            { nome, prop, ha, fone, produto, potencial, vendedor, evento }
+   PATCH /api/leads            { id, status }                     -> move na esteira
+   PATCH /api/leads?perda=1    { id, motivoPerda, swot:{...} }    -> registra perda + SWOT
    Fonte real: coleção "leads". Cada mudança de status grava no histórico.
 */
 const { ok, fail, audit, clientIp, tenantStore, pageOpts } = require('./_lib/store');

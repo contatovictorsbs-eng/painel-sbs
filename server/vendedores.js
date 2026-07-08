@@ -1,6 +1,6 @@
 /* Vendedores — CRUD. Espelha a tela "Vendedores" e o cadastro do App de Eventos.
-   GET  /.netlify/functions/vendedores?regiao=MT&parceira=coopercitrus
-   POST /.netlify/functions/vendedores  { nome, cpf, telefone, email, regiao, parceira }
+   GET  /api/vendedores?regiao=MT&parceira=coopercitrus
+   POST /api/vendedores  { nome, cpf, telefone, email, regiao, parceira }
 */
 const { ok, fail, audit, clientIp, tenantStore, pageOpts } = require('./_lib/store');
 const { fromEvent, tenantFromEvent } = require('./_lib/auth');

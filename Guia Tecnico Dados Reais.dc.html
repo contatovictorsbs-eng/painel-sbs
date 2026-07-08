@@ -56,7 +56,7 @@
 
 <h2>1. Como funciona — as três camadas</h2>
 <div class="step"><div class="step-n">1</div><div class="step-b"><h3 style="margin-top:0">Painel (navegador)</h3><p>O que já está pronto: 4 painéis, App de Eventos, robôs, clima. Ele apenas <b>lê e mostra</b> — não guarda segredo nenhum. É publicado como site estático.</p></div></div>
-<div class="step"><div class="step-n">2</div><div class="step-b"><h3 style="margin-top:0">Funções de servidor <span class="pill free">Netlify Functions — grátis</span></h3><p>Pequenos scripts que rodam no servidor, guardam as <b>chaves de API</b> com segurança e buscam os dados nas fontes externas. O painel chama estas funções por um endereço <code>/.netlify/functions/nome</code>.</p></div></div>
+<div class="step"><div class="step-n">2</div><div class="step-b"><h3 style="margin-top:0">Funções de servidor <span class="pill free">Cloudflare Pages Functions — grátis</span></h3><p>Pequenos scripts que rodam no servidor, guardam as <b>chaves de API</b> com segurança e buscam os dados nas fontes externas. O painel chama estas funções por um endereço <code>/api/nome</code>.</p></div></div>
 <div class="step"><div class="step-n">3</div><div class="step-b"><h3 style="margin-top:0">Fontes de dados</h3><p>APIs públicas do agro (CEPEA, CONAB, IBGE), clima (Open-Meteo/INMET), câmbio, e o seu <b>CRM/ERP</b> (pedidos, metas, vendedores). Cada função conversa com uma fonte.</p></div></div>
 
 <h2>2. Mapa de dados — de onde vem cada módulo</h2>
@@ -75,7 +75,7 @@
 </table>
 
 <h2>3. Chaves e APIs a configurar</h2>
-<p>Guardadas como <b>variáveis de ambiente</b> na Netlify (nunca no painel). Quase todas têm plano gratuito suficiente para começar.</p>
+<p>Guardadas como <b>variáveis de ambiente</b> no Cloudflare Pages (nunca no painel). Quase todas têm plano gratuito suficiente para começar.</p>
 <table>
   <thead><tr><th style="width:26%">Serviço</th><th style="width:16%">Custo</th><th style="width:34%">Para quê</th><th style="width:24%">Variável</th></tr></thead>
   <tbody>
@@ -90,9 +90,9 @@
 </table>
 
 <h2>4. Publicar e ativar — passo a passo</h2>
-<div class="step"><div class="step-n">1</div><div class="step-b"><p><b>Publicar o painel.</b> Suba o projeto no <b>Netlify</b> (arrastar a pasta em app.netlify.com, ou conectar ao GitHub). O site fica no ar com HTTPS.</p></div></div>
-<div class="step"><div class="step-n">2</div><div class="step-b"><p><b>Ativar as funções.</b> A pasta <code>functions/</code> já existe no projeto — a Netlify a reconhece automaticamente e publica cada arquivo como um endpoint.</p></div></div>
-<div class="step"><div class="step-n">3</div><div class="step-b"><p><b>Cadastrar as chaves.</b> Em <i>Site settings → Environment variables</i>, adicione <code>AV_KEY</code>, <code>AI_KEY</code>, <code>ERP_TOKEN</code> etc. Assim as chaves ficam no servidor, fora do alcance do navegador.</p></div></div>
+<div class="step"><div class="step-n">1</div><div class="step-b"><p><b>Publicar o painel.</b> Conecte o repositório no <b>Cloudflare Pages</b> (Workers &amp; Pages → Create → Pages → Connect to Git). O site fica no ar com HTTPS; cada branch/PR ganha uma URL de preview e a <code>main</code> vira produção.</p></div></div>
+<div class="step"><div class="step-n">2</div><div class="step-b"><p><b>Ativar as funções.</b> O roteador <code>functions/api/[[path]].js</code> já publica cada arquivo de <code>server/</code> em <code>/api/nome</code>. Ligue a flag <code>nodejs_compat</code> em <i>Settings → Functions → Compatibility flags</i> (Production e Preview).</p></div></div>
+<div class="step"><div class="step-n">3</div><div class="step-b"><p><b>Cadastrar as chaves.</b> Em <i>Settings → Environment variables</i>, adicione <code>AV_KEY</code>, <code>AI_KEY</code>, <code>ERP_TOKEN</code>, <code>SUPABASE_URL</code>, <code>SUPABASE_SERVICE_KEY</code> etc. Assim as chaves ficam no servidor, fora do alcance do navegador.</p></div></div>
 <div class="step"><div class="step-n">4</div><div class="step-b"><p><b>Ligar módulo a módulo.</b> Recomendo a ordem: <b>Clima</b> (mais fácil, sem chave) → <b>Câmbio/Cotações</b> → <b>Concorrentes</b> → <b>CRM/ERP</b> (Insights e Regiões) → <b>Panorama</b>. Cada um pode entrar no ar separadamente.</p></div></div>
 <div class="step"><div class="step-n">5</div><div class="step-b"><p><b>Agendar os robôs.</b> Configure <i>Scheduled Functions</i> para <code>coletor-concorrentes</code> e <code>alertas</code> rodarem sozinhos (ex.: de 6 em 6 horas), gravando os achados na base.</p></div></div>
 
@@ -118,7 +118,7 @@
 <h2>Checklist de virada</h2>
 <table>
   <tbody>
-    <tr><td style="width:60%"><b>Publicar</b> o painel no Netlify com HTTPS</td><td>Infra</td></tr>
+    <tr><td style="width:60%"><b>Publicar</b> o painel no Cloudflare Pages com HTTPS</td><td>Infra</td></tr>
     <tr><td><b>Cadastrar</b> variáveis de ambiente (chaves)</td><td>Infra</td></tr>
     <tr><td><b>Clima</b> ligado ao Open-Meteo (piloto sem chave)</td><td>Rápido</td></tr>
     <tr><td><b>Cotações/câmbio</b> em fontes ao vivo</td><td>Dados</td></tr>

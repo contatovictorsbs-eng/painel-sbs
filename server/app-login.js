@@ -2,7 +2,7 @@
    Credenciais ficam na coleção `vendedores` (id = usuario em minúsculas).
    hash = sha256(senha + AUTH_SECRET). Token perfil:'vendedor', tenant = parceira.
 
-   POST /.netlify/functions/app-login
+   POST /api/app-login
      { acao:'login',     usuario, senha }
      { acao:'cadastro',  nome, usuario, senha, email, telefone, cpf, cidade, uf, regiao, gerente, parceira }
      { acao:'solicitar', usuario|email }                 → código de 6 dígitos (30 min)

@@ -2,7 +2,7 @@
    Soma o faturamento das vendas de cada vendedor no recorte (parceira/evento),
    ordena e devolve a colocação, o gap para o 1º lugar e o corte de cada prêmio.
 
-   GET /.netlify/functions/ranking?parceira=Coopercitrus&eventoId=..&campanhaId=..&me=<vendedorId>
+   GET /api/ranking?parceira=Coopercitrus&eventoId=..&campanhaId=..&me=<vendedorId>
    Resposta: { ok, data: { campanha, meta, premios, sellers:[{vendedorId,nome,cidade,fat,pedidos,pos}],
                            me:{...}, need1, pctToFirst, tiers:[{pos,premio,corte,falta,sou}] } }
 */

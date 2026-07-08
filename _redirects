@@ -1,8 +1,5 @@
 # Cloudflare Pages — rewrites (status 200 = proxy interno, sem mudar a URL)
 
-# Compatibilidade: o front chama /.netlify/functions/<nome> → roteia para /api/<nome>
-/.netlify/functions/*   /api/:splat   200
-
 # Home abre o painel
 /   /painel-sbs.html   200
 

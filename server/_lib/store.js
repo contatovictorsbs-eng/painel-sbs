@@ -1,7 +1,9 @@
 /* Camada de dados compartilhada.
-   Duas implementações com a MESMA interface:
-   - Supabase/Postgres  → ativada quando SUPABASE_URL + SUPABASE_SERVICE_KEY existem (produção)
-   - Netlify Blobs       → fallback gratuito (MVP / staging)
+   Banco: Supabase/Postgres — ativado quando SUPABASE_URL + SUPABASE_SERVICE_KEY
+   existem (hospedagem: Cloudflare Pages). Sem essas variáveis o store lança um
+   erro claro pedindo a configuração (não há outro banco na stack).
+   (Há um caminho legado de Netlify Blobs, carregado só por import dinâmico em
+   try/catch — nunca empacotado no runtime Cloudflare e sem uso na stack atual.)
    Trocar de banco não exige mudar nenhuma função de rota. */
 
 /* Leitura PREGUIÇOSA do ambiente: no Cloudflare Workers o process.env só é

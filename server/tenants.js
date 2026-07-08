@@ -2,10 +2,10 @@
    Provisionar uma nova parceira = criar um registro aqui. Nenhum deploy/código novo.
    Cada tenant guarda a configuração white-label: marca, produtos, política de venda.
 
-   GET   /.netlify/functions/tenants                 → lista (super/admin vê todos)
-   GET   /.netlify/functions/tenants?slug=coamo      → config pública de 1 tenant (p/ o app carregar a marca)
-   POST  /.netlify/functions/tenants                 → cria/atualiza (admin/TI)   { slug, nome, cor, paleta[], logo, produtos[], politica, status }
-   DELETE/.netlify/functions/tenants?slug=coamo      → desativa (admin/TI)
+   GET   /api/tenants                 → lista (super/admin vê todos)
+   GET   /api/tenants?slug=coamo      → config pública de 1 tenant (p/ o app carregar a marca)
+   POST  /api/tenants                 → cria/atualiza (admin/TI)   { slug, nome, cor, paleta[], logo, produtos[], politica, status }
+   DELETE/api/tenants?slug=coamo      → desativa (admin/TI)
 
    Isolamento: dados operacionais (vendas, leads, orçamentos…) carregam `tenant`
    e são filtrados no store por tenant. Aqui vive só o CADASTRO dos tenants. */

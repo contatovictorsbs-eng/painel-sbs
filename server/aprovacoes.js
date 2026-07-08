@@ -1,7 +1,7 @@
 /* Aprovações — esteira colaborativa de projetos/eventos (Marketing → Gerência → Inteligência → CEO).
-   GET   /.netlify/functions/aprovacoes                      -> lista projetos em aprovação (paginado)
-   POST  /.netlify/functions/aprovacoes  { projeto, acao, quem, fase }   -> registra decisão + histórico
-   PATCH /.netlify/functions/aprovacoes  { id, faseAtual, status }       -> move de fase / decide
+   GET   /api/aprovacoes                      -> lista projetos em aprovação (paginado)
+   POST  /api/aprovacoes  { projeto, acao, quem, fase }   -> registra decisão + histórico
+   PATCH /api/aprovacoes  { id, faseAtual, status }       -> move de fase / decide
    Fonte real: coleção "aprovacoes" (+ histórico em aprovacoes_hist). Isolado por tenant.
 */
 const { ok, fail, audit, clientIp, tenantStore, pageOpts } = require('./_lib/store');
