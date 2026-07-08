@@ -132,6 +132,11 @@ Controle da área de Tecnologia sobre os painéis (persistido no cliente e/ou co
 Histórico do fluxo de aprovação (quem fez o quê, quando) + anexos por projeto.
 | id, projeto, quem, acao, quando, anexos[{nome,tipo(foto/PDF/arquivo),tam}] |
 
+### dossies
+Dossiê completo arquivado quando o CEO aprova/reprova — snapshot para consulta futura.
+Gerado por `aprovacoes.js` (POST `{tipo:'dossie',dossie}`) e listável via GET `?tipo=dossies`.
+| id, projId, proj, tipo, local, decisao(Aprovado/Reprovado), decididoPor, decididoEm, analises{marketing{orcamento,escopo}, gerente{metaReceita,pedidos}, inteligencia{roiPrev,prob,parecer,classe}}, roiConsolidado, anexos[{nome,tipo,tam}], timeline[], arquivadoEm, arquivadoPor |
+
 ### auditoria (LGPD)
 Trilha de acessos e alterações. Nunca guarda a payload de dados pessoais — só
 metadados de quem fez o quê. Leitura restrita a admin/TI.

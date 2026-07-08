@@ -16,6 +16,7 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === 'GET') {
       const q = event.queryStringParameters || {};
+      if (q.tipo === 'dossies') return ok(await db.list('dossies', {}, pageOpts(q)));
       const filtros = {};
       if (q.status)    filtros.status = q.status;
       if (q.faseAtual) filtros.faseAtual = q.faseAtual;
@@ -25,6 +26,14 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === 'POST') {
       const b = JSON.parse(event.body || '{}');
+      // Dossiê completo arquivado pela decisão do CEO (aprovar/reprovar) — consulta futura
+      if (b.tipo === 'dossie' && b.dossie) {
+        const dossie = Object.assign({}, b.dossie, { arquivadoEm: new Date().toISOString(), arquivadoPor: u.sub || 'sistema' });
+        const savedDos = await db.put('dossies', dossie);
+        await db.put('aprovacoes_hist', { projeto: dossie.proj || dossie.projId, acao: dossie.decisao === 'Aprovado' ? 'aprovou o investimento (dossiê arquivado)' : 'reprovou o investimento (dossiê arquivado)', quem: dossie.decididoPor || u.sub || 'CEO', fase: 'ceo', ts: new Date().toISOString() });
+        await audit({ usuario:u.sub, perfil:u.perfil, acao:'arquivou-dossie', entidade:'dossies', entidadeId:dossie.id, ip:clientIp(event) });
+        return ok(savedDos);
+      }
       if (!b.projeto) return fail('Informe o projeto');
       const now = new Date().toISOString();
       const ent = {

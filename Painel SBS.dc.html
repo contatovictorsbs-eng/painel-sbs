@@ -254,6 +254,8 @@ class Component extends DCLogic {
     panelOffline:{marketing:false,gerente:false,ceo:false,mercado:false},
     hiddenMods:{marketing:[],gerente:[],ceo:[],mercado:[]},
     aprovHist:[],
+    aprovDossies:[],
+    dossieView:null,
     robots:[
       {id:1,alvo:'TESTE — Monitoramento de concorrente',fontes:[{tipo:'Site oficial',ref:'https://concorrente-exemplo.com.br/precos'},{tipo:'Marketplace',ref:'mercadolivre.com.br/perfil/concorrente-exemplo'},{tipo:'Instagram',ref:'@concorrente_exemplo'}],freq:'Diário',status:'Ativo',achados:0,ultimo:{texto:'Aguardando primeira coleta das fontes cadastradas…',fonte:'—',ref:''},quando:'agora'},
     ],
@@ -1743,14 +1745,14 @@ class Component extends DCLogic {
     const nome=g('ev-nome'); if(!nome){ this.setState({evMsg:'Informe o nome do evento'}); return; }
     const di=g('ev-ini');
     const mesMap=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    let mes='', dia=null; if(di){ const dt=new Date(di); if(!isNaN(dt)){ mes=mesMap[dt.getMonth()]; dia=dt.getDate(); } }
+    let mes='', dia=null, anoEv=null, mIdx=null; if(di){ const dt=new Date(di+'T00:00:00'); if(!isNaN(dt)){ mes=mesMap[dt.getMonth()]; dia=dt.getDate(); anoEv=dt.getFullYear(); mIdx=dt.getMonth(); } }
     const meta=this.roleMeta()[this.state.role]||{}; const isAdmin=this.state.isAdmin;
     const rawApp=(document.getElementById('ev-app')||{}).value||'app:';
     let appVal='', appStat=''; 
     if(rawApp.indexOf('status:')===0){ appStat=rawApp.slice(7); appVal=''; }
     else { appVal=rawApp.replace(/^app:/,''); appStat=''; }  // '' = SBS padrão → inferido publicado
     const ev={ id:Date.now(), nome, cidade:g('ev-cidade'), uf:g('ev-uf').toUpperCase(),
-      data:(di?this.fmtDataBR(di):'A definir')+(g('ev-fim')&&g('ev-fim')!==di?(' – '+this.fmtDataBR(g('ev-fim'))):''), mes, dia,
+      data:(di?this.fmtDataBR(di):'A definir')+(g('ev-fim')&&g('ev-fim')!==di?(' – '+this.fmtDataBR(g('ev-fim'))):''), mes, dia, ano:anoEv,
       status:(document.getElementById('ev-status')||{}).value||'Planejado',
       app:appVal, appStatus:appStat,
       segmento:g('ev-seg')||'Evento', objetivo:g('ev-obj'), custo:this.parseBR(g('ev-orc')),
@@ -1759,7 +1761,7 @@ class Component extends DCLogic {
       criadoEm:new Date().toISOString(), aprovacao:false };
     const demOrigem=this.state.evDemandaOrigem;
     const iaOrigem=this.state.evIAorigem;
-    this.setState({eventos:[ev,...this.evAll()], evNovo:false, evPrefill:null, evDemandaOrigem:null, evDemandaNome:null, evIAorigem:null});
+    this.setState({eventos:[ev,...this.evAll()], evNovo:false, evPrefill:null, evDemandaOrigem:null, evDemandaNome:null, evIAorigem:null, ...(mIdx!=null?{evMonth:mIdx,evYear:anoEv}:{})});
     if(iaOrigem){ try{ const conv=(this.state.iaConvs||[]).find(c=>c.id===iaOrigem); if(conv){ this.iaUpdateConv(iaOrigem,{msgs:[...(conv.msgs||[]),{r:'ia',t:'✅ Evento criado a partir deste estudo: "'+ev.nome+'". Ele entrou na agenda compartilhada e segue o fluxo de aprovação.'}]}); } }catch(e){} }
     if(demOrigem){
       this.patchDemanda(demOrigem,{status:'Finalizado', eventoId:ev.id, convertidoEvento:ev.nome});
@@ -1770,7 +1772,7 @@ class Component extends DCLogic {
       .then(()=>{ this.setState({backend:'online'}); this.showToast('Evento salvo no banco ✓ — visível para todos os perfis'); })
       .catch((e)=>{ this.showToast('Evento criado localmente — NÃO salvou no banco: '+((e&&e.message)||'sem conexão')); });
   }
-  fmtDataBR(s){ try{ const d=new Date(s); if(isNaN(d)) return s; return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }catch(e){ return s; } }
+  fmtDataBR(s){ try{ const d=new Date(String(s).length===10?(s+'T00:00:00'):s); if(isNaN(d)) return s; return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }catch(e){ return s; } }
   parseBR(s){ return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0; }
   enviarEventoAprovacao(ev){
     if(ev.aprovacao){ this.setState({role:this.state.role,page:'aprovacoes'}); return; }
@@ -1819,8 +1821,12 @@ class Component extends DCLogic {
     const mesNomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const mesFull=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const mesIdx=e=>{ if(e.mes){ const i=mesNomes.findIndex(m=>m.toLowerCase()===String(e.mes).slice(0,3).toLowerCase()); if(i>=0) return i; } return null; };
-    const mCur=this.state.evMonth==null?7:this.state.evMonth;   // Ago por padrão (evento teste)
-    const yCur=this.state.evYear||2026;
+    // Mês padrão dirigido pelos dados: abre no mês do evento mais recente que tenha data
+    const comData=evsAll.filter(e=>e.dia!=null&&mesIdx(e)!=null);
+    const defMonth=comData.length?mesIdx(comData[0]):7;
+    const defYear=(comData.length&&comData[0].ano)?comData[0].ano:2026;
+    const mCur=this.state.evMonth==null?defMonth:this.state.evMonth;   // segue os dados
+    const yCur=this.state.evYear||defYear;
     const fArea=this.state.evFArea||'todos';
     const fStatus=this.state.evFStatus||'todos';
     // lista filtrada (todos os meses)
@@ -1834,7 +1840,10 @@ class Component extends DCLogic {
     for(let day=1;day<=nDays;day++){ const de=byDay[day]||[]; const has=de.length>0;
       cells.push(React.createElement('div',{key:day,style:{minHeight:66,borderRadius:9,border:'1px solid rgba(12,59,55,.07)',background:has?'#0c3b37':'#fff',padding:7,display:'flex',flexDirection:'column',gap:3}},
         React.createElement('span',{style:{font:'700 11px Manrope',color:has?'#4fd1be':'#5c6b67'}},day),
-        ...de.slice(0,2).map((e,j)=>React.createElement('div',{key:j,style:{font:'700 9px Manrope',color:'#fff',background:this.perfilBadge(e.criadoPor)[1],borderRadius:5,padding:'2px 4px',lineHeight:1.15,overflow:'hidden'}},e.nome)))); }
+        ...de.slice(0,2).map((e,j)=>React.createElement('div',{key:j,title:e.nome+' · criado por '+this.perfilBadge(e.criadoPor||'marketing')[0],style:{font:'700 9px Manrope',color:'#fff',background:this.perfilBadge(e.criadoPor||'marketing')[1],borderRadius:5,padding:'2px 4px',lineHeight:1.15,overflow:'hidden'}},
+          React.createElement('div',{style:{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},e.nome),
+          React.createElement('div',{style:{font:'600 8px Manrope',opacity:.85,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},this.perfilBadge(e.criadoPor||'marketing')[0]))),
+        de.length>2?React.createElement('div',{style:{font:'700 8px Manrope',color:has?'#4fd1be':'#5c6b67'}},'+'+(de.length-2)+' evento(s)'):null)); }
     const navMes=React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}},
       React.createElement('div',{style:{font:'700 16px Archivo',color:'#0c3b37'}},mesFull[mCur]+' '+yCur),
       React.createElement('div',{style:{display:'flex',gap:8}},
@@ -1891,9 +1900,60 @@ class Component extends DCLogic {
   }
 
   // ================= FLUXO DE APROVAÇÃO (entre frentes) =================
+  analiseConsolidada(p){
+    const h=React.createElement; const I=this.icons();
+    const brl=v=>this.brl(v||0);
+    const roi=(p.mi&&p.mi.roiPrev)||((p.ger&&p.ger.metaReceita)&&(p.mkt&&p.mkt.orcamento)?(p.ger.metaReceita/p.mkt.orcamento):0);
+    const bloco=(cor,ic,titulo,linhas)=>h('div',{style:{flex:1,minWidth:200,background:'#fff',border:'1px solid rgba(12,59,55,.1)',borderRadius:11,padding:'13px 14px'}},
+      h('div',{style:{display:'flex',alignItems:'center',gap:7,marginBottom:9}},h('span',{style:{width:26,height:26,borderRadius:7,background:cor,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(ic)),h('span',{style:{font:'800 12px Archivo',color:'#0c3b37'}},titulo)),
+      linhas.map((l,i)=>h('div',{key:i,style:{display:'flex',justifyContent:'space-between',gap:10,padding:'4px 0',borderTop:i?'1px solid rgba(12,59,55,.05)':'none'}},
+        h('span',{style:{font:'600 11.5px Manrope',color:'#5c6b67'}},l[0]),
+        h('span',{style:{font:'700 12px Manrope',color:'#0c3b37',textAlign:'right'}},l[1]))));
+    return h('div',{style:{background:'#eef7f4',border:'1px solid #cfe6df',borderRadius:12,padding:'15px 16px',marginBottom:12}},
+      h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:12}},h('span',{style:{color:'#0c8a7b'}},this.ic(I.gauge)),h('span',{style:{font:'800 13px Archivo',color:'#0c3b37'}},'Análises consolidadas — revise tudo antes de decidir')),
+      h('div',{style:{display:'flex',gap:10,flexWrap:'wrap',marginBottom:12}},
+        bloco('#12b39a',I.dash,'Marketing',[['Orçamento do evento',brl(p.mkt&&p.mkt.orcamento)]]),
+        bloco('#2b7bce',I.campaign,'Gerência Nacional',[['Meta de receita',brl(p.ger&&p.ger.metaReceita)],['Pedidos previstos',((p.ger&&p.ger.pedidos)||0)+'']]),
+        bloco('#6ba53a',I.gauge,'Inteligência',[['ROI previsto',(p.mi&&p.mi.roiPrev?p.mi.roiPrev.toFixed(1)+'x':'—')],['Probabilidade',(p.mi&&p.mi.prob?p.mi.prob+'%':'—')],['Prioridade',(p.mi&&p.mi.classe)||'—']])),
+      (p.mkt&&p.mkt.escopo)?h('div',{style:{font:'500 12.5px Manrope',color:'#3a4a44',lineHeight:1.5,marginBottom:6}},h('b',{style:{color:'#0c3b37'}},'Escopo (Mkt): '),p.mkt.escopo):null,
+      (p.mi&&p.mi.rec)?h('div',{style:{font:'500 12.5px Manrope',color:'#3a4a44',lineHeight:1.5,marginBottom:6}},h('b',{style:{color:'#12b39a'}},'Parecer técnico (Inteligência): '),p.mi.rec):null,
+      h('div',{style:{display:'flex',alignItems:'center',gap:10,background:'#0c3b37',borderRadius:10,padding:'11px 14px',marginTop:8}},
+        h('span',{style:{color:'#4fd1be'}},this.ic(I.target)),
+        h('span',{style:{font:'700 12px Manrope',color:'#dfeee9',flex:1}},'Retorno consolidado do estudo'),
+        h('span',{style:{font:'800 18px Archivo',color:'#fff'}},roi?roi.toFixed(1)+'x':'—')),
+      h('div',{style:{font:'500 11px Manrope',color:'#6b7c77',marginTop:9}},'Ao decidir, todo este conteúdo (análises, anexos e histórico) é arquivado em um dossiê para consulta futura.'));
+  }
   advanceFase(id){ this.setState({projetos:this.state.projetos.map(p=>p.id===id?{...p,fase:p.fase+1}:p)}); this.logAprov(id,'concluiu sua fase do estudo'); }
   setProjField(id,sec,f,val){ this.setState({projetos:this.state.projetos.map(p=>p.id===id?{...p,[sec]:{...p[sec],[f]:val}}:p)}); }
-  decideProj(id,ok){ this.setState({projetos:this.state.projetos.map(p=>p.id===id?{...p,fase:5,status:ok?'Aprovado':'Reprovado'}:p)}); this.logAprov(id,ok?'aprovou o investimento':'reprovou o investimento'); }
+  buildDossie(p,decisao){
+    const meta=this.roleMeta();
+    const roi=p.mi&&p.mi.roiPrev?p.mi.roiPrev:(p.ger&&p.ger.metaReceita&&p.mkt&&p.mkt.orcamento?(p.ger.metaReceita/p.mkt.orcamento):0);
+    return {
+      id:'DOS-'+Date.now(),
+      projId:p.id, proj:p.nome||'—', tipo:p.tipo||'', local:p.local||'',
+      decisao, decididoPor:this.state.isAdmin?'Admin master':((meta.ceo&&meta.ceo.name)||'CEO'),
+      decididoEm:new Date().toLocaleString('pt-BR'),
+      analises:{
+        marketing:{orcamento:(p.mkt&&p.mkt.orcamento)||0, escopo:(p.mkt&&p.mkt.escopo)||''},
+        gerente:{metaReceita:(p.ger&&p.ger.metaReceita)||0, pedidos:(p.ger&&p.ger.pedidos)||0},
+        inteligencia:{roiPrev:(p.mi&&p.mi.roiPrev)||0, prob:(p.mi&&p.mi.prob)||0, parecer:(p.mi&&p.mi.rec)||'', classe:(p.mi&&p.mi.classe)||'—'}
+      },
+      roiConsolidado:roi,
+      anexos:(p.anexos||[]).map(a=>({nome:a.nome,tipo:a.tipo,tam:a.tam})),
+      timeline:(this.state.aprovHist||[]).filter(h=>h.proj===(p.nome||'—'))
+    };
+  }
+  decideProj(id,ok){
+    const p=(this.state.projetos||[]).find(x=>x.id===id)||{};
+    const dossie=this.buildDossie(p, ok?'Aprovado':'Reprovado');
+    this.setState({
+      projetos:this.state.projetos.map(x=>x.id===id?{...x,fase:5,status:ok?'Aprovado':'Reprovado',dossieId:dossie.id}:x),
+      aprovDossies:[dossie,...(this.state.aprovDossies||[])].slice(0,200)
+    });
+    this.logAprov(id,ok?'aprovou o investimento':'reprovou o investimento');
+    try{ this.apiSend('aprovacoes','POST',{tipo:'dossie',dossie}).catch(()=>{}); }catch(e){}
+    this.showToast(ok?'Investimento aprovado — dossiê arquivado para consulta futura':'Investimento reprovado — dossiê arquivado');
+  }
   logAprov(id,acao){
     const p=(this.state.projetos||[]).find(x=>x.id===id)||{};
     const meta=this.roleMeta()[this.state.role]||{name:this.state.role};
@@ -1947,9 +2007,11 @@ class Component extends DCLogic {
       if(p.status==='Reprovado') return React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,background:'#fbeeea',borderRadius:11,padding:'12px 14px',font:'700 13px Manrope',color:'#c2564b'}},this.ic(this.icons().trash),'Investimento reprovado pelo CEO');
       const owner=fases[p.fase-1];
       if(r===owner[0]){
-        if(p.fase===4) return React.createElement('div',{style:{display:'flex',gap:10}},
+        if(p.fase===4) return React.createElement('div',null,
+          this.analiseConsolidada(p),
+          React.createElement('div',{style:{display:'flex',gap:10}},
           React.createElement('button',{onClick:()=>this.decideProj(p.id,true),style:{flex:1,background:'#00867f',color:'#fff',border:'none',borderRadius:11,padding:'12px',font:'800 14px Archivo',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7}},this.ic(this.icons().check),'Aprovar investimento'),
-          React.createElement('button',{onClick:()=>this.decideProj(p.id,false),style:{flex:'none',background:'#fbeeea',color:'#c2564b',border:'none',borderRadius:11,padding:'12px 18px',font:'800 14px Archivo',cursor:'pointer'}},'Reprovar'));
+          React.createElement('button',{onClick:()=>this.decideProj(p.id,false),style:{flex:'none',background:'#fbeeea',color:'#c2564b',border:'none',borderRadius:11,padding:'12px 18px',font:'800 14px Archivo',cursor:'pointer'}},'Reprovar')));
         const secKey={1:'mkt',2:'ger',3:'mi'}[p.fase];
         const flds={1:[['orcamento','Orçamento do evento (R$)','num'],['escopo','Escopo e ativações','text']],2:[['metaReceita','Meta de receita (R$)','num'],['pedidos','Pedidos previstos','num']],3:[['roiPrev','ROI previsto (x)','num'],['prob','Probabilidade de sucesso (%)','num'],['rec','Parecer técnico do estudo','text']]}[p.fase];
         const fInp=(f,label,type)=>React.createElement('label',{key:f,style:{display:'flex',flexDirection:'column',gap:5,gridColumn:type==='text'?'1 / -1':'auto'}},
@@ -1999,7 +2061,51 @@ class Component extends DCLogic {
             React.createElement('div',{style:{flex:1}},React.createElement('div',{style:{font:'700 12px Manrope',color:'#0c3b37'}},h.quem+' '+h.acao),React.createElement('div',{style:{font:'500 11px Manrope',color:'#8a9a94'}},h.proj)),
             React.createElement('span',{style:{font:'500 11px Manrope',color:'#8a9a94',flex:'none'}},h.quando)))):
           React.createElement('div',{style:{padding:'24px',textAlign:'center',color:'#8a9a94',font:'500 13px Manrope'}},'Ainda sem movimentações. Cada ação (preencher fase, anexar, aprovar) aparece aqui.')]),
+      this.card([
+        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:4}},
+          React.createElement('span',{style:{color:'#0c8a7b'}},this.ic(this.icons().file)),
+          React.createElement('div',{style:{flex:1}},this.h('Arquivo de decisões (dossiês)','Cada aprovação/reprovação do CEO fica salva aqui, com todo o conteúdo, para consulta futura'))),
+        (this.state.aprovDossies&&this.state.aprovDossies.length)?React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8}},this.state.aprovDossies.map((d)=>
+          React.createElement('div',{key:d.id,style:{display:'flex',alignItems:'center',gap:12,background:'#f7faf9',border:'1px solid rgba(12,59,55,.08)',borderRadius:11,padding:'12px 14px'}},
+            React.createElement('span',{style:{width:34,height:34,borderRadius:9,background:d.decisao==='Aprovado'?'#e4f5ec':'#fbeeea',color:d.decisao==='Aprovado'?'#00867f':'#c2564b',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(d.decisao==='Aprovado'?this.icons().check:this.icons().trash)),
+            React.createElement('div',{style:{flex:1,minWidth:0}},
+              React.createElement('div',{style:{font:'800 13px Archivo',color:'#0c3b37'}},d.proj),
+              React.createElement('div',{style:{font:'500 11px Manrope',color:'#8a9a94'}},d.decisao+' por '+d.decididoPor+' · '+d.decididoEm)),
+            React.createElement('button',{onClick:()=>this.set({dossieView:d}),style:{flex:'none',background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:6}},this.ic(this.icons().activity),'Ver dossiê completo'))) ):
+          React.createElement('div',{style:{padding:'22px',textAlign:'center',color:'#8a9a94',font:'500 13px Manrope'}},'Nenhuma decisão arquivada ainda. Quando o CEO aprovar ou reprovar um projeto, o dossiê completo é salvo aqui.')]),
+      this.dossieModal(),
     ]);
+  }
+  dossieModal(){
+    const d=this.state.dossieView; if(!d) return null;
+    const h=React.createElement; const I=this.icons(); const brl=v=>this.brl(v||0);
+    const secTitle=(ic,cor,txt)=>h('div',{style:{display:'flex',alignItems:'center',gap:8,margin:'16px 0 9px'}},h('span',{style:{width:26,height:26,borderRadius:7,background:cor,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(ic)),h('span',{style:{font:'800 13px Archivo',color:'#0c3b37'}},txt));
+    const linha=(k,v)=>h('div',{style:{display:'flex',justifyContent:'space-between',gap:12,padding:'6px 0',borderBottom:'1px solid rgba(12,59,55,.06)'}},h('span',{style:{font:'600 12px Manrope',color:'#5c6b67'}},k),h('span',{style:{font:'700 12.5px Manrope',color:'#0c3b37',textAlign:'right'}},v));
+    const a=d.analises||{};
+    return h('div',{onClick:()=>this.set({dossieView:null}),style:{position:'fixed',inset:0,background:'rgba(6,32,29,.55)',zIndex:80,display:'flex',alignItems:'center',justifyContent:'center',padding:20}},
+      h('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:18,width:640,maxWidth:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:'0 30px 80px rgba(0,0,0,.35)'}},
+        h('div',{style:{position:'sticky',top:0,background:d.decisao==='Aprovado'?'linear-gradient(120deg,#0e433d,#0a322e)':'linear-gradient(120deg,#5a2420,#3f1a17)',padding:'18px 22px',display:'flex',alignItems:'center',gap:12,borderRadius:'18px 18px 0 0'}},
+          h('span',{style:{width:40,height:40,borderRadius:11,background:'rgba(255,255,255,.15)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(d.decisao==='Aprovado'?I.check:I.trash)),
+          h('div',{style:{flex:1}},h('div',{style:{font:'800 17px Archivo',color:'#fff'}},d.proj),h('div',{style:{font:'600 12px Manrope',color:'#a9c6b6'}},'Dossiê '+d.id+' · '+d.tipo+(d.local?(' · '+d.local):''))),
+          h('button',{onClick:()=>this.set({dossieView:null}),style:{background:'rgba(255,255,255,.15)',border:'none',color:'#fff',borderRadius:9,width:32,height:32,cursor:'pointer',font:'700 16px Manrope',flex:'none'}},'×')),
+        h('div',{style:{padding:'6px 22px 22px'}},
+          h('div',{style:{display:'flex',alignItems:'center',gap:8,background:d.decisao==='Aprovado'?'#e4f5ec':'#fbeeea',color:d.decisao==='Aprovado'?'#00867f':'#c2564b',borderRadius:10,padding:'11px 14px',margin:'14px 0',font:'700 13px Manrope'}},this.ic(d.decisao==='Aprovado'?I.check:I.trash),d.decisao+' por '+d.decididoPor+' em '+d.decididoEm),
+          secTitle(I.dash,'#12b39a','Marketing'),
+          linha('Orçamento do evento',brl(a.marketing&&a.marketing.orcamento)),
+          (a.marketing&&a.marketing.escopo)?h('div',{style:{font:'500 12.5px Manrope',color:'#3a4a44',lineHeight:1.5,marginTop:8}},a.marketing.escopo):null,
+          secTitle(I.campaign,'#2b7bce','Gerência Nacional'),
+          linha('Meta de receita',brl(a.gerente&&a.gerente.metaReceita)),
+          linha('Pedidos previstos',((a.gerente&&a.gerente.pedidos)||0)+''),
+          secTitle(I.gauge,'#6ba53a','Inteligência de Mercado'),
+          linha('ROI previsto',(a.inteligencia&&a.inteligencia.roiPrev?a.inteligencia.roiPrev.toFixed(1)+'x':'—')),
+          linha('Probabilidade de sucesso',(a.inteligencia&&a.inteligencia.prob?a.inteligencia.prob+'%':'—')),
+          linha('Prioridade',(a.inteligencia&&a.inteligencia.classe)||'—'),
+          (a.inteligencia&&a.inteligencia.parecer)?h('div',{style:{font:'500 12.5px Manrope',color:'#3a4a44',lineHeight:1.5,marginTop:8}},h('b',{style:{color:'#12b39a'}},'Parecer: '),a.inteligencia.parecer):null,
+          h('div',{style:{display:'flex',alignItems:'center',gap:10,background:'#0c3b37',borderRadius:10,padding:'12px 15px',margin:'16px 0'}},h('span',{style:{color:'#4fd1be'}},this.ic(I.target)),h('span',{style:{font:'700 12px Manrope',color:'#dfeee9',flex:1}},'Retorno consolidado'),h('span',{style:{font:'800 18px Archivo',color:'#fff'}},d.roiConsolidado?d.roiConsolidado.toFixed(1)+'x':'—')),
+          d.anexos&&d.anexos.length?secTitle(I.file,'#5c6b67','Anexos ('+d.anexos.length+')'):null,
+          d.anexos&&d.anexos.length?h('div',{style:{display:'flex',flexWrap:'wrap',gap:8}},d.anexos.map((ax,i)=>h('div',{key:i,style:{display:'flex',alignItems:'center',gap:8,background:'#f7faf9',border:'1px solid rgba(12,59,55,.1)',borderRadius:9,padding:'7px 10px',font:'700 11px Manrope',color:'#0c3b37'}},this.ic(I.file),ax.nome,h('span',{style:{color:'#8a9a94',fontWeight:500}},ax.tam+' KB')))):null,
+          d.timeline&&d.timeline.length?secTitle(I.history,'#0c8a7b','Histórico de ações'):null,
+          d.timeline&&d.timeline.length?h('div',{style:{display:'flex',flexDirection:'column',gap:2}},d.timeline.map((t,i)=>h('div',{key:i,style:{display:'flex',justifyContent:'space-between',gap:10,padding:'7px 0',borderBottom:i<d.timeline.length-1?'1px solid rgba(12,59,55,.06)':'none'}},h('span',{style:{font:'600 11.5px Manrope',color:'#0c3b37'}},t.quem+' '+t.acao),h('span',{style:{font:'500 10.5px Manrope',color:'#8a9a94',flex:'none'}},t.quando)))):null)));
   }
 
   // ================= APPS DE PARCEIROS (white-label) =================
