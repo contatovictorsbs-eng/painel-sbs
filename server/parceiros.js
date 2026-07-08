@@ -1,9 +1,11 @@
 /* Apps de parceiros (co-branded white-label). Espelha "Apps de parceiros".
-   GET  /api/parceiros
-   POST /api/parceiros  { nome, cor, logo(base64|url), evento, local, produtos[] }
+   GET   /api/parceiros
+   POST  /api/parceiros  { nome, cor, logo(base64|url), evento, local, produtos[], campanhaId, campanha }
+   PATCH /api/parceiros  { id, campanhaId, campanha }   → anexa/atualiza a campanha vinculada
+   Regra: todo app de evento opera dentro de uma campanha (produtos, materiais e metas).
    Logo: no MVP aceita dataURL/base64; em produção subir para storage e salvar a URL.
 */
-const { list, put, remove, ok, fail } = require('./_lib/store');
+const { list, get, put, remove, ok, fail } = require('./_lib/store');
 
 exports.handler = async (event) => {
   try {
@@ -15,8 +17,19 @@ exports.handler = async (event) => {
       const item = {
         id: b.id, nome: b.nome, sigla, cor: b.cor||'#e8730f', logo: b.logo||null,
         evento: b.evento||'', local: b.local||'', produtos: b.produtos||[],
+        campanhaId: b.campanhaId!=null ? b.campanhaId : null, campanha: b.campanha||null,
         status: b.status||'Rascunho', vendedores: b.vendedores||0, criadoEm: new Date().toISOString()
       };
+      return ok(await put('parceiros', item));
+    }
+    if (event.httpMethod === 'PATCH') {
+      const b = JSON.parse(event.body || '{}');
+      if (!b.id) return fail('id obrigatório');
+      const atual = (await get('parceiros', b.id)) || { id: b.id };
+      const item = Object.assign({}, atual, {
+        campanhaId: b.campanhaId!=null ? b.campanhaId : (atual.campanhaId != null ? atual.campanhaId : null),
+        campanha: b.campanha!=null ? b.campanha : (atual.campanha || null)
+      });
       return ok(await put('parceiros', item));
     }
     if (event.httpMethod === 'DELETE') {

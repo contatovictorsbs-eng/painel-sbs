@@ -65,7 +65,11 @@ Função **`demandas.js`**: `GET /api/demandas?destino=&status=` · `POST /api/d
 · `POST /api/demandas?acao=status {id,status}` (mover) · `POST /api/demandas?acao=excluir {id}` (remover).
 Menções `@Marketing/@CEO/@Inteligência/@Gerente Nacional` no campo `envolvidos` são
 extraídas para `mencoes[]` e geram um registro em **alertas** (tipo `mencao`) para a área marcada.
-| id, tipo, destino, solic, origem, regiao, area, prio(Alta/Média/Baixa), status(Solicitado→Em análise→Em desenvolvimento→Aguardando aprovação→Finalizado), resp, prazo, desc, envolvidos[], mencoes[], ts |
+| id, tipo, destino, solic, origem, regiao, area, prio(Alta/Média/Baixa), status(Solicitado→Em análise→Em desenvolvimento→Aguardando aprovação→Finalizado), resp, prazo, desc, envolvidos[], mencoes[], eventoId, convertidoEvento, ts |
+
+Uma demanda pode **virar evento** (botão "Virar evento" no modal de edição): abre a criação
+de evento pré-preenchida; ao criar, a demanda é marcada `status:Finalizado` com `eventoId` e
+`convertidoEvento` (nome), e o evento segue o fluxo normal da agenda (aprovação/app).
 
 ### mi_cotacoes / mi_concorrentes / mi_cc_movimentos / mi_regioes / mi_tendencias
 Inteligência de Mercado. Lidas/gravadas pela função **`mercado.js`**:
@@ -85,6 +89,14 @@ Fluxo de estudo colaborativo por setor.
 Esteira/pipeline. Liga o App do Vendedor aos painéis (Marketing/Gerente). Cada
 mudança de status grava no histórico; perda registra motivo + SWOT.
 | id, nome(pessoal-LGPD), prop, ha, fone(LGPD), produto, potencial(Quente/Morno/Frio), status(Novo/Contatado/Qualificado/Proposta/Ganho/Perdido), vendedor, evento, motivoPerda, swot{forca,fraqueza,oportunidade,ameaca}, hist[{status,quando}] |
+
+### parceiros
+Apps de eventos co-branded (white-label) — SBS × parceira. Espelha "Apps de parceiros".
+Função **`parceiros.js`**: `GET /api/parceiros` · `POST /api/parceiros {nome,cor,logo,evento,local,produtos[],campanhaId,campanha}`
+· `PATCH /api/parceiros {id,campanhaId,campanha}` (anexar/atualizar a campanha) · `DELETE /api/parceiros?id=`.
+**Regra:** todo app de evento opera dentro de uma campanha (produtos, materiais e metas).
+Na criação a campanha é obrigatória; um app sem campanha exibe "Anexar campanha" no card.
+| id, nome, sigla, cor, logo, evento, local, produtos[], campanhaId, campanha, status(Rascunho/Ativo), vendedores, criadoEm |
 
 ### monitoramentos
 Robôs de coleta com FONTES referenciadas (link/@ exato) — origem de cada achado

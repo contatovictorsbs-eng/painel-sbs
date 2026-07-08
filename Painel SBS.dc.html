@@ -76,6 +76,7 @@
   </sc-if>
   {{ pwOverlay }}
   {{ evOverlay }}
+  {{ demandaOverlay }}
   {{ evMuralOverlay }}
   <sc-if value="{{ showPanel }}" hint-placeholder-val="{{ true }}">
   <div style="display:flex;width:100%;max-width:1560px;height:100vh;overflow:hidden;background:#eef1ee">
@@ -88,10 +89,15 @@
         <div style="font:700 10px Manrope;letter-spacing:.14em;text-transform:uppercase;color:{{ roleColor }};padding:0 10px 10px">{{ roleName }}</div>
         <nav style="display:flex;flex-direction:column;gap:2px">
           <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="7">
-            <a onClick="{{ item.go }}" style="{{ item.style }}">
-              <span style="display:flex;width:18px;height:18px;align-items:center;justify-content:center;opacity:.9">{{ item.icon }}</span>
-              <span style="flex:1">{{ item.label }}</span>
-            </a>
+            <sc-if value="{{ item.isSection }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ item.style }}">{{ item.label }}</div>
+            </sc-if>
+            <sc-if value="{{ item.isLink }}" hint-placeholder-val="{{ true }}">
+              <a onClick="{{ item.go }}" style="{{ item.style }}">
+                <span style="display:flex;width:18px;height:18px;align-items:center;justify-content:center;opacity:.9">{{ item.icon }}</span>
+                <span style="flex:1">{{ item.label }}</span>
+              </a>
+            </sc-if>
           </sc-for>
         </nav>
       </div>
@@ -344,7 +350,7 @@ class Component extends DCLogic {
     try{ this.loadGov(); }catch(e){}
   }
   componentWillUnmount(){ try{ window.removeEventListener('resize',this._onResize); }catch(e){} try{ window.removeEventListener('sbs-install-ready',this._onInstallReady); }catch(e){} }
-  _persistKeys(){ return ['auth','isAdmin','role','page','appPage','appUser','eventos','orcamentos','catalogo','leads','partners','robots','notifs','estudo','estudoAplic','campaigns','vendedoresReal','evAnexos','logFiltro','mktDashTab','rankTab','vendFilter']; }
+  _persistKeys(){ return ['auth','isAdmin','role','page','appPage','appUser','eventos','orcamentos','catalogo','leads','partners','robots','notifs','estudo','estudoAplic','campaigns','vendedoresReal','evAnexos','logFiltro','mktDashTab','rankTab','vendFilter','iaConvs','iaActiveId']; }
   salvarEstado(){ try{ if(this.state.role==='app'||!this.state.auth){ return; } const st={}; for(const k of this._persistKeys()){ if(this.state[k]!==undefined) st[k]=this.state[k]; } localStorage.setItem('sbs_estado', JSON.stringify(st)); }catch(e){} }
   componentDidUpdate(){ try{ clearTimeout(this._pt); this._pt=setTimeout(()=>this.salvarEstado(),250); }catch(e){} }
   // ---------- API CLIENT (com fallback demo) ----------
@@ -655,6 +661,7 @@ class Component extends DCLogic {
     if(p==='aprovacoes') return this.pgAprovacoes();
     if(p==='agenda') return this.agendaEventos();
     if(p==='compartilhar') return this.mktCompartilhar();
+    if(p==='biblioteca') return this.pgBiblioteca();
     if(p==='vendparceiro') return this.vendedoresPorParceiro();
     if(p==='catalogo') return this.gerCatalogo();
     if(r==='marketing'){
@@ -867,6 +874,33 @@ class Component extends DCLogic {
   }
 
   wrap(children){ return React.createElement('div',{key:this.state.role+this.state.page+this.state.eventId,style:{display:'flex',flexDirection:'column',gap:20,animation:'sbsIn .35s ease'}},children); }
+
+  // Trilho de fluxo de trabalho: dois pontos de entrada (Demanda / Criar evento no calendário)
+  // convergem para Estudo & aprovação e terminam em Evento ativo. Clicável = navega.
+  fluxoStepper(active){
+    const I=this.icons(); const h=React.createElement;
+    const node=(key,ic,label,sub,page,on)=>h('button',{key:key,onClick:()=>this.go(page),title:'Ir para '+label,style:{flex:'none',display:'flex',alignItems:'center',gap:9,cursor:'pointer',textAlign:'left',border:on?'1px solid #12b39a':'1px solid rgba(12,59,55,.12)',background:on?'#0c3b37':'#fff',borderRadius:12,padding:'9px 13px',boxShadow:on?'0 6px 18px rgba(12,59,55,.18)':'none'}},
+      h('span',{style:{width:30,height:30,borderRadius:9,flex:'none',display:'flex',alignItems:'center',justifyContent:'center',background:on?'#12b39a':'#eef4f1',color:on?'#fff':'#0c3b37'}},this.ic(ic)),
+      h('span',{style:{display:'flex',flexDirection:'column',lineHeight:1.15}},
+        h('span',{style:{font:'800 12.5px Archivo',color:on?'#fff':'#0c3b37'}},label),
+        h('span',{style:{font:'600 10px Manrope',color:on?'#9fd8cd':'#8a9a94',marginTop:1}},sub)));
+    const arrow=(k)=>h('span',{key:k,style:{flex:'none',color:'#b9cabe'}},this.ic(['M5 12h14','M13 6l6 6-6 6']));
+    const plus=h('span',{key:'plus',style:{flex:'none',color:'#b9cabe',font:'800 15px Archivo',padding:'0 1px'}},'+');
+    return h('div',{key:'fluxo',style:{background:'linear-gradient(120deg,#f3faf8,#eef5f2)',border:'1px solid #dcede5',borderRadius:16,padding:'15px 17px'}},
+      h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:12}},
+        h('span',{style:{font:'800 10px Manrope',letterSpacing:'.14em',textTransform:'uppercase',color:'#0c8a7b'}},'Fluxo de trabalho'),
+        h('span',{style:{font:'600 11.5px Manrope',color:'#5c6b67'}},'· um evento nasce pelo calendário ou a partir de uma demanda, passa pela aprovação e vira evento ativo')),
+      h('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
+        h('div',{style:{flex:'none',display:'flex',flexDirection:'column',gap:7}},
+          h('div',{style:{font:'700 9.5px Manrope',letterSpacing:'.12em',textTransform:'uppercase',color:'#9aa8a2',paddingLeft:2}},'Entrada'),
+          h('div',{style:{display:'flex',gap:8,flexWrap:'wrap'}},
+            node('n-dem',I.inbox,'Demanda','portal de solicitações','demandas',active==='demanda'),
+            node('n-ev',I.calendar,'Criar evento','pelo calendário','agenda',active==='evento'))),
+        arrow('a1'),
+        node('n-ap',I.target,'Estudo & aprovação','Mkt → Gerência → Intel → CEO','aprovacoes',active==='aprovacao'),
+        arrow('a2'),
+        node('n-at',I.check,'Evento ativo','na agenda + app','agenda',false)));
+  }
 
   // ---- MARKETING DASH ----
   mktDash(){
@@ -1723,8 +1757,15 @@ class Component extends DCLogic {
       receita:0, leads:0, participantes:this.parseBR(g('ev-part')), conv:0, roi:0, equipe:this.parseBR(g('ev-eq'))||1,
       criadoPor:this.state.role, criadoPorNome:isAdmin?'Admin master':(meta.name||this.state.role),
       criadoEm:new Date().toISOString(), aprovacao:false };
-    this.setState({eventos:[ev,...this.evAll()], evNovo:false});
-    this.showToast('Salvando evento…');
+    const demOrigem=this.state.evDemandaOrigem;
+    const iaOrigem=this.state.evIAorigem;
+    this.setState({eventos:[ev,...this.evAll()], evNovo:false, evPrefill:null, evDemandaOrigem:null, evDemandaNome:null, evIAorigem:null});
+    if(iaOrigem){ try{ const conv=(this.state.iaConvs||[]).find(c=>c.id===iaOrigem); if(conv){ this.iaUpdateConv(iaOrigem,{msgs:[...(conv.msgs||[]),{r:'ia',t:'✅ Evento criado a partir deste estudo: "'+ev.nome+'". Ele entrou na agenda compartilhada e segue o fluxo de aprovação.'}]}); } }catch(e){} }
+    if(demOrigem){
+      this.patchDemanda(demOrigem,{status:'Finalizado', eventoId:ev.id, convertidoEvento:ev.nome});
+      try{ this.apiSend('demandas','POST',{id:demOrigem,status:'Finalizado',eventoId:ev.id,convertidoEvento:ev.nome}).catch(()=>{}); }catch(e){}
+    }
+    this.showToast(demOrigem?'Demanda transformada em evento ✓ — agora segue o fluxo da agenda':'Salvando evento…');
     this.apiSend('eventos','POST',ev)
       .then(()=>{ this.setState({backend:'online'}); this.showToast('Evento salvo no banco ✓ — visível para todos os perfis'); })
       .catch((e)=>{ this.showToast('Evento criado localmente — NÃO salvou no banco: '+((e&&e.message)||'sem conexão')); });
@@ -1746,10 +1787,12 @@ class Component extends DCLogic {
     if(!this.state.evNovo) return null;
     const fs={width:'100%',boxSizing:'border-box',background:'#f4f7f5',border:'1px solid #d7e2dc',borderRadius:10,padding:'11px 12px',font:'500 14px Manrope',color:'#0c3b37',outline:'none'};
     const field=(t,el,col)=>React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:5,gridColumn:col||'auto'}},React.createElement('span',{style:{font:'700 11.5px Manrope',color:'#12211e'}},t),el);
-    const inp=(id,ph,type)=>React.createElement('input',{id:id,type:type||'text',placeholder:ph,style:fs});
+    const pf=this.state.evPrefill||{};
+    const inp=(id,ph,type)=>React.createElement('input',{id:id,type:type||'text',placeholder:ph,defaultValue:pf[id]||'',style:fs});
     return React.createElement('div',{style:{position:'fixed',inset:0,zIndex:200,background:'rgba(8,40,37,.55)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}},
       React.createElement('div',{style:{width:'100%',maxWidth:560,maxHeight:'90vh',overflowY:'auto',background:'#fff',borderRadius:20,padding:'24px'}},
-        React.createElement('div',{style:{font:'800 20px Archivo',color:'#0c3b37',marginBottom:4}},'Criar evento'),
+        React.createElement('div',{style:{font:'800 20px Archivo',color:'#0c3b37',marginBottom:4}},this.state.evDemandaOrigem?'Transformar demanda em evento':'Criar evento'),
+        this.state.evDemandaOrigem?React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,background:'#eaf2fc',border:'1px solid #bcd6f5',borderRadius:10,padding:'9px 12px',marginBottom:14,font:'600 12px Manrope',color:'#2b6cb0'}},this.ic(this.icons().link),'Origem: demanda "'+(this.state.evDemandaNome||'—')+'". Ao criar, ela é marcada como concluída e vira este evento.'):
         React.createElement('div',{style:{font:'500 13px Manrope',color:'#5c6b67',marginBottom:18}},'O evento entra na agenda compartilhada e aparece para todos os perfis.'),
         React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:13}},
           field('Nome do evento',inp('ev-nome','Ex: Show Rural Coopavel'),'1 / -1'),
@@ -1765,10 +1808,10 @@ class Component extends DCLogic {
                [React.createElement('option',{key:'sbs',value:'app:'},'App SBS Eventos (padrão) — publicado')].concat((this.state.partners||this.data().partners||[]).map(p=>React.createElement('option',{key:p.slug||p.nome,value:'app:'+p.nome},p.nome+' · App de Eventos'))))]),'1 / -1'),
           field('Orçamento previsto (R$)',inp('ev-orc','180.000')),field('Participantes esperados',inp('ev-part','9.000')),
           field('Tamanho da equipe',inp('ev-eq','8')),
-          field('Objetivo',React.createElement('textarea',{id:'ev-obj',rows:2,placeholder:'Ex: geração de leads e vendas de sementes',style:{...fs,resize:'vertical'}}),'1 / -1')),
+          field('Objetivo',React.createElement('textarea',{id:'ev-obj',rows:2,defaultValue:pf['ev-obj']||'',placeholder:'Ex: geração de leads e vendas de sementes',style:{...fs,resize:'vertical'}}),'1 / -1')),
         this.state.evMsg?React.createElement('div',{style:{font:'600 12.5px Manrope',color:'#c2564b',marginTop:12}},this.state.evMsg):null,
         React.createElement('div',{style:{display:'flex',gap:10,justifyContent:'flex-end',marginTop:20}},
-          React.createElement('button',{onClick:()=>this.setState({evNovo:false}),style:{background:'#eef2f0',color:'#0c3b37',border:'none',borderRadius:11,padding:'12px 18px',font:'700 14px Manrope',cursor:'pointer'}},'Cancelar'),
+          React.createElement('button',{onClick:()=>this.setState({evNovo:false,evPrefill:null,evDemandaOrigem:null,evDemandaNome:null}),style:{background:'#eef2f0',color:'#0c3b37',border:'none',borderRadius:11,padding:'12px 18px',font:'700 14px Manrope',cursor:'pointer'}},'Cancelar'),
           React.createElement('button',{onClick:()=>this.salvarEventoNovo(),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:11,padding:'12px 22px',font:'800 14px Archivo',cursor:'pointer'}},'Criar evento'))));
   }
   agendaEventos(){
@@ -1823,6 +1866,7 @@ class Component extends DCLogic {
           ?React.createElement('span',{style:{flex:'none',display:'flex',alignItems:'center',gap:6,font:'700 11.5px Manrope',color:'#00867f',background:'#e4f5ec',borderRadius:9,padding:'8px 11px'}},this.ic(this.icons().check),'Em aprovação')
           :React.createElement('button',{onClick:()=>this.enviarEventoAprovacao(e),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'9px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(this.icons().target),'Enviar p/ aprovação')); };
     return this.wrap([
+      this.fluxoStepper('evento'),
       React.createElement('div',{key:'nt',style:{display:'flex',alignItems:'center',gap:12,background:'#0c3b37',borderRadius:14,padding:'15px 18px'}},
         React.createElement('span',{style:{color:'#4fd1be',flex:'none'}},this.ic(this.icons().calendar)),
         React.createElement('div',{style:{flex:1,font:'500 13px Manrope',color:'#dfeee9',lineHeight:1.5}},'Agenda compartilhada. Eventos criados por Marketing, Gerência, Vendas e Inteligência aparecem para todos os perfis. Qualquer evento pode ser enviado para a esteira de aprovação de investimento.'),
@@ -1919,6 +1963,7 @@ class Component extends DCLogic {
       return React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,background:'#fbf7ee',borderRadius:11,padding:'12px 14px',font:'600 13px Manrope',color:'#c98a1e'}},this.ic(this.icons().history),'Aguardando '+owner[1]+' preencher esta fase');
     };
     return this.wrap([
+      this.fluxoStepper('aprovacao'),
       React.createElement('div',{key:'flow',style:{background:'linear-gradient(120deg,#0e433d,#0a322e)',borderRadius:16,padding:'18px 20px'}},
         React.createElement('div',{style:{font:'800 16px Archivo',color:'#fff',marginBottom:3}},'Fluxo de aprovação de investimento'),
         React.createElement('div',{style:{font:'500 13px Manrope',color:'#a9c6b6',marginBottom:14}},'Cada frente contribui com a sua parte antes do CEO aprovar o investimento.'),
@@ -2093,11 +2138,14 @@ class Component extends DCLogic {
   createPartner(){
     const get=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
     const nome=get('pt-nome'); if(!nome){ const e=document.getElementById('pt-nome'); if(e){e.style.borderColor='#c2564b';e.focus();} return; }
+    const campEl=document.getElementById('pt-campanha'); const campId=campEl?campEl.value:'';
+    if(this.allCampaigns().length && !campId){ if(campEl){campEl.style.borderColor='#c2564b';campEl.focus();} this.showToast('Selecione a campanha vinculada ao app'); return; }
+    const campObj=campId?this.allCampaigns().find(c=>String(c.id)===String(campId)):null;
     const sigla=nome.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const fmtD=s=>{ if(!s) return ''; const [y,m,d]=s.split('-'); return d+'/'+m+'/'+y; };
     const di=get('pt-data-ini'), df=get('pt-data-fim');
     const dataEvento = di ? (fmtD(di)+(df&&df!==di?' – '+fmtD(df):'')) : 'A definir';
-    const novo={id:Date.now(),nome,cor:this.state.partnerColor,logo:this.state.partnerLogo||null,politica:get('pt-politica'),manual:get('pt-manual'),evento:get('pt-evento')||'Evento a definir',local:get('pt-local')||'—',dataEvento,dataIni:di,dataFim:df,status:'Ativo',vendedores:0,sigla,fat:0,eventos:1,leads:0,roi:0};
+    const novo={id:Date.now(),nome,cor:this.state.partnerColor,logo:this.state.partnerLogo||null,politica:get('pt-politica'),manual:get('pt-manual'),evento:get('pt-evento')||'Evento a definir',local:get('pt-local')||'—',dataEvento,dataIni:di,dataFim:df,status:'Ativo',vendedores:0,sigla,fat:0,eventos:1,leads:0,roi:0,campanhaId:campId?(+campId||campId):null,campanha:campObj?campObj.nome:null};
     const slug=nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
     novo.slug=slug;
     // Se veio do atalho de um evento, amarra o app ao evento (estado: em criação → publicado ao provisionar)
@@ -2106,7 +2154,7 @@ class Component extends DCLogic {
     this.setState({partners:[novo,...this.state.partners],partnerNew:false,partnerLogo:null});
     // Provisiona o tenant (white-label, escala sem deploy). Reflete o resultado real:
     // online → confirma; erro de permissão → avisa; offline → segue em demonstração.
-    const payload={slug,nome,cor:novo.cor,paleta:[novo.cor],logo:novo.logo,produtos:novo.produtos||[],politica:novo.politica,status:'Ativo'};
+    const payload={slug,nome,cor:novo.cor,paleta:[novo.cor],logo:novo.logo,produtos:novo.produtos||[],politica:novo.politica,status:'Ativo',campanhaId:novo.campanhaId,campanha:novo.campanha};
     this.showToast('Criando app de parceiro…');
     this.apiSend('tenants','POST',payload).then(saved=>{
       const s=(saved&&saved.slug)||slug;
@@ -2156,6 +2204,13 @@ class Component extends DCLogic {
           React.createElement('div',{style:{display:'flex',gap:12}},
             React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6,flex:1}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Data de início'),React.createElement('input',{id:'pt-data-ini',type:'date',style:{padding:'10px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',color:'#0c3b37',background:'#fff'}})),
             React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6,flex:1}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Data de término'),React.createElement('input',{id:'pt-data-fim',type:'date',style:{padding:'10px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',color:'#0c3b37',background:'#fff'}}))),
+          React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6}},
+            React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Campanha vinculada ',React.createElement('span',{style:{color:'#c2564b'}},'*')),
+            (this.allCampaigns().length
+              ? React.createElement('select',{id:'pt-campanha',defaultValue:'',style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#0c3b37'}},
+                  [React.createElement('option',{key:'_',value:''},'Selecione uma campanha…')].concat(this.allCampaigns().map(c=>React.createElement('option',{key:c.id,value:String(c.id)},(c.nome||'Campanha')+(c.evento?(' · '+c.evento):'')))))
+              : React.createElement('div',{style:{padding:'11px 13px',border:'1px dashed #c98a1e',borderRadius:10,font:'500 12px Manrope',color:'#c98a1e',background:'#fff9ee'}},'Nenhuma campanha criada ainda — você poderá anexar uma depois, no card do app.')),
+            React.createElement('span',{style:{font:'500 11px Manrope',color:'#8a9a94'}},'Todo app de evento opera dentro de uma campanha (produtos, materiais e metas).')),
           React.createElement('div',null,React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Cor da marca da parceira'),
             React.createElement('div',{style:{display:'flex',gap:10,marginTop:8}},cores.map(c=>React.createElement('button',{key:c,onClick:()=>this.set({partnerColor:c}),style:{width:34,height:34,borderRadius:9,background:c,border:this.state.partnerColor===c?'3px solid #0c3b37':'3px solid transparent',cursor:'pointer'}})))),
           React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Política de vendas e desconto'),React.createElement('textarea',{id:'pt-politica',rows:3,placeholder:'Condições de pagamento, faixas de desconto, alçadas…',style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',resize:'vertical'}})),
@@ -2193,7 +2248,10 @@ class Component extends DCLogic {
             this.chip(pt.status,pt.status==='Ativo'?'#00867f':'#c98a1e')),
           React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:5,marginBottom:14}},
             React.createElement('div',{style:{display:'flex',alignItems:'center',gap:7,font:'500 12px Manrope',color:'#3a4a44'}},this.ic(this.icons().event),pt.evento),
-            React.createElement('div',{style:{display:'flex',alignItems:'center',gap:7,font:'500 12px Manrope',color:'#5c6b67'}},this.ic(this.icons().users),pt.vendedores+' vendedores no app')),
+            React.createElement('div',{style:{display:'flex',alignItems:'center',gap:7,font:'500 12px Manrope',color:'#5c6b67'}},this.ic(this.icons().users),pt.vendedores+' vendedores no app'),
+            pt.campanha
+              ? React.createElement('div',{style:{display:'flex',alignItems:'center',gap:7,font:'600 12px Manrope',color:'#6b8b2e'}},this.ic(this.icons().flag||this.icons().event),'Campanha: '+pt.campanha)
+              : React.createElement('button',{onClick:()=>this.openAttachCamp(pt),style:{alignSelf:'flex-start',display:'flex',alignItems:'center',gap:6,marginTop:2,background:'#fff9ee',border:'1px dashed #c98a1e',color:'#c98a1e',borderRadius:8,padding:'6px 10px',font:'700 11.5px Manrope',cursor:'pointer'}},this.ic(this.icons().plus),'Anexar campanha')),
           React.createElement('div',{style:{display:'flex',gap:8}},
             React.createElement('button',{onClick:()=>this.openPartnerApp(pt),style:{flex:1,background:pt.cor,color:'#fff',border:'none',borderRadius:9,padding:'10px',font:'700 12px Manrope',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}},this.ic(this.icons().phone),'Abrir app'),
             React.createElement('button',{onClick:()=>this.openPartnerApp(pt),style:{flex:'none',background:'#eef1ee',color:'#0c3b37',border:'none',borderRadius:9,padding:'10px 14px',font:'700 12px Manrope',cursor:'pointer'}},'Personalizar')),
@@ -2202,7 +2260,33 @@ class Component extends DCLogic {
       )),
       modal,
       this.sharePtModal(),
+      this.attachCampModal(),
     ]);
+  }
+  openAttachCamp(pt){ this.setState({attachCampPt:pt}); }
+  attachCampanha(){
+    const pt=this.state.attachCampPt; if(!pt) return;
+    const el=document.getElementById('ac-camp'); const id=el?el.value:'';
+    if(!id){ this.showToast('Selecione uma campanha'); return; }
+    const c=this.allCampaigns().find(x=>String(x.id)===String(id));
+    this.setState({partners:this.state.partners.map(p=>p.id===pt.id?Object.assign({},p,{campanhaId:(+id||id),campanha:c?c.nome:null}):p), attachCampPt:null});
+    try{ this.apiSend('parceiros','PATCH',{id:pt.id,slug:pt.slug,campanhaId:(+id||id),campanha:c?c.nome:null}).catch(()=>{}); }catch(e){}
+    this.showToast('Campanha vinculada ao app ✓');
+  }
+  attachCampModal(){
+    const pt=this.state.attachCampPt; if(!pt) return null;
+    const camps=this.allCampaigns();
+    return React.createElement('div',{onClick:()=>this.set({attachCampPt:null}),style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:70,display:'flex',alignItems:'center',justifyContent:'center',padding:20}},
+      React.createElement('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:16,padding:24,width:460,maxWidth:'100%',boxShadow:'0 30px 80px rgba(0,0,0,.35)'}},
+        React.createElement('div',{style:{font:'800 17px Archivo',color:'#0c3b37',marginBottom:4}},'Anexar campanha'),
+        React.createElement('div',{style:{font:'500 12.5px Manrope',color:'#5c6b67',marginBottom:16}},'Vincule uma campanha ao app '+pt.nome+'. Os produtos, materiais e metas da campanha passam a valer no app do parceiro.'),
+        camps.length
+          ? React.createElement('select',{id:'ac-camp',defaultValue:'',style:{width:'100%',padding:'12px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#0c3b37'}},
+              [React.createElement('option',{key:'_',value:''},'Selecione uma campanha…')].concat(camps.map(c=>React.createElement('option',{key:c.id,value:String(c.id)},(c.nome||'Campanha')+(c.evento?(' · '+c.evento):'')))))
+          : React.createElement('div',{style:{padding:'12px',border:'1px dashed #c98a1e',borderRadius:10,font:'500 12.5px Manrope',color:'#c98a1e',background:'#fff9ee'}},'Nenhuma campanha criada. Crie uma no módulo Campanhas primeiro.'),
+        React.createElement('div',{style:{display:'flex',gap:12,justifyContent:'flex-end',marginTop:20}},
+          React.createElement('button',{onClick:()=>this.set({attachCampPt:null}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Cancelar'),
+          camps.length?React.createElement('button',{onClick:()=>this.attachCampanha(),style:{background:'#12b39a',border:'none',borderRadius:10,padding:'10px 18px',font:'700 13px Manrope',color:'#fff',cursor:'pointer'}},'Vincular'):null)));
   }
 
   // ================= ARQUITETURA =================
@@ -2723,7 +2807,9 @@ class Component extends DCLogic {
       status:'Solicitado', resp:'A definir', prazo:nd.prazo||'—', desc:nd.desc.trim(),
       envolvidos, mencoes };
     this._nd={};
-    this.setState({demandasExtra:[dem,...(this.state.demandasExtra||[])],demandaNew:false});
+    const iaOrigem=this.state.iaDemandaOrigem;
+    this.setState({demandasExtra:[dem,...(this.state.demandasExtra||[])],demandaNew:false,iaDemandaOrigem:null});
+    if(iaOrigem){ try{ const conv=(this.state.iaConvs||[]).find(c=>c.id===iaOrigem); if(conv){ this.iaUpdateConv(iaOrigem,{msgs:[...(conv.msgs||[]),{r:'ia',t:'✅ Demanda criada a partir deste estudo: "'+dem.tipo+'". Ela entrou no Quadro de demandas e pode virar um evento a qualquer momento.'}]}); } }catch(e){} }
     // Backend (quando publicado): grava e dispara alerta às áreas marcadas.
     try{ this.apiSend('demandas','POST',dem).catch(()=>{}); }catch(e){}
     this.showToast(mencoes.length?('Demanda criada ✓ — '+mencoes.map(m=>'@'+m).join(', ')+' marcada(s)'):'Demanda criada ✓');
@@ -2918,10 +3004,18 @@ class Component extends DCLogic {
         React.createElement('div',{style:{display:'flex',gap:12,justifyContent:'space-between',alignItems:'center',marginTop:22,flexWrap:'wrap'}},
           React.createElement('div',{style:{display:'flex',gap:10}},
             React.createElement('button',{onClick:()=>this.assumirDemanda(),style:{background:'#0c3b37',border:'none',borderRadius:10,padding:'11px 16px',font:'700 13px Manrope',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().users),'Sou eu (assumir)'),
+            React.createElement('button',{onClick:()=>this.demandaVirarEvento(),style:{background:'#eef7ee',border:'1px solid #6FA331',borderRadius:10,padding:'11px 16px',font:'700 13px Manrope',color:'#4d7a1e',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().calendar),'Virar evento'),
             React.createElement('button',{onClick:()=>{ if(confirm('Excluir esta demanda? Esta ação não pode ser desfeita.')) this.excluirDemanda(this.state.demandaEdit); },style:{background:'#fff',border:'1px solid #c2564b',borderRadius:10,padding:'11px 16px',font:'700 13px Manrope',color:'#c2564b',cursor:'pointer'}},'Excluir')),
           React.createElement('div',{style:{display:'flex',gap:12}},
             React.createElement('button',{onClick:()=>this.set({demandaEdit:null}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Cancelar'),
             React.createElement('button',{onClick:()=>this.saveDemandaEdit(),style:{background:'#12b39a',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#fff',cursor:'pointer'}},'Salvar alterações')))));
+  }
+  demandaVirarEvento(){
+    const de=this._de||{}; const id=this.state.demandaEdit;
+    const nome=de.tipo||de.desc||'Evento da demanda';
+    const uf=(de.regiao&&/^[A-Za-z]{2}$/.test(String(de.regiao).trim()))?String(de.regiao).trim().toUpperCase():'';
+    const pf={ 'ev-nome':nome, 'ev-obj':de.desc||'', 'ev-seg':'Evento', 'ev-uf':uf };
+    this.setState({ demandaEdit:null, evNovo:true, evMsg:'', evPrefill:pf, evDemandaOrigem:id, evDemandaNome:nome });
   }
   assumirDemanda(){
     const de=this._de||{}; const id=this.state.demandaEdit; if(!id) return;
@@ -3007,6 +3101,7 @@ class Component extends DCLogic {
           React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8}},
             ds.filter(x=>x.status===col).map(card))))));
     return this.wrap([
+      this.fluxoStepper('demanda'),
       React.createElement('div',{key:'hd',style:{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
         React.createElement('div',{style:{font:'600 13px Manrope',color:'#5c6b67',flex:1,minWidth:200}},isCeo?'Espelho da diretoria: Marketing, Gerência Nacional e Inteligência trabalham no mesmo quadro — cada área abre e marca tarefas para outra.':'Quadro compartilhado entre Marketing, Gerência Nacional e Inteligência — cada área abre e marca tarefas para outra. Setas ◀ ▶ movem; clique para editar, definir responsável e envolvidos.'),
         React.createElement('button',{onClick:()=>this.set({demandaNew:true}),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7,flex:'none'}},this.ic(this.icons().plus),isCeo?'Abrir demanda para a equipe':'Nova demanda')),
@@ -3028,8 +3123,6 @@ class Component extends DCLogic {
             React.createElement('div',{style:{font:'500 10.5px Manrope',color:'#a9c6b6'}},'no fluxo · '+fim+' finalizada(s)'));
         }))):null,
       board,
-      this.demandaModal(),
-      this.demandaEditModal(),
     ]);
   }
 
@@ -4276,11 +4369,11 @@ class Component extends DCLogic {
   navDefs(){
     const I=this.icons();
     return {
-      marketing:[['dash','Dashboard',I.dash],['agenda','Agenda de eventos',I.calendar],['leads','Esteira de leads',I.funnel],['aprovacoes','Aprovações',I.target],['demandas','Quadro de demandas',I.inbox],['inteligencia','Inteligência',I.bulb],['assistente','Assistente IA',I.activity],['campanhas','Campanhas',I.campaign],['catalogo','Catálogo & materiais',I.cube],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['notificacoes','Notificações',I.bell],['clima','Clima & tempo',I.cloud],['compartilhar','Compartilhar app',I.share],['parceiros','Apps de parceiros',I.share],['ranking','Ranking',I.trophy],['historico','Histórico',I.history]],
+      marketing:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['campanhas','Campanhas',I.campaign],['catalogo','Catálogo & materiais',I.cube],['__sec','Apps & parceiros'],['compartilhar','Compartilhar app',I.share],['parceiros','Apps de parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Inteligência & apoio'],['inteligencia','Inteligência',I.bulb],['assistente','Assistente IA',I.activity],['clima','Clima & tempo',I.cloud],['ranking','Ranking',I.trophy],['notificacoes','Notificações',I.bell],['historico','Histórico',I.history]],
       _mkt_old:[['dash','Dashboard',I.dash],['agenda','Agenda',I.calendar],['eventos','Eventos',I.event],['cadastro','Cadastrar evento',I.plus],['ranking','Ranking',I.trophy],['comparativo','Comparativo',I.compare],['historico','Histórico',I.history]],
-      gerente:[['dash','Dashboard',I.dash],['agenda','Agenda de eventos',I.calendar],['campanhas','Campanhas',I.campaign],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['aprovacoes','Aprovações',I.target],['demandas','Quadro de demandas',I.inbox],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['pipeline','Pipeline',I.funnel],['clima','Clima & tempo',I.cloud],['compartilhar','Compartilhar app',I.share],['notificacoes','Notificações',I.bell],['evolucao','Evolução',I.chart]],
-      ceo:[['dash','Dashboard',I.dash],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['demandas','Quadro de demandas',I.inbox],['mercado','Mercado & decisão',I.activity],['geo','Estados & regiões',I.map],['parceiros','Parceiros',I.share],['produtos','Produtos',I.cube],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['evolucao','Evolução',I.chart],['comparativos','Comparativos',I.compare],['clima','Clima & tempo',I.cloud],['indicadores','Indicadores',I.gauge]],
-      mercado:[['dash','Visão geral',I.dash],['agenda','Agenda de eventos',I.calendar],['cotacoes','Cotações',I.chart],['financeiro','Ações & bolsa',I.activity],['concorrentes','Concorrentes',I.gauge],['fontes','Fontes & canais',I.radar],['aprovacoes','Aprovações',I.target],['demandas','Quadro de demandas',I.inbox],['regioes','Regiões & mercado',I.map],['tendencias','Tendências',I.bulb],['clima','Clima & tempo',I.cloud],['panorama','Panorama setorial',I.cube],['mensuracao','Mensuração & ROI',I.activity],['assistente','Assistente IA',I.bulb],['compartilhar','Compartilhar app',I.share],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['insights','Insights de vendas',I.target]],
+      gerente:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['campanhas','Campanhas',I.campaign],['pipeline','Pipeline',I.funnel],['__sec','Metas & desempenho'],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['evolucao','Evolução',I.chart],['__sec','Produtos & parceiros'],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['notificacoes','Notificações',I.bell]],
+      ceo:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Estratégia'],['mercado','Mercado & decisão',I.activity],['indicadores','Indicadores',I.gauge],['evolucao','Evolução',I.chart],['comparativos','Comparativos',I.compare],['geo','Estados & regiões',I.map],['__sec','Estrutura'],['parceiros','Parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['produtos','Produtos',I.cube],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud]],
+      mercado:[['__sec','Principal'],['dash','Visão geral',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Mercado'],['cotacoes','Cotações',I.chart],['financeiro','Ações & bolsa',I.activity],['concorrentes','Concorrentes',I.gauge],['regioes','Regiões & mercado',I.map],['tendencias','Tendências',I.bulb],['panorama','Panorama setorial',I.cube],['__sec','Análise & fontes'],['fontes','Fontes & canais',I.radar],['mensuracao','Mensuração & ROI',I.activity],['assistente','Assistente IA',I.bulb],['insights','Insights de vendas',I.target],['__sec','Apps & apoio'],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['clima','Clima & tempo',I.cloud]],
       ti:[['governanca','Governança dos painéis',I.gauge],['status','Status & saúde',I.activity],['acessos','Acessos & perfis',I.users],['auditoria','Auditoria (LGPD)',I.target]],
     };
   }
@@ -4454,10 +4547,119 @@ class Component extends DCLogic {
     return cur?cur[1]:'Dashboard';
   }
 
+  iaArea(){ return this.state.role==='mercado'?'mercado':'marketing'; }
+  iaConvList(){ return (this.state.iaConvs||[]).filter(c=>c.area===this.iaArea()).sort((a,b)=>String(b.ts||'').localeCompare(String(a.ts||''))); }
+  iaActiveConv(){ const l=this.iaConvList(); return l.find(c=>c.id===this.state.iaActiveId)||l[0]||null; }
+  iaNovaConversa(){ const id=Date.now(); const conv={id,area:this.iaArea(),titulo:'Nova conversa',msgs:[],ts:new Date().toISOString()}; this.setState({iaConvs:[conv,...(this.state.iaConvs||[])],iaActiveId:id,iaAnexos:[]}); }
+  iaAbrirConversa(id){ this.setState({iaActiveId:id,iaAnexos:[]}); }
+  iaExcluirConversa(id){ const list=(this.state.iaConvs||[]).filter(c=>c.id!==id); const act=this.state.iaActiveId===id?null:this.state.iaActiveId; this.setState({iaConvs:list,iaActiveId:act}); this.showToast('Conversa excluída'); }
+  iaUpdateConv(id,patch){ const list=(this.state.iaConvs||[]).map(c=>c.id===id?Object.assign({},c,patch):c); this.setState({iaConvs:list}); }
+  iaResumoConversa(conv){ const ias=((conv&&conv.msgs)||[]).filter(m=>m.r==='ia'); return ias.length?ias[ias.length-1].t:(((conv&&conv.msgs)||[]).map(m=>m.t).join('\n\n')); }
+  iaGerarEvento(){
+    const conv=this.iaActiveConv(); if(!conv||!((conv.msgs)||[]).length){ this.showToast('Abra ou crie uma conversa primeiro'); return; }
+    const nome=(conv.titulo&&conv.titulo!=='Nova conversa')?conv.titulo:'Evento do estudo IA';
+    const pf={ 'ev-nome':String(nome).slice(0,60), 'ev-obj':String(this.iaResumoConversa(conv)||'').slice(0,400), 'ev-seg':'Evento' };
+    this.setState({ evNovo:true, evMsg:'', evPrefill:pf, evDemandaOrigem:null, evDemandaNome:null, evIAorigem:conv.id });
+  }
+  iaGerarDemanda(){
+    const conv=this.iaActiveConv(); if(!conv||!((conv.msgs)||[]).length){ this.showToast('Abra ou crie uma conversa primeiro'); return; }
+    const meta=this.roleMeta()[this.state.role]||{};
+    this._nd={ tipo:(this.state.role==='mercado'?'Estudo de mercado':'Campanha'), destino:(this.state.role==='mercado'?'Inteligência':'Marketing'), solic:meta.user||'', desc:String(this.iaResumoConversa(conv)||'').slice(0,600), prio:'Média' };
+    this.setState({ page:'demandas', demandaNew:true, iaDemandaOrigem:conv.id });
+  }
+  // ================= BIBLIOTECA (imagens e documentos compartilhados) =================
+  bibList(){ return this.state.biblioteca||[]; }
+  bibAudiencias(){ return ['Todos','Gerentes regionais','Supervisores']; }
+  bibStage(fileList){
+    const f=(fileList&&fileList[0])||null; if(!f) return;
+    const ext=(f.name.split('.').pop()||'').toLowerCase();
+    const isImg=/^image\//.test(f.type);
+    const meta={name:f.name,tipo:ext,tamanho:f.size,isImg};
+    const reader=new FileReader();
+    reader.onload=()=>{ meta.dataUrl=reader.result; this.setState({bibStaged:meta}); };
+    reader.onerror=()=>{ this.setState({bibStaged:meta}); };
+    reader.readAsDataURL(f);
+  }
+  bibSalvar(){
+    const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+    const titulo=g('bib-titulo'); const st=this.state.bibStaged;
+    if(!titulo){ const e=document.getElementById('bib-titulo'); if(e){e.style.borderColor='#c2564b';e.focus();} return; }
+    if(!st){ this.showToast('Selecione um arquivo ou imagem'); return; }
+    const meta=this.roleMeta()[this.state.role]||{};
+    const aud=(document.getElementById('bib-aud')||{}).value||'Todos';
+    const cat=(document.getElementById('bib-cat')||{}).value||(st.isImg?'Imagem':'Documento');
+    const item={ id:'b'+Date.now(), titulo, tipo:st.tipo, audiencia:aud, categoria:cat, dataUrl:st.dataUrl, tamanho:st.tamanho, criadoPor:this.state.isAdmin?'Admin master':(meta.user||'—'), criadoEm:new Date().toISOString() };
+    this.setState({biblioteca:[item,...this.bibList()],bibNew:false,bibStaged:null});
+    try{ this.apiSend('biblioteca','POST',item).catch(()=>{}); }catch(e){}
+    this.showToast('Arquivo publicado ✓ — visível para '+aud);
+  }
+  bibExcluir(id){ if(!confirm('Remover este arquivo da biblioteca?')) return; this.setState({biblioteca:this.bibList().filter(x=>x.id!==id)}); try{ this.apiSend('biblioteca?id='+encodeURIComponent(id),'DELETE',{}).catch(()=>{}); }catch(e){} this.showToast('Arquivo removido'); }
+  bibAbrir(it){ try{ if(it.dataUrl){ const w=window.open(); if(w){ if(it.isImg||/^(png|jpg|jpeg|gif|webp|svg)$/.test(it.tipo)){ w.document.write('<img src="'+it.dataUrl+'" style="max-width:100%">'); } else { w.location=it.dataUrl; } } } else if(it.url){ window.open(it.url,'_blank','noopener'); } else { this.showToast('Arquivo indisponível'); } }catch(e){ this.showToast('Não foi possível abrir'); } }
+  bibFmtKB(n){ if(!n) return '—'; return n>1048576?((n/1048576).toFixed(1)+' MB'):(Math.max(1,Math.round(n/1024))+' KB'); }
+  bibModal(){
+    if(!this.state.bibNew) return null;
+    const st=this.state.bibStaged;
+    const fs={width:'100%',boxSizing:'border-box',padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#0c3b37'};
+    return React.createElement('div',{style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:60,display:'flex',alignItems:'center',justifyContent:'center',padding:20},onClick:()=>this.set({bibNew:false,bibStaged:null})},
+      React.createElement('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:18,padding:26,width:480,maxWidth:'100%',boxShadow:'0 30px 80px rgba(0,0,0,.35)',maxHeight:'90vh',overflowY:'auto'}},
+        React.createElement('div',{style:{font:'800 18px Archivo',color:'#0c3b37',marginBottom:4}},'Compartilhar arquivo'),
+        React.createElement('div',{style:{font:'500 12.5px Manrope',color:'#5c6b67',marginBottom:18}},'Publique uma imagem ou documento para gerentes regionais e supervisores acessarem no painel.'),
+        React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+          React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Título'),React.createElement('input',{id:'bib-titulo',placeholder:'Ex.: Guia de abordagem — Safra de verão',style:fs})),
+          React.createElement('div',{style:{display:'flex',gap:12}},
+            React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6,flex:1}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Compartilhar com'),React.createElement('select',{id:'bib-aud',defaultValue:'Todos',style:fs},this.bibAudiencias().map(a=>React.createElement('option',{key:a},a)))),
+            React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6,flex:1}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Categoria'),React.createElement('select',{id:'bib-cat',defaultValue:(st&&st.isImg)?'Imagem':'Documento',style:fs},['Documento','Imagem','Apresentação','Planilha','Material técnico','Vídeo'].map(a=>React.createElement('option',{key:a},a))))),
+          React.createElement('div',null,
+            React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Arquivo'),
+            React.createElement('label',{style:{marginTop:8,display:'flex',alignItems:'center',gap:12,border:'1.5px dashed '+(st?'#12b39a':'rgba(12,59,55,.2)'),borderRadius:12,padding:'14px',cursor:'pointer',background:st?'#eafff9':'#f6f8f6'}},
+              st&&st.isImg?React.createElement('img',{src:st.dataUrl,style:{width:52,height:52,borderRadius:8,objectFit:'cover'}}):React.createElement('span',{style:{width:52,height:52,borderRadius:8,background:'#0c3b37',color:'#4fd1be',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(this.icons().file||['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z','M14 2v6h6'])),
+              React.createElement('div',{style:{flex:1,minWidth:0}},
+                React.createElement('div',{style:{font:'700 13px Manrope',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},st?st.name:'Escolher imagem ou documento'),
+                React.createElement('div',{style:{font:'500 11.5px Manrope',color:'#8a9a94'}},st?(st.tipo.toUpperCase()+' · '+this.bibFmtKB(st.tamanho)):'PNG, JPG, PDF, XLSX, PPTX…')),
+              React.createElement('input',{type:'file',accept:'image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt',style:{display:'none'},onChange:e=>{ this.bibStage(e.target.files); e.target.value=''; }}))),
+        ),
+        React.createElement('div',{style:{display:'flex',gap:12,justifyContent:'flex-end',marginTop:22}},
+          React.createElement('button',{onClick:()=>this.set({bibNew:false,bibStaged:null}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Cancelar'),
+          React.createElement('button',{onClick:()=>this.bibSalvar(),style:{background:'#12b39a',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#fff',cursor:'pointer'}},'Publicar'))));
+  }
+  pgBiblioteca(){
+    const filtro=this.state.bibFiltro||'Todos';
+    const all=this.bibList();
+    const itens=filtro==='Todos'?all:all.filter(x=>x.audiencia==='Todos'||x.audiencia===filtro);
+    const audCor={'Todos':'#0c3b37','Gerentes regionais':'#2b7bce','Supervisores':'#6FA331'};
+    const card=it=>{
+      const isImg=it.isImg||/^(png|jpg|jpeg|gif|webp|svg)$/.test(it.tipo||'');
+      return React.createElement('div',{key:it.id,style:{background:'#fff',border:'1px solid rgba(12,59,55,.08)',borderRadius:14,overflow:'hidden',boxShadow:'0 1px 2px rgba(12,59,55,.04)',display:'flex',flexDirection:'column'}},
+        React.createElement('div',{onClick:()=>this.bibAbrir(it),style:{height:132,background:isImg?'#0c3b37':'#eef4f1',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',overflow:'hidden'}},
+          isImg&&it.dataUrl?React.createElement('img',{src:it.dataUrl,style:{width:'100%',height:'100%',objectFit:'cover'}}):React.createElement('span',{style:{transform:'scale(1.7)',color:'#12b39a'}},this.ic(this.icons().file||['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z','M14 2v6h6']))),
+        React.createElement('div',{style:{padding:14,display:'flex',flexDirection:'column',gap:8,flex:1}},
+          React.createElement('div',{style:{font:'700 13.5px Manrope',color:'#0c3b37',lineHeight:1.3}},it.titulo),
+          React.createElement('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},
+            this.chip(it.audiencia,audCor[it.audiencia]||'#0c3b37'),
+            React.createElement('span',{style:{font:'700 10px Manrope',color:'#5c6b67',background:'#eef1ee',padding:'3px 8px',borderRadius:20,textTransform:'uppercase'}},(it.tipo||'arquivo'))),
+          React.createElement('div',{style:{font:'500 11px Manrope',color:'#8a9a94'}},this.bibFmtKB(it.tamanho)+' · por '+(it.criadoPor||'—')),
+          React.createElement('div',{style:{display:'flex',gap:8,marginTop:'auto'}},
+            React.createElement('button',{onClick:()=>this.bibAbrir(it),style:{flex:1,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'9px',font:'700 12px Manrope',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}},this.ic(this.icons().share),'Abrir'),
+            React.createElement('button',{onClick:()=>this.bibExcluir(it.id),title:'Remover',style:{flex:'none',background:'#fff',color:'#c2564b',border:'1px solid #edd2ce',borderRadius:9,padding:'9px 12px',font:'700 12px Manrope',cursor:'pointer'}},'×'))));
+    };
+    return this.wrap([
+      React.createElement('div',{key:'note',style:{display:'flex',gap:10,alignItems:'flex-start',background:'#eafff9',borderRadius:13,padding:'14px 16px',font:'500 13px Manrope',color:'#0c3b37',lineHeight:1.5}},
+        React.createElement('span',{style:{color:'#12b39a',flex:'none',marginTop:1}},this.ic(this.icons().share)),
+        'Central de arquivos da equipe: publique imagens e documentos (guias, tabelas, materiais de campanha) e escolha se vão para todos, para os gerentes regionais ou para os supervisores. Eles acessam por aqui, no painel.'),
+      React.createElement('div',{key:'hd',style:{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
+        React.createElement('div',{style:{font:'700 15px Archivo',color:'#0c3b37',flex:1}},all.length+' arquivo(s) na biblioteca'),
+        React.createElement('div',{style:{display:'flex',gap:6}},this.bibAudiencias().map(a=>React.createElement('button',{key:a,onClick:()=>this.set({bibFiltro:a}),style:{border:'none',cursor:'pointer',borderRadius:20,padding:'8px 13px',font:'700 11.5px Manrope',background:filtro===a?'#0c3b37':'#eef1ee',color:filtro===a?'#fff':'#5c6b67'}},a))),
+        React.createElement('button',{onClick:()=>this.set({bibNew:true,bibStaged:null}),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().plus),'Enviar arquivo')),
+      itens.length?this.grid(4,16,itens.map(card)):this.card(React.createElement('div',{style:{padding:'42px',textAlign:'center',color:'#5c6b67',font:'500 14px Manrope'}},filtro==='Todos'?'Nenhum arquivo ainda. Clique em "Enviar arquivo" para compartilhar uma imagem ou documento com a equipe.':'Nenhum arquivo para "'+filtro+'" ainda.')),
+      this.bibModal(),
+    ]);
+  }
   assistenteIA(){
     const area=this.state.role==='mercado'?'Inteligência de Mercado':'Marketing';
     const accent=this.state.role==='mercado'?'#6ba53a':'#12b39a';
-    const msgs=this.state.iaMsgs||[];
+    const conv=this.iaActiveConv();
+    const msgs=(conv&&conv.msgs)||[];
+    const convList=this.iaConvList();
     const suger=this.state.role==='mercado'
       ?['Resuma os movimentos dos concorrentes esta semana','Quais regiões têm maior potencial para soja?','Analise o risco do câmbio para a próxima safra']
       :['Crie um texto de convite para o próximo evento','Sugira 3 ideias de campanha para a safra de verão','Resuma o ROI dos últimos eventos'];
@@ -4465,16 +4667,24 @@ class Component extends DCLogic {
       React.createElement('div',{style:{maxWidth:'82%',display:'flex',flexDirection:'column',gap:6,alignItems:m.r==='user'?'flex-end':'flex-start'}},
         (m.anexos&&m.anexos.length)?React.createElement('div',{style:{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'flex-end'}},m.anexos.map((a,j)=>a.dataUrl?React.createElement('img',{key:j,src:a.dataUrl,alt:a.name,style:{width:120,height:120,objectFit:'cover',borderRadius:10,border:'1px solid rgba(12,59,55,.12)'}}):React.createElement('div',{key:j,style:{display:'flex',alignItems:'center',gap:6,background:'#eef1ee',borderRadius:9,padding:'7px 10px',font:'600 11px Manrope',color:'#0c3b37'}},this.ic(this.icons().file||['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z','M14 2v6h6']),a.name))):null,
         m.t?React.createElement('div',{style:{background:m.r==='user'?'#0c3b37':'#fff',color:m.r==='user'?'#fff':'#12211e',border:m.r==='user'?'none':'1px solid rgba(12,59,55,.1)',borderRadius:14,padding:'12px 15px',font:'500 13.5px Manrope',lineHeight:1.55,whiteSpace:'pre-wrap'}},m.t):null));
-    return this.wrap([
-      React.createElement('div',{key:'hero',style:{background:'linear-gradient(120deg,#0e433d,#0a322e)',borderRadius:16,padding:'18px 20px',display:'flex',gap:14,alignItems:'center'}},
-        React.createElement('div',{style:{width:42,height:42,borderRadius:12,background:accent,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(this.icons().bulb)),
-        React.createElement('div',{style:{flex:1}},
-          React.createElement('div',{style:{font:'800 16px Archivo',color:'#fff'}},'Assistente IA · '+area),
-          React.createElement('div',{style:{font:'500 12.5px Manrope',color:'#a9c6b6'}},'Powered by Groq · respostas com base nos dados do painel')),
-        React.createElement('span',{style:{font:'700 10px Manrope',color:'#fff',background:'#f55036',padding:'4px 10px',borderRadius:20}},'GROQ')),
-      this.card([
+    const sidebar=React.createElement('div',{key:'side',style:{width:230,flex:'none',display:'flex',flexDirection:'column',gap:10}},
+      React.createElement('button',{onClick:()=>this.iaNovaConversa(),style:{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:accent,color:'#fff',border:'none',borderRadius:11,padding:'12px',font:'800 13px Archivo',cursor:'pointer'}},this.ic(this.icons().plus),'Nova conversa'),
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:4,overflowY:'auto',maxHeight:520}},
+        convList.length?convList.map(c=>{
+          const activeC=conv&&conv.id===c.id;
+          return React.createElement('div',{key:c.id,onClick:()=>this.iaAbrirConversa(c.id),style:{display:'flex',alignItems:'center',gap:6,padding:'10px 11px',borderRadius:10,cursor:'pointer',background:activeC?'#eafff9':'#fff',border:'1px solid '+(activeC?'rgba(18,179,154,.35)':'rgba(12,59,55,.08)')}},
+            React.createElement('span',{style:{flex:'none',color:activeC?accent:'#8a9a94',display:'flex'}},this.ic(this.icons().bulb)),
+            React.createElement('span',{style:{flex:1,minWidth:0,font:(activeC?'700':'600')+' 12px Manrope',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},c.titulo||'Conversa'),
+            React.createElement('button',{onClick:e=>{e.stopPropagation();this.iaExcluirConversa(c.id);},title:'Excluir conversa',style:{flex:'none',border:'none',background:'none',color:'#b0bdb8',cursor:'pointer',font:'700 15px Manrope',lineHeight:1}},'×'));
+        }):React.createElement('div',{style:{font:'500 12px Manrope',color:'#8a9a94',padding:'8px 4px'}},'Nenhuma conversa ainda. Clique em "Nova conversa".')));
+    const toolbar=React.createElement('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:12,paddingBottom:12,borderBottom:'1px solid rgba(12,59,55,.08)'}},
+      React.createElement('span',{style:{font:'700 11px Manrope',color:'#8a9a94',marginRight:2}},'Do estudo desta conversa:'),
+      React.createElement('button',{onClick:()=>this.iaGerarEvento(),style:{display:'flex',alignItems:'center',gap:6,background:msgs.length?'#eef7ee':'#f2f4f2',color:msgs.length?'#4d7a1e':'#b0bdb8',border:'1px solid '+(msgs.length?'#6FA331':'rgba(12,59,55,.12)'),borderRadius:9,padding:'8px 12px',font:'700 12px Manrope',cursor:msgs.length?'pointer':'not-allowed'}},this.ic(this.icons().calendar),'Gerar evento'),
+      React.createElement('button',{onClick:()=>this.iaGerarDemanda(),style:{display:'flex',alignItems:'center',gap:6,background:msgs.length?'#eaf2fc':'#f2f4f2',color:msgs.length?'#2b6cb0':'#b0bdb8',border:'1px solid '+(msgs.length?'#bcd6f5':'rgba(12,59,55,.12)'),borderRadius:9,padding:'8px 12px',font:'700 12px Manrope',cursor:msgs.length?'pointer':'not-allowed'}},this.ic(this.icons().inbox),'Gerar demanda'));
+    const chat=this.card([
+        toolbar,
         React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:10,minHeight:220,maxHeight:420,overflowY:'auto',paddingRight:4}},
-          msgs.length===0?React.createElement('div',{style:{color:'#8a9a94',font:'500 13px Manrope',textAlign:'center',padding:'30px 10px'}},'Pergunte algo para começar. Use as sugestões abaixo.'):msgs.map(bubble),
+          msgs.length===0?React.createElement('div',{style:{color:'#8a9a94',font:'500 13px Manrope',textAlign:'center',padding:'30px 10px'}},'Pergunte algo para começar. O estudo desta conversa pode virar um evento ou uma demanda pelos botões acima.'):msgs.map(bubble),
           this.state.iaBusy?React.createElement('div',{style:{color:'#8a9a94',font:'500 12px Manrope'}},'Gerando resposta…'):null),
         React.createElement('div',{style:{display:'flex',gap:8,flexWrap:'wrap',margin:'12px 0'}},suger.map((s,i)=>React.createElement('button',{key:i,onClick:()=>{const el=document.getElementById('ia-input');if(el){el.value=s;this.sendIA();}},style:{border:'1px solid rgba(12,59,55,.12)',background:'#f6f8f6',borderRadius:20,padding:'7px 12px',font:'600 11.5px Manrope',color:'#0c3b37',cursor:'pointer'}},s))),
         (this.state.iaAnexos&&this.state.iaAnexos.length)?React.createElement('div',{style:{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}},this.state.iaAnexos.map((a,i)=>React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',gap:8,background:'#eef7f4',border:'1px solid rgba(18,179,154,.25)',borderRadius:10,padding:'6px 8px 6px 10px'}},
@@ -4485,8 +4695,19 @@ class Component extends DCLogic {
           React.createElement('input',{id:'ia-file',type:'file',multiple:true,accept:'.pdf,.xls,.xlsx,.csv,.txt,.json,image/*',style:{display:'none'},onChange:e=>{ this.iaAddFiles(e.target.files); e.target.value=''; }}),
           React.createElement('button',{onClick:()=>{const f=document.getElementById('ia-file');if(f)f.click();},title:'Anexar PDF, Excel, imagem…',style:{flex:'none',width:46,height:46,borderRadius:12,border:'1px solid rgba(12,59,55,.15)',background:'#f6f8f6',color:'#0c3b37',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}},this.ic(['M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48'])),
           React.createElement('input',{id:'ia-input',placeholder:'Escreva sua pergunta…',onKeyDown:e=>{if(e.key==='Enter')this.sendIA();},style:{flex:1,padding:'13px 15px',border:'1px solid rgba(12,59,55,.15)',borderRadius:12,font:'500 14px Manrope',background:'#fff'}}),
-          React.createElement('button',{onClick:()=>this.sendIA(),style:{background:accent,color:'#fff',border:'none',borderRadius:12,padding:'0 20px',font:'800 14px Archivo',cursor:'pointer'}},'Enviar'))]),
-      React.createElement('div',{key:'nt',style:{font:'500 12px Manrope',color:'#8a9a94',lineHeight:1.5}},'O assistente lê um resumo dos dados reais do painel (eventos, campanhas, vendas, orçamentos, leads) e responde com base neles. A chave da Groq fica no backend (GROQ_API_KEY no Cloudflare Pages); sem publicação, responde em modo demonstração com os mesmos números. Só agregados são enviados — nomes, CNPJ e telefone de clientes/vendedores nunca vão ao modelo (LGPD).')
+          React.createElement('button',{onClick:()=>this.sendIA(),style:{background:accent,color:'#fff',border:'none',borderRadius:12,padding:'0 20px',font:'800 14px Archivo',cursor:'pointer'}},'Enviar'))]);
+    return this.wrap([
+      React.createElement('div',{key:'hero',style:{background:'linear-gradient(120deg,#0e433d,#0a322e)',borderRadius:16,padding:'18px 20px',display:'flex',gap:14,alignItems:'center'}},
+        React.createElement('div',{style:{width:42,height:42,borderRadius:12,background:accent,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(this.icons().bulb)),
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{style:{font:'800 16px Archivo',color:'#fff'}},'Assistente IA · '+area),
+          React.createElement('div',{style:{font:'500 12.5px Manrope',color:'#a9c6b6'}},'Powered by Groq · o estudo de cada conversa pode virar evento ou demanda')),
+        React.createElement('span',{style:{font:'700 10px Manrope',color:'#fff',background:'#f55036',padding:'4px 10px',borderRadius:20}},'GROQ')),
+      React.createElement('div',{key:'cols',style:{display:'flex',gap:16,alignItems:'flex-start',flexWrap:'wrap'}},
+        sidebar,
+        React.createElement('div',{style:{flex:1,minWidth:320,display:'flex',flexDirection:'column',gap:14}},
+          chat,
+          React.createElement('div',{style:{font:'500 12px Manrope',color:'#8a9a94',lineHeight:1.5}},'O assistente lê um resumo dos dados reais do painel (eventos, campanhas, vendas, orçamentos, leads) e responde com base neles. Cada conversa fica salva na lateral. A chave da Groq fica no backend (GROQ_API_KEY no Cloudflare Pages); sem publicação, responde em modo demonstração. Só agregados são enviados — nomes, CNPJ e telefone nunca vão ao modelo (LGPD).')))
     ]);
   }
   iaAddFiles(fileList){
@@ -4515,18 +4736,30 @@ class Component extends DCLogic {
     const area=this.state.role==='mercado'?'Inteligência de Mercado':'Marketing';
     const anexoTxt=this.iaAnexoResumo();
     const shownText=q+(anexos.length?('\n\n📎 '+anexos.map(a=>a.name).join(', ')):'');
-    const msgs=[...(this.state.iaMsgs||[]),{r:'user',t:shownText,anexos:anexos.map(a=>({name:a.name,dataUrl:a.dataUrl,ext:a.ext}))}];
-    this.setState({iaMsgs:msgs,iaBusy:true,iaAnexos:[]}); if(el) el.value='';
+    const userMsg={r:'user',t:shownText,anexos:anexos.map(a=>({name:a.name,dataUrl:a.dataUrl,ext:a.ext}))};
+    // Garante uma conversa ativa (cria se não houver) e grava a mensagem nela.
+    const convs=(this.state.iaConvs||[]).slice();
+    let conv=this.iaActiveConv(); let convId;
+    if(!conv){ convId=Date.now(); conv={id:convId,area:this.iaArea(),titulo:'Nova conversa',msgs:[],ts:new Date().toISOString()}; convs.unshift(conv); } else convId=conv.id;
+    const newMsgs=[...(conv.msgs||[]),userMsg];
+    const titulo=(!conv.titulo||conv.titulo==='Nova conversa')?(q?q.slice(0,42):'Conversa com anexo'):conv.titulo;
+    const updated=convs.map(c=>c.id===convId?Object.assign({},c,{msgs:newMsgs,titulo,ts:new Date().toISOString()}):c);
+    this.setState({iaConvs:updated,iaActiveId:convId,iaBusy:true,iaAnexos:[]}); if(el) el.value='';
     const hdr={'Content-Type':'application/json'};
     const tok=this.state.token||(window.localStorage&&localStorage.getItem('sbs_token'));
     if(tok) hdr['Authorization']='Bearer '+tok;
-    const payloadMsgs=msgs.map((m,idx)=>({role:m.r==='user'?'user':'assistant',content:m.t+(idx===msgs.length-1?anexoTxt:'')}));
+    const payloadMsgs=newMsgs.map((m,idx)=>({role:m.r==='user'?'user':'assistant',content:m.t+(idx===newMsgs.length-1?anexoTxt:'')}));
     try{
       fetch('/api/ia-groq',{method:'POST',headers:hdr,body:JSON.stringify({area,messages:payloadMsgs})})
         .then(r=>r.ok?r.json():Promise.reject())
-        .then(d=>this.setState({iaMsgs:[...msgs,{r:'ia',t:(d&&d.reply)||this.iaDemo(q,area,d&&d.contexto)}],iaBusy:false}))
-        .catch(()=>setTimeout(()=>this.setState({iaMsgs:[...msgs,{r:'ia',t:this.iaDemo(q,area,null)}],iaBusy:false}),600));
-    }catch(e){ setTimeout(()=>this.setState({iaMsgs:[...msgs,{r:'ia',t:this.iaDemo(q,area,null)}],iaBusy:false}),600); }
+        .then(d=>this.iaAppendIA(convId,(d&&d.reply)||this.iaDemo(q,area,d&&d.contexto)))
+        .catch(()=>setTimeout(()=>this.iaAppendIA(convId,this.iaDemo(q,area,null)),600));
+    }catch(e){ setTimeout(()=>this.iaAppendIA(convId,this.iaDemo(q,area,null)),600); }
+  }
+  iaAppendIA(convId,text){
+    const list=(this.state.iaConvs||[]); const conv=list.find(c=>c.id===convId);
+    const msgs=[...((conv&&conv.msgs)||[]),{r:'ia',t:text}];
+    this.iaUpdateConv(convId,{msgs}); this.setState({iaBusy:false});
   }
   iaResumoLocal(){
     // Resumo dos dados do painel para o modo demonstração (espelha o backend).
@@ -4563,11 +4796,16 @@ class Component extends DCLogic {
       return !((this.state.hiddenMods[this.state.role]||[]).includes(n[0]));
     });
     const active=this.state.page;
-    const navItems=nav.map(([key,label,icon])=>({
-      label, icon:this.ic(icon), go:()=>{ this.go(key); if(isMobile) this.setState({sidebarOpen:false}); },
-      style:{display:'flex',alignItems:'center',gap:11,padding:'10px 12px',borderRadius:10,font:(key===active?'700':'600')+' 13px Manrope',cursor:'pointer',textDecoration:'none',
-        color:key===active?'#0c3b37':'#cfe6df',background:key===active?'#eafff9':'transparent',transition:'.15s'}
-    }));
+    const navItems=nav.map(([key,label,icon])=>{
+      if(key==='__sec'){
+        return { isSection:true, isLink:false, label,
+          style:{display:'block',font:'800 9.5px Manrope',letterSpacing:'.12em',textTransform:'uppercase',color:'rgba(207,230,223,.5)',padding:'14px 12px 5px'} };
+      }
+      return { isSection:false, isLink:true,
+        label, icon:this.ic(icon), go:()=>{ this.go(key); if(isMobile) this.setState({sidebarOpen:false}); },
+        style:{display:'flex',alignItems:'center',gap:11,padding:'10px 12px',borderRadius:10,font:(key===active?'700':'600')+' 13px Manrope',cursor:'pointer',textDecoration:'none',
+          color:key===active?'#0c3b37':'#cfe6df',background:key===active?'#eafff9':'transparent',transition:'.15s'} };
+    });
     const roleTabs=[['marketing','Marketing'],['gerente','Gerente Nacional'],['ceo','CEO'],['mercado','Intel. de Mercado']].filter(([k])=>this.state.isAdmin||k===this.state.role).map(([k,l])=>({
       label:l, go:()=>this.goRole(k),
       style:{border:'none',cursor:'pointer',borderRadius:8,padding:'8px 14px',font:'700 12px Manrope',whiteSpace:'nowrap',
@@ -4585,7 +4823,7 @@ class Component extends DCLogic {
       isMobile, sidebarStyle, sidebarOpen:menuOpen, showSearch:!isMobile,
       openMenu:()=>this.setState({sidebarOpen:true}), closeMenu:()=>this.setState({sidebarOpen:false}),
       icMenu:this.ic(['M4 6h16','M4 12h16','M4 18h16']),
-      isApp, isDesktop:!isApp, showLogin:!isApp&&!this.state.auth, showPanel:!isApp&&!!this.state.auth, loginView:this.panelLoginView(), pwOverlay:this.pwModalView(), evOverlay:this.eventoModalView(), evMuralOverlay:this.eventoMuralView(), goTrocarSenha:()=>this.pwOpen('trocar'), icKey:this.ic(['M12.5 10.5a4 4 0 1 0-3 3','M14 12l7 7','M18 15l2 2','M17 16l2 2']),
+      isApp, isDesktop:!isApp, showLogin:!isApp&&!this.state.auth, showPanel:!isApp&&!!this.state.auth, loginView:this.panelLoginView(), pwOverlay:this.pwModalView(), evOverlay:this.eventoModalView(), demandaOverlay:React.createElement(React.Fragment,{},this.demandaModal(),this.demandaEditModal()), evMuralOverlay:this.eventoMuralView(), goTrocarSenha:()=>this.pwOpen('trocar'), icKey:this.ic(['M12.5 10.5a4 4 0 1 0-3 3','M14 12l7 7','M18 15l2 2','M17 16l2 2']),
       doLogout:()=>{ try{ localStorage.removeItem('sbs_sessao'); localStorage.removeItem('sbs_token'); localStorage.removeItem('sbs_estado'); }catch(e){} this.setState({auth:null,isAdmin:false}); }, icLogout:this.ic(['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4','M16 17l5-5-5-5','M21 12H9']),
       roleName:meta.name, roleColor:meta.color,
       userName:this.state.isAdmin?'Admin master':meta.user, userRole:this.state.isAdmin?('Acesso total \u00b7 '+meta.name):meta.cargo, userInitials:this.state.isAdmin?'AD':meta.user.split(' ').map(w=>w[0]).slice(0,2).join(''),

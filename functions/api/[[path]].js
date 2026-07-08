@@ -17,6 +17,7 @@ import * as fAppLogin from '../../server/app-login.js';
 import * as fAprovacoes from '../../server/aprovacoes.js';
 import * as fAuditoria from '../../server/auditoria.js';
 import * as fAuth from '../../server/auth.js';
+import * as fBiblioteca from '../../server/biblioteca.js';
 import * as fCampanhas from '../../server/campanhas.js';
 import * as fClima from '../../server/clima.js';
 import * as fDemandas from '../../server/demandas.js';
@@ -44,6 +45,7 @@ const HANDLERS = {
   'aprovacoes': pick(fAprovacoes),
   'auditoria': pick(fAuditoria),
   'auth': pick(fAuth),
+  'biblioteca': pick(fBiblioteca),
   'campanhas': pick(fCampanhas),
   'clima': pick(fClima),
   'demandas': pick(fDemandas),
