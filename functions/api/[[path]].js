@@ -19,15 +19,12 @@ import * as fAuditoria from '../../server/auditoria.js';
 import * as fAuth from '../../server/auth.js';
 import * as fBiblioteca from '../../server/biblioteca.js';
 import * as fCampanhas from '../../server/campanhas.js';
-import * as fCanais from '../../server/canais.js';
 import * as fClima from '../../server/clima.js';
 import * as fDemandas from '../../server/demandas.js';
 import * as fEventos from '../../server/eventos.js';
-import * as fIntegracao from '../../server/integracao.js';
 import * as fIaGroq from '../../server/ia-groq.js';
 import * as fLeads from '../../server/leads.js';
 import * as fLimparTeste from '../../server/limpar-teste.js';
-import * as fLocalizacoes from '../../server/localizacoes.js';
 import * as fMercado from '../../server/mercado.js';
 import * as fMonitoramento from '../../server/monitoramento.js';
 import * as fNotificacoes from '../../server/notificacoes.js';
@@ -40,6 +37,108 @@ import * as fTenants from '../../server/tenants.js';
 import * as fVendas from '../../server/vendas.js';
 import * as fVendedores from '../../server/vendedores.js';
 
+/* ------------------------------------------------------------------
+   Handlers embutidos: canais, integracao e localizacoes.
+   Ficam AQUI (e não em server/*.js) porque o upload web do GitHub não
+   adiciona arquivos NOVOS em subpasta de forma confiável. Este roteador
+   é um arquivo já existente — atualizá-lo sempre funciona no deploy.
+   Dependem apenas de server/_lib/* (que já estão no repositório).
+   ------------------------------------------------------------------ */
+import * as _store from '../../server/_lib/store.js';
+import * as _auth from '../../server/_lib/auth.js';
+const _storeM = _store.default || _store;
+const _authM = _auth.default || _auth;
+const { ok, fail, audit, clientIp, tenantStore, pageOpts } = _storeM;
+const { fromEvent, tenantFromEvent } = _authM;
+
+async function hCanais(event){
+  try {
+    const db = tenantStore(tenantFromEvent(event));
+    const u = fromEvent(event) || {};
+    if (event.httpMethod === 'GET') {
+      const q = event.queryStringParameters || {};
+      return ok(await db.list('canais', {}, pageOpts(q)));
+    }
+    if (event.httpMethod === 'POST') {
+      const b = JSON.parse(event.body || '{}');
+      if (!b.id) return fail('id obrigatório');
+      const now = new Date().toISOString();
+      const ent = Object.assign({}, b, { atualizadoEm: now, atualizadoPor: u.sub || 'sistema' });
+      const saved = await db.put('canais', ent);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao: b.tipo === 'handle' ? 'editou' : 'criou', entidade:'canais', entidadeId:b.id, ip:clientIp(event) });
+      return ok(saved);
+    }
+    if (event.httpMethod === 'DELETE') {
+      const q = event.queryStringParameters || {};
+      if (!q.id) return fail('id obrigatório');
+      await db.remove('canais', q.id);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'removeu', entidade:'canais', entidadeId:q.id, ip:clientIp(event) });
+      return ok({ removido: q.id });
+    }
+    return fail('Método não suportado', 405);
+  } catch (e) { return fail(e.message, 500); }
+}
+
+async function hIntegracao(event){
+  try {
+    const db = tenantStore(tenantFromEvent(event));
+    const u = fromEvent(event) || {};
+    if (event.httpMethod === 'GET') {
+      const q = event.queryStringParameters || {};
+      const filtros = {};
+      if (q.de)   filtros.sistema = q.de;
+      if (q.tipo) filtros.tipo = q.tipo;
+      return ok(await db.list('integracao', filtros, pageOpts(q)));
+    }
+    if (event.httpMethod === 'POST') {
+      const b = JSON.parse(event.body || '{}');
+      if (!b.tipo) return fail('Informe o tipo do dado (vendas, vendedores, …)');
+      const now = new Date().toISOString();
+      const ent = {
+        sistema: b.sistema || 'painel-sbs',
+        tipo: String(b.tipo),
+        ref: b.ref || '',
+        titulo: b.titulo || '',
+        resumo: b.resumo || '',
+        payload: b.payload || {},
+        criadoEm: now,
+        criadoPor: b.criadoPor || u.sub || 'sistema'
+      };
+      const saved = await db.put('integracao', ent);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'enviou-integracao', entidade:'integracao', entidadeId:saved.id, ip:clientIp(event) });
+      return ok(saved);
+    }
+    if (event.httpMethod === 'DELETE') {
+      const q = event.queryStringParameters || {};
+      if (!q.id) return fail('id obrigatório');
+      await db.remove('integracao', q.id);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'removeu', entidade:'integracao', entidadeId:q.id, ip:clientIp(event) });
+      return ok({ removido: q.id });
+    }
+    return fail('Método não suportado', 405);
+  } catch (e) { return fail(e.message, 500); }
+}
+
+async function hLocalizacoes(event){
+  const H = { 'content-type': 'application/json' };
+  const base = (process.env.SBS_BRASIL_URL || '').replace(/\/+$/, '');
+  const key = process.env.INTEG_KEY || '';
+  if (!base || !key) {
+    return { statusCode: 200, headers: H, body: JSON.stringify({ ok: true, data: { configurado: false, localizacoes: [] } }) };
+  }
+  try {
+    const url = base + '/api/integ/localizacoes?key=' + encodeURIComponent(key);
+    const r = await fetch(url, { headers: { 'accept': 'application/json' } });
+    const txt = await r.text();
+    let data = {};
+    try { data = JSON.parse(txt); } catch (e) { data = {}; }
+    const locs = Array.isArray(data.localizacoes) ? data.localizacoes : [];
+    return { statusCode: 200, headers: H, body: JSON.stringify({ ok: true, data: { configurado: true, localizacoes: locs } }) };
+  } catch (e) {
+    return { statusCode: 200, headers: H, body: JSON.stringify({ ok: true, data: { configurado: true, erro: e.message, localizacoes: [] } }) };
+  }
+}
+
 function pick(m){ return (m && (m.handler || (m.default && m.default.handler))) || null; }
 
 const HANDLERS = {
@@ -50,15 +149,15 @@ const HANDLERS = {
   'auth': pick(fAuth),
   'biblioteca': pick(fBiblioteca),
   'campanhas': pick(fCampanhas),
-  'canais': pick(fCanais),
+  'canais': hCanais,
   'clima': pick(fClima),
   'demandas': pick(fDemandas),
   'eventos': pick(fEventos),
-  'integracao': pick(fIntegracao),
+  'integracao': hIntegracao,
   'ia-groq': pick(fIaGroq),
   'leads': pick(fLeads),
   'limpar-teste': pick(fLimparTeste),
-  'localizacoes': pick(fLocalizacoes),
+  'localizacoes': hLocalizacoes,
   'mercado': pick(fMercado),
   'monitoramento': pick(fMonitoramento),
   'notificacoes': pick(fNotificacoes),
