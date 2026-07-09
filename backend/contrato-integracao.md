@@ -46,3 +46,19 @@ e colocar os campos dentro de `payload`.
 4. Regras: mudanças **sempre aditivas** — nunca renomear/remover um campo já usado do
    `payload` sem migração, porque os dois fazem deploy de forma independente.
 5. Suba um, suba o outro — cada um no seu tempo; o banco mantém a compatibilidade.
+
+## Mapa da equipe ao vivo (endpoint direto, fora do barramento)
+Dados de ALTA frequência (localização) NÃO usam a tabela `integracao` — empilhar posição a cada
+40s incharia o banco. Em vez disso, o SBS Brasil expõe um endpoint que devolve sempre a posição
+ATUAL de cada pessoa, protegido por chave.
+
+- **SBS Brasil (Worker):** `GET /api/integ/localizacoes?key=<INTEG_KEY>`
+  → `{ localizacoes:[{ supervisor_id, vendedor, papel(gerente/supervisor), estado, lat, lng, criado }] }`
+  (uma linha por pessoa, sempre a mais recente; `criado` = horário da última atualização).
+- **Painel SBS:** NUNCA chama o Worker do navegador (a chave não pode vazar). O front chama
+  `GET /api/localizacoes` (sem chave); a Pages Function `server/localizacoes.js` (proxy) lê
+  `SBS_BRASIL_URL` e `INTEG_KEY` do ambiente e repassa. Polling recomendado: 30–40s.
+- **Variáveis de ambiente (as mesmas dos dois lados):** `INTEG_KEY` idêntica no Painel e no Worker.
+  No Painel também `SBS_BRASIL_URL`; no Worker também `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`.
+- **App do vendedor → SBS Brasil:** envia posição a cada ~40s enquanto aberto (com consentimento — LGPD).
+  Só há posição com o app ABERTO; app fechado = última posição conhecida (esmaecer no mapa).

@@ -93,6 +93,9 @@ Fontes & canais de monitoramento (Inteligência de Mercado). Guarda tanto a EDI�
 Barramento compartilhado entre Painel SBS e SBS Brasil (mesmo Supabase). Envelope genérico com payload JSON livre — ver `backend/contrato-integracao.md`.
 | id, sistema('painel-sbs'/'sbs-brasil'), tipo(vendas/vendedores/clientes/campanhas/pedidos/produtos/eventos/…), ref, titulo, resumo, payload(json), criadoEm, criadoPor, tenant |
 
+### localizacoes (proxy — não grava)
+Mapa da equipe ao vivo do CEO. NÃO é uma coleção: `server/localizacoes.js` é um PROXY que lê `SBS_BRASIL_URL` e `INTEG_KEY` do ambiente e busca as posições atuais no Worker do SBS Brasil (`GET /api/integ/localizacoes?key=`). Devolve `{ok, data:{configurado, localizacoes:[{supervisor_id, vendedor, papel(gerente/supervisor), estado, lat, lng, criado}]}}`. Front chama `GET /api/localizacoes` (polling 35s). Sem as variáveis → `configurado:false` (modo demonstração).
+
 ### leads
 Esteira/pipeline. Liga o App do Vendedor aos painéis (Marketing/Gerente). Cada
 mudança de status grava no histórico; perda registra motivo + SWOT.
