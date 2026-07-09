@@ -19,12 +19,15 @@ import * as fAuditoria from '../../server/auditoria.js';
 import * as fAuth from '../../server/auth.js';
 import * as fBiblioteca from '../../server/biblioteca.js';
 import * as fCampanhas from '../../server/campanhas.js';
+import * as fCanais from '../../server/canais.js';
 import * as fClima from '../../server/clima.js';
 import * as fDemandas from '../../server/demandas.js';
 import * as fEventos from '../../server/eventos.js';
+import * as fIntegracao from '../../server/integracao.js';
 import * as fIaGroq from '../../server/ia-groq.js';
 import * as fLeads from '../../server/leads.js';
 import * as fLimparTeste from '../../server/limpar-teste.js';
+import * as fLocalizacoes from '../../server/localizacoes.js';
 import * as fMercado from '../../server/mercado.js';
 import * as fMonitoramento from '../../server/monitoramento.js';
 import * as fNotificacoes from '../../server/notificacoes.js';
@@ -47,12 +50,15 @@ const HANDLERS = {
   'auth': pick(fAuth),
   'biblioteca': pick(fBiblioteca),
   'campanhas': pick(fCampanhas),
+  'canais': pick(fCanais),
   'clima': pick(fClima),
   'demandas': pick(fDemandas),
   'eventos': pick(fEventos),
+  'integracao': pick(fIntegracao),
   'ia-groq': pick(fIaGroq),
   'leads': pick(fLeads),
   'limpar-teste': pick(fLimparTeste),
+  'localizacoes': pick(fLocalizacoes),
   'mercado': pick(fMercado),
   'monitoramento': pick(fMonitoramento),
   'notificacoes': pick(fNotificacoes),

@@ -85,6 +85,14 @@ Formatos (o que as telas leem):
 Fluxo de estudo colaborativo por setor.
 | id, eventoId, faseAtual(marketing/gerente/inteligencia/ceo), estudoMkt, estudoGerente, estudoIntel, decisaoCeo |
 
+### canais
+Fontes & canais de monitoramento (Inteligência de Mercado). Guarda tanto a EDIÇÃO do @/endereço de um canal padrão (Instagram, Facebook, LinkedIn, YouTube, GMN…) quanto CANAIS custom adicionados pelo usuário.
+| id, tipo(handle/canal), grupo(redes/gmb/sites/recomendados), nome, sub(@ ou URL), desc, atualizadoEm, atualizadoPor |
+
+### integracao
+Barramento compartilhado entre Painel SBS e SBS Brasil (mesmo Supabase). Envelope genérico com payload JSON livre — ver `backend/contrato-integracao.md`.
+| id, sistema('painel-sbs'/'sbs-brasil'), tipo(vendas/vendedores/clientes/campanhas/pedidos/produtos/eventos/…), ref, titulo, resumo, payload(json), criadoEm, criadoPor, tenant |
+
 ### leads
 Esteira/pipeline. Liga o App do Vendedor aos painéis (Marketing/Gerente). Cada
 mudança de status grava no histórico; perda registra motivo + SWOT.

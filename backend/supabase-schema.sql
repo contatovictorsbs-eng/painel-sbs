@@ -27,7 +27,7 @@ select sbs_criar_colecao(n) from unnest(array[
   'usuarios','tenants','auditoria',
   'vendedores','vendas','eventos','leads','orcamentos',
   'produtos','campanhas','notificacoes','demandas','parceiros','alertas',
-  'monitoramentos','aprovacoes','aprovacoes_hist','governanca',
+  'monitoramentos','aprovacoes','aprovacoes_hist','governanca','dossies','canais','integracao',
   'mi_cotacoes','mi_concorrentes','mi_cc_movimentos','mi_regioes','mi_tendencias'
 ]) as n;
 

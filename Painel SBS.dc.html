@@ -33,6 +33,8 @@
     .sbs-app{max-width:100% !important;width:100% !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;min-height:100vh !important;min-height:100dvh !important}
   }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="icon" type="image/png" sizes="192x192" href="assets/pwa-192.png">
 <link rel="shortcut icon" type="image/png" href="assets/pwa-192.png">
 <meta name="theme-color" content="#0c3b37">
@@ -256,6 +258,7 @@ class Component extends DCLogic {
     aprovHist:[],
     aprovDossies:[],
     dossieView:null,
+    locs:[], locsConfig:false, locsErr:null,
     robots:[
       {id:1,alvo:'TESTE — Monitoramento de concorrente',fontes:[{tipo:'Site oficial',ref:'https://concorrente-exemplo.com.br/precos'},{tipo:'Marketplace',ref:'mercadolivre.com.br/perfil/concorrente-exemplo'},{tipo:'Instagram',ref:'@concorrente_exemplo'}],freq:'Diário',status:'Ativo',achados:0,ultimo:{texto:'Aguardando primeira coleta das fontes cadastradas…',fonte:'—',ref:''},quando:'agora'},
     ],
@@ -280,7 +283,7 @@ class Component extends DCLogic {
     ],
     notifs:[
       {id:1,tipo:'aviso',titulo:'TESTE — Notificação',msg:'Exemplo de teste do envio de notificação para vendedores.',dest:'Todos os vendedores',data:'Hoje',lidas:0,total:1},
-    ] };
+    ], integracaoRecs:null, intFilter:'todos', intView:null };
 
   // ---------- EXPORTAÇÃO ----------
   currentDataset(){
@@ -351,10 +354,37 @@ class Component extends DCLogic {
     try{ this.loadReal(); }catch(e){}
     try{ this.loadGov(); }catch(e){}
   }
-  componentWillUnmount(){ try{ window.removeEventListener('resize',this._onResize); }catch(e){} try{ window.removeEventListener('sbs-install-ready',this._onInstallReady); }catch(e){} }
+  componentWillUnmount(){ try{ window.removeEventListener('resize',this._onResize); }catch(e){} try{ window.removeEventListener('sbs-install-ready',this._onInstallReady); }catch(e){} try{ if(this._locTimer){ clearInterval(this._locTimer); this._locTimer=null; } }catch(e){} try{ if(this._map){ this._map.remove(); this._map=null; } }catch(e){} }
   _persistKeys(){ return ['auth','isAdmin','role','page','appPage','appUser','eventos','orcamentos','catalogo','leads','partners','robots','notifs','estudo','estudoAplic','campaigns','vendedoresReal','evAnexos','logFiltro','mktDashTab','rankTab','vendFilter','iaConvs','iaActiveId']; }
   salvarEstado(){ try{ if(this.state.role==='app'||!this.state.auth){ return; } const st={}; for(const k of this._persistKeys()){ if(this.state[k]!==undefined) st[k]=this.state[k]; } localStorage.setItem('sbs_estado', JSON.stringify(st)); }catch(e){} }
-  componentDidUpdate(){ try{ clearTimeout(this._pt); this._pt=setTimeout(()=>this.salvarEstado(),250); }catch(e){} }
+  componentDidUpdate(prevProps,prevState){
+    try{ clearTimeout(this._pt); this._pt=setTimeout(()=>this.salvarEstado(),250); }catch(e){}
+    try{
+      const prevU=(prevState&&prevState.notifs||[]).reduce((s,n)=>s+Math.max(0,(n.total||0)-(n.lidas||0)),0);
+      const curU=(this.state.notifs||[]).reduce((s,n)=>s+Math.max(0,(n.total||0)-(n.lidas||0)),0);
+      const prevLen=(prevState&&prevState.notifs||[]).length; const curLen=(this.state.notifs||[]).length;
+      if(curLen>prevLen || curU>prevU){ this.tocarAlertaNotif(); }
+    }catch(e){}
+    try{ this.syncMapaEquipe(); }catch(e){}
+  }
+  tocarAlertaNotif(){
+    try{ if(navigator.vibrate) navigator.vibrate([200,100,200]); }catch(e){}
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+      if(!this._audioCtx) this._audioCtx=new AC();
+      const ctx=this._audioCtx; if(ctx.state==='suspended'){ try{ctx.resume();}catch(e){} }
+      const tocaBip=(t,freq)=>{
+        const o=ctx.createOscillator(); const g=ctx.createGain();
+        o.type='square'; o.frequency.setValueAtTime(freq,t);
+        g.gain.setValueAtTime(0.0001,t);
+        g.gain.exponentialRampToValueAtTime(0.9,t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+0.32);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.34);
+      };
+      const now=ctx.currentTime;
+      tocaBip(now,880); tocaBip(now+0.38,1180); tocaBip(now+0.76,880);
+    }catch(e){}
+  }
   // ---------- API CLIENT (com fallback demo) ----------
   apiBase(){ return '/api'; }
   api(nome, opts){
@@ -369,6 +399,80 @@ class Component extends DCLogic {
   }
   apiGet(nome, q){ const qs = q ? ('?'+Object.entries(q).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&')) : ''; return this.api(nome+qs); }
   apiSend(nome, method, body){ return this.api(nome, { method, body: JSON.stringify(body||{}) }); }
+  // ---------- MAPA DA EQUIPE AO VIVO (CEO) ----------
+  loadLocs(){
+    this.apiGet('localizacoes').then(d=>{
+      const locs=(d&&Array.isArray(d.localizacoes))?d.localizacoes:[];
+      this.setState({locs:locs, locsConfig:!!(d&&d.configurado), locsErr:null});
+    }).catch(e=>{ this.setState({locsErr:(e&&e.message)||'sem conexão'}); });
+  }
+  locsDemo(){ return [
+    {vendedor:'Caio Menezes — MG',papel:'gerente',estado:'MG',lat:-19.92,lng:-43.94,criado:null,demo:true},
+    {vendedor:'Vendedor — SP',papel:'supervisor',estado:'SP',lat:-23.55,lng:-46.63,criado:null,demo:true},
+    {vendedor:'Vendedor — GO',papel:'supervisor',estado:'GO',lat:-16.68,lng:-49.25,criado:null,demo:true},
+  ]; }
+  locsData(){ const l=this.state.locs; return (Array.isArray(l)&&l.length)?l:this.locsDemo(); }
+  vistoHa(criado){
+    if(!criado) return '—';
+    const t=Date.parse(String(criado).replace(' ','T')); if(isNaN(t)) return '—';
+    const min=Math.max(0,Math.round((Date.now()-t)/60000));
+    if(min<1) return 'agora'; if(min<60) return 'há '+min+' min';
+    const h=Math.round(min/60); if(h<24) return 'há '+h+' h'; return 'há '+Math.round(h/24)+' d';
+  }
+  syncMapaEquipe(){
+    const active=this.state.role==='ceo' && this.state.page==='mapaequipe';
+    if(active && !this._locTimer){ this.loadLocs(); this._locTimer=setInterval(()=>this.loadLocs(),35000); }
+    if(!active && this._locTimer){ clearInterval(this._locTimer); this._locTimer=null; }
+    if(active){ this.desenharMapa(); }
+    else if(this._map){ try{ this._map.remove(); }catch(e){} this._map=null; this._locLayer=null; }
+  }
+  desenharMapa(){
+    if(typeof L==='undefined') return;
+    const el=document.getElementById('sbsMapaEquipe'); if(!el) return;
+    if(!this._map){
+      this._map=L.map(el,{zoomControl:true,attributionControl:false}).setView([-14.2,-51.9],4);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd'}).addTo(this._map);
+      this._locLayer=L.layerGroup().addTo(this._map);
+    }
+    try{ this._map.invalidateSize(); }catch(e){}
+    if(!this._locLayer) return;
+    this._locLayer.clearLayers();
+    const now=Date.now();
+    (this.locsData()||[]).forEach(p=>{
+      if(typeof p.lat!=='number'||typeof p.lng!=='number') return;
+      const papel=(p.papel||'').toLowerCase();
+      const cor=papel==='gerente'?'#6FA331':'#0B6B61';
+      let stale=false;
+      if(p.criado){ const t=Date.parse(String(p.criado).replace(' ','T')); if(!isNaN(t)&&(now-t)>15*60000) stale=true; }
+      const m=L.circleMarker([p.lat,p.lng],{radius:9,color:'#fff',weight:2,fillColor:cor,fillOpacity:stale?0.3:0.9,opacity:stale?0.5:1});
+      const papelTxt=papel==='gerente'?'Gerente regional':'Vendedor/supervisor';
+      m.bindPopup('<b>'+(p.vendedor||'—')+'</b><br>'+papelTxt+(p.estado?(' · '+p.estado):'')+'<br>visto '+(p.demo?'(demonstração)':this.vistoHa(p.criado)));
+      this._locLayer.addLayer(m);
+    });
+  }
+  _legenda(cor,txt){ return React.createElement('div',{key:txt,style:{display:'flex',alignItems:'center',gap:7,font:'600 12px Manrope',color:'#4a5a55'}},
+    React.createElement('span',{style:{width:12,height:12,borderRadius:'50%',background:cor,display:'inline-block'}}), txt); }
+  mapaEquipe(){
+    const cfg=this.state.locsConfig; const locs=this.locsData()||[];
+    const ger=locs.filter(p=>(p.papel||'').toLowerCase()==='gerente').length; const vend=locs.length-ger;
+    return this.wrap([
+      React.createElement('div',{key:'hd',style:{marginBottom:16}},
+        React.createElement('h2',{style:{margin:'0 0 4px',font:'800 22px Archivo',color:'#0c3b37'}},'Mapa da equipe ao vivo'),
+        React.createElement('p',{style:{margin:0,font:'500 13px Manrope',color:'#5a6b66'}},'Posições de gerentes e vendedores enquanto o app deles está aberto (com consentimento — LGPD). Atualiza a cada 35s.')),
+      !cfg && React.createElement('div',{key:'demo',style:{marginBottom:14,padding:'10px 14px',borderRadius:10,background:'#fff7ed',border:'1px solid #fed7aa',font:'500 12.5px Manrope',color:'#9a3412'}},'Modo demonstração — defina SBS_BRASIL_URL e INTEG_KEY no Cloudflare para exibir as posições reais.'),
+      React.createElement('div',{key:'lg',style:{display:'flex',gap:16,flexWrap:'wrap',marginBottom:12}},
+        this._legenda('#6FA331','Gerente regional ('+ger+')'),
+        this._legenda('#0B6B61','Vendedor/supervisor ('+vend+')'),
+        this._legenda('#c7ccca','Posição antiga (>15 min)')),
+      React.createElement('div',{key:'mp',id:'sbsMapaEquipe',style:{height:460,width:'100%',borderRadius:14,overflow:'hidden',border:'1px solid rgba(12,59,55,.12)',background:'#e8eef0'}}),
+      React.createElement('div',{key:'ls',style:{marginTop:14,display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:10}},
+        (locs.length?locs:[]).map((p,i)=> React.createElement('div',{key:i,style:{background:'#fff',borderRadius:12,padding:'12px 14px',border:'1px solid rgba(12,59,55,.1)',display:'flex',alignItems:'center',gap:10}},
+          React.createElement('span',{style:{flex:'none',width:12,height:12,borderRadius:'50%',background:(p.papel||'').toLowerCase()==='gerente'?'#6FA331':'#0B6B61'}}),
+          React.createElement('div',{style:{minWidth:0}},
+            React.createElement('div',{style:{font:'700 13px Manrope',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},p.vendedor||'—'),
+            React.createElement('div',{style:{font:'500 11.5px Manrope',color:'#7d8b86'}},((p.papel||'').toLowerCase()==='gerente'?'Gerente':'Vendedor')+(p.estado?(' · '+p.estado):'')+' · '+(p.demo?'demonstração':this.vistoHa(p.criado)))))))
+    ]);
+  }
   // carrega coleções reais; se a API não responder, mantém o modo demonstração
   loadReal(){
     if(this.state.role==='app') return; // no app o vendedor usa a rota pública quando publicado
@@ -397,6 +501,11 @@ class Component extends DCLogic {
     } }).catch(()=>{});
     // Robôs de monitoramento
     this.apiGet('monitoramento',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({robots:rows}); }).catch(()=>{});
+    // Integração SBS Brasil ↔ Painel (barramento compartilhado)
+    this.apiGet('integracao',PG).then(rows=>{ on(); if(Array.isArray(rows)) this.setState({integracaoRecs:rows}); }).catch(()=>{});
+    // Solicitações vindas do SBS Brasil (fluxo de aprovação) + decisões já publicadas
+    this.apiGet('integracao',{de:'sbs-brasil',tipo:'solicitacoes',limite:500}).then(rows=>{ on(); if(Array.isArray(rows)) this.setState({solicRecs:rows}); }).catch(()=>{});
+    this.apiGet('integracao',{de:'painel-sbs',tipo:'sugestao-decisao',limite:500}).then(rows=>{ on(); if(Array.isArray(rows)) this.setState({solicDecisoes:rows}); }).catch(()=>{});
   }
   // Fontes de Inteligência: preferem o dado real (state) e caem no demo enquanto vazio.
   cotData(){ const s=this.state.miCotacoes; return (s&&s.length)?s:this.data().cotacoes; }
@@ -665,6 +774,9 @@ class Component extends DCLogic {
     if(p==='compartilhar') return this.mktCompartilhar();
     if(p==='biblioteca') return this.pgBiblioteca();
     if(p==='vendparceiro') return this.vendedoresPorParceiro();
+    if(p==='integracao') return this.integracaoModule();
+    if(p==='solicitacoes-sbs') return this.solicitacoesModule();
+    if(p==='mapaequipe') return this.mapaEquipe();
     if(p==='catalogo') return this.gerCatalogo();
     if(r==='marketing'){
       if(p==='dash') return this.mktDash();
@@ -1221,6 +1333,7 @@ class Component extends DCLogic {
   salvarCampanha(){
     const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
     const nome=g('camp-nome'); if(!nome){ this.showToast('Informe o nome da campanha'); return; }
+    if(!(this.state.campDraftProds||[]).length){ this.showToast('Anexe pelo menos 1 produto à campanha'); return; }
     const meta=parseFloat((g('camp-meta')||'0').replace(/\./g,'').replace(',','.'))||0;
     const evNome=g('camp-evento'); const evObj=(this.evAll()||[]).find(e=>e.nome===evNome); const appEv=this.eventoApp(evObj||{});
     const camp={ id:Date.now(), nome, gtn:g('camp-gtn'), inicio:g('camp-ini'), fim:g('camp-fim'), evento:evNome, app:appEv.nome,
@@ -1264,8 +1377,9 @@ class Component extends DCLogic {
         (function(self){
           const cat=self.state.catalogo||[]; const draft=self.state.campDraftProds||[];
           return React.createElement('div',{style:{marginTop:18,paddingTop:16,borderTop:'1px solid rgba(12,59,55,.1)'}},
-            React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:4}},React.createElement('span',{style:{color:'#12b39a'}},self.ic(self.icons().cube)),React.createElement('span',{style:{font:'800 14px Archivo',color:'#0c3b37'}},'Produtos e preços da campanha')),
-            React.createElement('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginBottom:12}},'Selecione do catálogo e defina o preço desta campanha — é a tabela que o vendedor vê no app.'),
+            React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:4}},React.createElement('span',{style:{color:'#12b39a'}},self.ic(self.icons().cube)),React.createElement('span',{style:{font:'800 14px Archivo',color:'#0c3b37',flex:1}},'Produtos e preços da campanha'),
+              React.createElement('button',{onClick:()=>self.novoProdutoNaCampanha(),style:{flex:'none',background:'#eafff9',border:'1px solid #12b39a',color:'#12b39a',borderRadius:8,padding:'7px 12px',font:'700 11.5px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:6}},self.ic(self.icons().plus),'Criar produto')),
+            React.createElement('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginBottom:12}},'Toda campanha precisa de ao menos 1 produto. Selecione do catálogo e defina o preço desta campanha — é a tabela que o vendedor vê no app. Não existe ainda? Clique em “Criar produto”.'),
             cat.length?React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:6}},cat.map(p=>{
               const on=draft.find(x=>x.id===p.id);
               return React.createElement('div',{key:p.id,style:{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',borderRadius:9,background:on?'#f4faf7':'#f7f9f7'}},
@@ -1318,6 +1432,7 @@ class Component extends DCLogic {
           React.createElement('button',{onClick:()=>this.showToast('Campanha “'+c.nome+'” compartilhada com Marketing e CEO'),style:{flex:1,background:'#eef1ee',border:'none',borderRadius:9,padding:'9px',font:'700 12px Manrope',color:'#0c3b37',cursor:'pointer'}},'Compartilhar'),
           this.effStatus(c)==='Ativa'&&React.createElement('button',{onClick:()=>this.encerrarCamp(c.id),style:{flex:1,background:'#fbeeea',border:'none',borderRadius:9,padding:'9px',font:'700 12px Manrope',color:'#c2564b',cursor:'pointer'}},'Encerrar'))]))),
       modal,
+      this.produtoModal(),
     ]);
   }
   gerMetas(){
@@ -1755,7 +1870,7 @@ class Component extends DCLogic {
       data:(di?this.fmtDataBR(di):'A definir')+(g('ev-fim')&&g('ev-fim')!==di?(' – '+this.fmtDataBR(g('ev-fim'))):''), mes, dia, ano:anoEv,
       status:(document.getElementById('ev-status')||{}).value||'Planejado',
       app:appVal, appStatus:appStat,
-      segmento:g('ev-seg')||'Evento', objetivo:g('ev-obj'), custo:this.parseBR(g('ev-orc')),
+      segmento:g('ev-seg')||'Evento', objetivo:g('ev-obj'), estudo:g('ev-estudo'), custo:this.parseBR(g('ev-orc')),
       receita:0, leads:0, participantes:this.parseBR(g('ev-part')), conv:0, roi:0, equipe:this.parseBR(g('ev-eq'))||1,
       criadoPor:this.state.role, criadoPorNome:isAdmin?'Admin master':(meta.name||this.state.role),
       criadoEm:new Date().toISOString(), aprovacao:false };
@@ -1810,7 +1925,8 @@ class Component extends DCLogic {
                [React.createElement('option',{key:'sbs',value:'app:'},'App SBS Eventos (padrão) — publicado')].concat((this.state.partners||this.data().partners||[]).map(p=>React.createElement('option',{key:p.slug||p.nome,value:'app:'+p.nome},p.nome+' · App de Eventos'))))]),'1 / -1'),
           field('Orçamento previsto (R$)',inp('ev-orc','180.000')),field('Participantes esperados',inp('ev-part','9.000')),
           field('Tamanho da equipe',inp('ev-eq','8')),
-          field('Objetivo',React.createElement('textarea',{id:'ev-obj',rows:2,defaultValue:pf['ev-obj']||'',placeholder:'Ex: geração de leads e vendas de sementes',style:{...fs,resize:'vertical'}}),'1 / -1')),
+          field('Objetivo',React.createElement('textarea',{id:'ev-obj',rows:2,defaultValue:pf['ev-obj']||'',placeholder:'Ex: geração de leads e vendas de sementes',style:{...fs,resize:'vertical'}}),'1 / -1'),
+          field('Estudo / análise (Marketing · Inteligência de Mercado)',React.createElement('textarea',{id:'ev-estudo',rows:5,defaultValue:pf['ev-estudo']||'',placeholder:'Cole ou traga do Assistente IA o estudo de viabilidade, ROI previsto, potencial de mercado, recomendação…',style:{...fs,resize:'vertical'}}),'1 / -1')),
         this.state.evMsg?React.createElement('div',{style:{font:'600 12.5px Manrope',color:'#c2564b',marginTop:12}},this.state.evMsg):null,
         React.createElement('div',{style:{display:'flex',gap:10,justifyContent:'flex-end',marginTop:20}},
           React.createElement('button',{onClick:()=>this.setState({evNovo:false,evPrefill:null,evDemandaOrigem:null,evDemandaNome:null}),style:{background:'#eef2f0',color:'#0c3b37',border:'none',borderRadius:11,padding:'12px 18px',font:'700 14px Manrope',cursor:'pointer'}},'Cancelar'),
@@ -1840,10 +1956,10 @@ class Component extends DCLogic {
     for(let day=1;day<=nDays;day++){ const de=byDay[day]||[]; const has=de.length>0;
       cells.push(React.createElement('div',{key:day,style:{minHeight:66,borderRadius:9,border:'1px solid rgba(12,59,55,.07)',background:has?'#0c3b37':'#fff',padding:7,display:'flex',flexDirection:'column',gap:3}},
         React.createElement('span',{style:{font:'700 11px Manrope',color:has?'#4fd1be':'#5c6b67'}},day),
-        ...de.slice(0,2).map((e,j)=>React.createElement('div',{key:j,title:e.nome+' · criado por '+this.perfilBadge(e.criadoPor||'marketing')[0],style:{font:'700 9px Manrope',color:'#fff',background:this.perfilBadge(e.criadoPor||'marketing')[1],borderRadius:5,padding:'2px 4px',lineHeight:1.15,overflow:'hidden'}},
+        ...de.slice(0,2).map((e,j)=>React.createElement('div',{key:j,onClick:(ev)=>{ev.stopPropagation();this.set({evDetalhe:e});},title:'Ver detalhes de: '+e.nome,style:{font:'700 9px Manrope',color:'#fff',background:this.perfilBadge(e.criadoPor||'marketing')[1],borderRadius:5,padding:'2px 4px',lineHeight:1.15,overflow:'hidden',cursor:'pointer'}},
           React.createElement('div',{style:{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},e.nome),
           React.createElement('div',{style:{font:'600 8px Manrope',opacity:.85,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},this.perfilBadge(e.criadoPor||'marketing')[0]))),
-        de.length>2?React.createElement('div',{style:{font:'700 8px Manrope',color:has?'#4fd1be':'#5c6b67'}},'+'+(de.length-2)+' evento(s)'):null)); }
+        de.length>2?React.createElement('div',{onClick:(ev)=>{ev.stopPropagation();this.set({evDiaLista:{dia:day,mes:mCur,ano:yCur,evs:de}});},style:{font:'700 8px Manrope',color:has?'#4fd1be':'#5c6b67',cursor:'pointer'}},'+'+(de.length-2)+' evento(s)'):null)); }
     const navMes=React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}},
       React.createElement('div',{style:{font:'700 16px Archivo',color:'#0c3b37'}},mesFull[mCur]+' '+yCur),
       React.createElement('div',{style:{display:'flex',gap:8}},
@@ -1896,7 +2012,68 @@ class Component extends DCLogic {
           evs.length>this.shownCount('agenda')?React.createElement('button',{key:'mais',onClick:()=>this.carregarMais('agenda'),style:{background:'#e7efe9',border:'none',borderRadius:9,padding:'11px',font:'700 12px Manrope',color:'#0c3b37',cursor:'pointer'}},'+ '+(evs.length-this.shownCount('agenda'))+' evento(s) — carregar mais'):null
         ])
           :React.createElement('div',{style:{padding:'30px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94'}},'Nenhum evento com esse filtro.')]),
+      this.evDetalheModal(),
+      this.evDiaListaModal(),
     ]);
+  }
+  evDiaListaModal(){
+    const d=this.state.evDiaLista; if(!d) return null;
+    const mesFull=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    return React.createElement('div',{style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:70,display:'flex',alignItems:'center',justifyContent:'center',padding:20},onClick:()=>this.set({evDiaLista:null})},
+      React.createElement('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:18,padding:24,width:460,maxWidth:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:'0 30px 80px rgba(0,0,0,.35)'}},
+        React.createElement('div',{style:{font:'800 17px Archivo',color:'#0c3b37',marginBottom:14}},(d.evs.length)+' eventos · '+d.dia+' de '+mesFull[d.mes]+' '+d.ano),
+        React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8}},d.evs.map(e=>{ const pb=this.perfilBadge(e.criadoPor||'marketing');
+          return React.createElement('div',{key:e.id,onClick:()=>this.set({evDetalhe:e,evDiaLista:null}),style:{display:'flex',alignItems:'center',gap:10,padding:'11px 12px',borderRadius:10,cursor:'pointer',background:'#f7f9f7',border:'1px solid rgba(12,59,55,.07)'}},
+            React.createElement('span',{style:{width:9,height:9,borderRadius:9,background:pb[1],flex:'none'}}),
+            React.createElement('div',{style:{flex:1,minWidth:0}},React.createElement('div',{style:{font:'700 13px Manrope',color:'#0c3b37',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},e.nome),React.createElement('div',{style:{font:'500 11.5px Manrope',color:'#8a9a94'}},'criado por '+pb[0]+' · '+e.status)),
+            React.createElement('span',{style:{color:'#8a9a94',flex:'none'}},this.ic(this.icons().chevR||['M9 18l6-6-6-6'])));
+        })),
+        React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',marginTop:16}},
+          React.createElement('button',{onClick:()=>this.set({evDiaLista:null}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'10px 18px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Fechar'))));
+  }
+  evDetalheModal(){
+    const e=this.state.evDetalhe; if(!e) return null;
+    const pb=this.perfilBadge(e.criadoPor||'marketing'); const ae=this.appEstado(e);
+    const linha=(rot,val)=>val?React.createElement('div',{key:rot,style:{display:'flex',gap:12,padding:'10px 0',borderBottom:'1px solid rgba(12,59,55,.07)'}},
+      React.createElement('span',{style:{flex:'none',width:150,font:'700 12px Manrope',color:'#5c6b67'}},rot),
+      React.createElement('span',{style:{flex:1,font:'600 13px Manrope',color:'#0c3b37',whiteSpace:'pre-wrap',wordBreak:'break-word'}},val)):null;
+    const local=((e.cidade||'')+(e.uf?('/'+e.uf):''))||e.local||'';
+    const bloco=(titulo,texto)=>texto?React.createElement('div',{key:titulo,style:{marginTop:14}},
+      React.createElement('div',{style:{font:'700 12px Manrope',color:'#0c3b37',marginBottom:5}},titulo),
+      React.createElement('div',{style:{font:'500 13px Manrope',color:'#3a4a46',lineHeight:1.55,whiteSpace:'pre-wrap',background:'#f7f9f7',borderRadius:10,padding:'12px 13px'}},texto)):null;
+    return React.createElement('div',{style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:70,display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'40px 20px',overflowY:'auto'},onClick:()=>this.set({evDetalhe:null})},
+      React.createElement('div',{onClick:ev=>ev.stopPropagation(),style:{background:'#fff',borderRadius:18,width:600,maxWidth:'100%',boxShadow:'0 30px 80px rgba(0,0,0,.35)'}},
+        React.createElement('div',{style:{background:pb[1],borderRadius:'18px 18px 0 0',padding:'18px 22px',display:'flex',alignItems:'flex-start',gap:12}},
+          React.createElement('div',{style:{flex:1,minWidth:0}},
+            React.createElement('div',{style:{font:'700 10.5px Manrope',color:'#fff',opacity:.9,marginBottom:4}},'EVENTO · criado por '+pb[0]),
+            React.createElement('div',{style:{font:'800 20px Archivo',color:'#fff',lineHeight:1.2}},e.nome)),
+          React.createElement('button',{onClick:()=>this.set({evDetalhe:null}),title:'Minimizar',style:{flex:'none',width:32,height:32,borderRadius:9,border:'none',background:'rgba(255,255,255,.2)',color:'#fff',cursor:'pointer',font:'700 16px Manrope'}},'—')),
+        React.createElement('div',{style:{padding:'6px 22px 22px'}},
+          React.createElement('div',{style:{display:'flex',gap:8,flexWrap:'wrap',margin:'14px 0'}},
+            this.chip(e.status||'Planejado',this.statusColor(e.status||'Planejado')),
+            this.appEstadoBadge(e,{}),
+            e.segmento?React.createElement('span',{style:{font:'700 11px Manrope',color:'#0c3b37',background:'#eef4f1',borderRadius:20,padding:'5px 12px'}},e.segmento):null),
+          React.createElement('div',{style:{marginTop:4}},
+            linha('Período',e.data||'A definir'),
+            linha('Local',local),
+            linha('App do evento',ae.key==='publicado'?('Publicado'+(e.app?(' · '+e.app):'')):ae.label),
+            linha('Orçamento previsto',e.custo?this.brl(e.custo):null),
+            linha('Participantes esperados',e.participantes?String(e.participantes):null),
+            linha('Tamanho da equipe',e.equipe?String(e.equipe):null),
+            linha('Receita registrada',e.receita?this.brl(e.receita):null),
+            linha('Leads',e.leads?String(e.leads):null)),
+          bloco('Objetivo',e.objetivo),
+          bloco('Estudo / análise',e.estudo),
+          (e.mural&&e.mural.length)?React.createElement('div',{style:{marginTop:14}},
+            React.createElement('div',{style:{font:'700 12px Manrope',color:'#0c3b37',marginBottom:5}},'Anexos ('+e.mural.length+')'),
+            React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:6}},e.mural.map((a,i)=>
+              React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',gap:9,background:'#f4faf7',borderRadius:9,padding:'8px 11px'}},
+                React.createElement('span',{style:{width:26,height:26,borderRadius:7,background:'#eafff9',color:'#12b39a',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(this.icons().file)),
+                React.createElement('span',{style:{flex:1,minWidth:0,font:'600 12px Manrope',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},a.nome||a.titulo||('Anexo '+(i+1))),
+                (a.dataUrl||a.url)?React.createElement('button',{onClick:()=>this.bibAbrir(a),style:{flex:'none',display:'flex',alignItems:'center',gap:5,background:'#0c3b37',color:'#fff',border:'none',borderRadius:8,padding:'6px 11px',font:'700 11px Manrope',cursor:'pointer'}},this.ic(this.icons().download),'Baixar'):null))) ):null,
+          React.createElement('div',{style:{display:'flex',gap:10,justifyContent:'flex-end',marginTop:20,flexWrap:'wrap'}},
+            React.createElement('button',{onClick:()=>this.set({evDetalhe:null}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Fechar'),
+            React.createElement('button',{onClick:()=>{const ev=e;this.set({evDetalhe:null});this.openEvMural(ev);},style:{background:'#0c3b37',color:'#fff',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:6}},this.ic(this.icons().file),'Anexos')))));
   }
 
   // ================= FLUXO DE APROVAÇÃO (entre frentes) =================
@@ -2901,6 +3078,20 @@ class Component extends DCLogic {
       if(a&&out.indexOf(a)<0) out.push(a); });
     return out;
   }
+  addDemandaAnexo(files){
+    const nd=this._nd||(this._nd={}); nd.anexos=nd.anexos||[];
+    const list=Array.from(files||[]); if(!list.length) return;
+    let pend=list.length;
+    list.forEach(f=>{
+      const isImg=/^image\//.test(f.type);
+      const reader=new FileReader();
+      reader.onload=()=>{ nd.anexos.push({name:f.name,tipo:(f.name.split('.').pop()||'').toLowerCase(),tamanho:f.size,isImg,dataUrl:reader.result}); if(--pend<=0) this.forceUpdate(); };
+      reader.onerror=()=>{ nd.anexos.push({name:f.name,tipo:(f.name.split('.').pop()||'').toLowerCase(),tamanho:f.size,isImg}); if(--pend<=0) this.forceUpdate(); };
+      reader.readAsDataURL(f);
+    });
+    const el=document.getElementById('dem-anexo-file'); if(el) el.value='';
+  }
+  removeDemandaAnexo(i){ const nd=this._nd||{}; if(nd.anexos){ nd.anexos.splice(i,1); this.forceUpdate(); } }
   salvarDemanda(){
     const nd=this._nd||{};
     const meta=this.roleMeta()[this.state.role]||{};
@@ -2911,6 +3102,7 @@ class Component extends DCLogic {
       solic:nd.solic||meta.user||'—', origem:(nd.solic||meta.user||'—')+(meta.name?(' ('+meta.name+')'):''),
       regiao:nd.regiao||'—', area:this.state.role==='ceo'?'Diretoria':(meta.name||'—'), prio:nd.prio||'Média',
       status:'Solicitado', resp:'A definir', prazo:nd.prazo||'—', desc:nd.desc.trim(),
+      anexos:(nd.anexos||[]).slice(),
       envolvidos, mencoes };
     this._nd={};
     const iaOrigem=this.state.iaDemandaOrigem;
@@ -3078,7 +3270,17 @@ class Component extends DCLogic {
           React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Envolvidos e menções (@área)',React.createElement('div',null,
             React.createElement('input',{id:'new-envol-input',defaultValue:nd.envolvidos||'',placeholder:'Ex.: Ana, Bruno, @Marketing',onChange:e=>nd.envolvidos=e.target.value,style:{...fs,width:'100%'}}),
             this.mencaoChips(nd,'envolvidos','new-envol-input')))),
-          React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Descrição / objetivo',React.createElement('textarea',{defaultValue:nd.desc||'',onChange:e=>nd.desc=e.target.value,rows:3,style:{...fs,resize:'vertical'}})))),
+          React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Descrição / objetivo',React.createElement('textarea',{defaultValue:nd.desc||'',onChange:e=>nd.desc=e.target.value,rows:3,style:{...fs,resize:'vertical'}}))),
+          React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Anexos (imagens, PDF, arquivos)',React.createElement('div',null,
+            React.createElement('button',{onClick:()=>{const i=document.getElementById('dem-anexo-file');if(i)i.click();},style:{display:'flex',alignItems:'center',gap:7,background:'#eef1ee',border:'1px dashed rgba(12,59,55,.25)',borderRadius:10,padding:'10px 14px',font:'700 12px Manrope',color:'#0c3b37',cursor:'pointer'}},this.ic(this.icons().file),'Anexar arquivo'),
+            React.createElement('input',{id:'dem-anexo-file',type:'file',multiple:true,accept:'image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv',style:{display:'none'},onChange:e=>this.addDemandaAnexo(e.target.files)}),
+            (nd.anexos&&nd.anexos.length)?React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:6,marginTop:10}},nd.anexos.map((a,i)=>
+              React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',gap:10,background:'#f4faf7',borderRadius:9,padding:'8px 11px'}},
+                React.createElement('span',{style:{width:28,height:28,borderRadius:7,background:'#eafff9',color:'#12b39a',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(this.icons().file)),
+                React.createElement('span',{style:{flex:1,minWidth:0,font:'600 12.5px Manrope',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},a.name),
+                React.createElement('span',{style:{font:'500 11px Manrope',color:'#8a9a94',flex:'none'}},this.bibFmtKB(a.tamanho)),
+                React.createElement('button',{onClick:()=>this.removeDemandaAnexo(i),style:{width:26,height:26,borderRadius:7,border:'none',background:'#fbeeea',color:'#c2564b',cursor:'pointer',flex:'none',display:'flex',alignItems:'center',justifyContent:'center'}},this.ic(this.icons().trash)))))
+              :React.createElement('div',{style:{font:'500 11.5px Manrope',color:'#8a9a94',marginTop:6}},'Nenhum anexo. As áreas envolvidas poderão baixar os arquivos.'))))),
         React.createElement('div',{style:{display:'flex',gap:12,justifyContent:'flex-end',marginTop:22}},
           React.createElement('button',{onClick:()=>this.set({demandaNew:false}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Cancelar'),
           React.createElement('button',{onClick:()=>this.salvarDemanda(),style:{background:'#12b39a',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#fff',cursor:'pointer'}},isCeo?'Enviar para a equipe':'Enviar demanda'))));
@@ -3106,7 +3308,12 @@ class Component extends DCLogic {
           React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Envolvidos e menções (@área)',React.createElement('div',null,
             React.createElement('input',{id:'edit-envol-input',defaultValue:de.envolvidos||'',placeholder:'Ex.: Ana, Bruno, @Marketing',onChange:e=>de.envolvidos=e.target.value,style:{...fs,width:'100%'}}),
             this.mencaoChips(de,'envolvidos','edit-envol-input')))),
-          React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Descrição',React.createElement('textarea',{defaultValue:de.desc||'',onChange:e=>de.desc=e.target.value,rows:3,style:{...fs,resize:'vertical'}})))),
+          React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Descrição',React.createElement('textarea',{defaultValue:de.desc||'',onChange:e=>de.desc=e.target.value,rows:3,style:{...fs,resize:'vertical'}}))),
+          (de.anexos&&de.anexos.length)?React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Anexos ('+de.anexos.length+')',React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:6}},de.anexos.map((a,i)=>
+            React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',gap:10,background:'#f4faf7',borderRadius:9,padding:'8px 11px'}},
+              React.createElement('span',{style:{width:28,height:28,borderRadius:7,background:'#eafff9',color:'#12b39a',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(this.icons().file)),
+              React.createElement('span',{style:{flex:1,minWidth:0,font:'600 12.5px Manrope',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},a.name),
+              React.createElement('button',{onClick:()=>this.bibAbrir(a),style:{display:'flex',alignItems:'center',gap:6,background:'#0c3b37',color:'#fff',border:'none',borderRadius:8,padding:'7px 12px',font:'700 11.5px Manrope',cursor:'pointer',flex:'none'}},this.ic(this.icons().download),'Baixar')))))):null),
         React.createElement('div',{style:{display:'flex',gap:12,justifyContent:'space-between',alignItems:'center',marginTop:22,flexWrap:'wrap'}},
           React.createElement('div',{style:{display:'flex',gap:10}},
             React.createElement('button',{onClick:()=>this.assumirDemanda(),style:{background:'#0c3b37',border:'none',borderRadius:10,padding:'11px 16px',font:'700 13px Manrope',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().users),'Sou eu (assumir)'),
@@ -3385,8 +3592,32 @@ class Component extends DCLogic {
           React.createElement('button',{onClick:()=>this.createRobot(),style:{background:'#12b39a',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().gauge),'Ativar robô'))));
   }
   toggleCanal(id){ const c=Object.assign({},this.state.canaisOn); c[id]=!c[id]; this.setState({canaisOn:c}); this.showToast(c[id]?'Canal conectado':'Canal desconectado'); }
+  editarHandle(id,atual){
+    const v=prompt('Editar o @ / endereço deste canal:',atual||'');
+    if(v==null) return;
+    const cfg=Object.assign({},this.state.canaisCfg||{}); cfg[id]=v.trim();
+    this.setState({canaisCfg:cfg});
+    try{ this.apiSend('canais','POST',{id,sub:v.trim(),tipo:'handle'}).catch(()=>{}); }catch(e){}
+    this.showToast('Endereço atualizado ✓');
+  }
+  salvarCanalCustom(){
+    const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+    const nome=g('fc-nome'); if(!nome){ const e=document.getElementById('fc-nome'); if(e){e.style.borderColor='#c2564b';e.focus();} return; }
+    const tipo=(document.getElementById('fc-tipo')||{}).value||'Site / portal';
+    const sub=g('fc-url'); const desc=g('fc-desc');
+    const grupo=/rede/i.test(tipo)?'redes':(/google/i.test(tipo)?'gmb':(/notícia|noticia|mercado|órg|org|cotaç/i.test(tipo)?'recomendados':'sites'));
+    const item={ id:'fc'+Date.now(), grupo, nome, sub, desc, tipo };
+    const list=[item,...(this.state.canaisCustom||[])];
+    const on=Object.assign({},this.state.canaisOn||{}); on[item.id]=true;
+    this.setState({canaisCustom:list,canaisOn:on,fonteModal:false});
+    try{ this.apiSend('canais','POST',Object.assign({tipo:'canal'},item)).catch(()=>{}); }catch(e){}
+    this.showToast('Canal adicionado ao monitoramento ✓');
+  }
   mercFontes(){
     const on=this.state.canaisOn||{};
+    const cfg=this.state.canaisCfg||{};
+    const custom=this.state.canaisCustom||[];
+    const cu=g=>custom.filter(c=>c.grupo===g);
     const conta=(ids)=>ids.filter(i=>on[i]).length;
     const redes=[
       ['ig','Instagram','instagram.com/sbsgreenseeds','Perfis, posts e menções de concorrentes e produtores','#E1306C'],
@@ -3410,13 +3641,14 @@ class Component extends DCLogic {
       ['siteA','Site Concorrente A','concorrenteA.com.br','Tabela de preços e catálogo de cultivares'],
       ['siteB','Portal da Cooperativa X','coopx.coop.br','Agenda de eventos e campanhas regionais'],
     ];
-    const linha=(id,nome,sub,desc,cor,tag)=>React.createElement('div',{key:id,style:{display:'flex',alignItems:'center',gap:13,padding:'13px 0',borderBottom:'1px solid rgba(12,59,55,.07)'}},
+    const linha=(id,nome,sub,desc,cor,tag,editable)=>React.createElement('div',{key:id,style:{display:'flex',alignItems:'center',gap:13,padding:'13px 0',borderBottom:'1px solid rgba(12,59,55,.07)'}},
       React.createElement('div',{style:{width:38,height:38,borderRadius:10,background:cor+'1a',color:cor,display:'flex',alignItems:'center',justifyContent:'center',flex:'none',font:'800 13px Archivo'}},nome[0]),
       React.createElement('div',{style:{flex:1,minWidth:0}},
         React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}},
           React.createElement('span',{style:{font:'700 13.5px Manrope',color:'#12211e'}},nome),
           tag&&this.chip('recomendado','#00867f'),
-          sub&&React.createElement('span',{style:{font:'500 11.5px Manrope',color:'#8a9a94'}},sub)),
+          sub&&React.createElement('span',{style:{font:'500 11.5px Manrope',color:'#8a9a94'}},sub),
+          editable&&React.createElement('button',{onClick:()=>this.editarHandle(id,sub),title:'Editar @ / endereço',style:{flex:'none',background:'#eef3f1',border:'1px solid rgba(12,59,55,.12)',borderRadius:7,padding:'2px 8px',font:'700 10.5px Manrope',color:'#0c6b61',cursor:'pointer',display:'inline-flex',alignItems:'center',gap:4}},this.ic(this.icons().edit),'editar')),
         desc&&React.createElement('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginTop:2}},desc)),
       React.createElement('button',{onClick:()=>this.toggleCanal(id),style:{flex:'none',background:on[id]?'#e4f3ee':'#0c3b37',color:on[id]?'#00867f':'#fff',border:on[id]?'1px solid #b6e0d2':'none',borderRadius:9,padding:'8px 14px',font:'700 12px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:6}},
         on[id]?[this.ic(this.icons().check),'Conectado']:'Conectar'));
@@ -3434,21 +3666,21 @@ class Component extends DCLogic {
       ])),
       this.grid('1fr 1fr',20,[
         this.card([this.h('Redes sociais','Perfis e páginas para escuta de mercado'),
-          React.createElement('div',null,redes.map(r=>linha(r[0],r[1],r[2],r[3],r[4],false)))]),
+          React.createElement('div',null,redes.map(r=>linha(r[0],r[1],cfg[r[0]]||r[2],r[3],r[4],false,true)).concat(cu('redes').map(c=>linha(c.id,c.nome,cfg[c.id]||c.sub,c.desc||c.tipo,'#12b39a',false,true))))]),
         React.createElement('div',{key:'col2',style:{display:'flex',flexDirection:'column',gap:20}},
           this.card([this.h('Google Meu Negócio','Avaliações e presença local'),
-            React.createElement('div',null,linha('gmb','Google Meu Negócio','SBS Green Seeds','Avaliações, notas e comparação com concorrentes na busca local','#4285F4',true)),
+            React.createElement('div',null,[linha('gmb','Google Meu Negócio',cfg['gmb']||'SBS Green Seeds','Avaliações, notas e comparação com concorrentes na busca local','#4285F4',true,true)].concat(cu('gmb').map(c=>linha(c.id,c.nome,cfg[c.id]||c.sub,c.desc||c.tipo,'#4285F4',false,true)))),
             React.createElement('div',{style:{display:'flex',gap:20,marginTop:14,paddingTop:14,borderTop:'1px solid rgba(12,59,55,.07)'}},
               [['Nota média','4,7 ★'],['Avaliações','312'],['Concorrentes na região','5']].map((m,i)=>
                 React.createElement('div',{key:i},React.createElement('div',{style:{font:'800 20px Archivo',color:'#0c3b37'}},m[1]),React.createElement('div',{style:{font:'500 11.5px Manrope',color:'#5c6b67'}},m[0]))))]),
           this.card([React.createElement('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:6}},
               React.createElement('div',{style:{flex:1}},this.h('Sites & portais monitorados','Concorrentes, cooperativas e órgãos')),
               React.createElement('button',{onClick:()=>this.set({fonteModal:true}),style:{flex:'none',background:'#12b39a',color:'#fff',border:'none',borderRadius:9,padding:'9px 14px',font:'700 12px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:6}},this.ic(this.icons().plus),'Adicionar')),
-            React.createElement('div',null,sites.map(s=>linha(s[0],s[1],s[2],s[3],'#5c6b67',false)))]),
+            React.createElement('div',null,sites.map(s=>linha(s[0],s[1],cfg[s[0]]||s[2],s[3],'#5c6b67',false,true)).concat(cu('sites').map(c=>linha(c.id,c.nome,cfg[c.id]||c.sub,c.desc||c.tipo,'#5c6b67',false,true))))]),
         ),
       ]),
       this.card([this.h('Canais recomendados para o agro','Fontes que sugerimos para a Inteligência de Mercado da SBS'),
-        React.createElement('div',null,recomendados.map(r=>linha(r[0],r[1],r[2],r[3],r[4],r[5])))]),
+        React.createElement('div',null,recomendados.map(r=>linha(r[0],r[1],cfg[r[0]]||r[2],r[3],r[4],r[5],true)).concat(cu('recomendados').map(c=>linha(c.id,c.nome,cfg[c.id]||c.sub,c.desc||c.tipo,'#0c6b61',false,true))))]),
       this.fonteModalEl(),
     ]);
   }
@@ -3461,16 +3693,16 @@ class Component extends DCLogic {
         React.createElement('div',{style:{font:'500 13px Manrope',color:'#5c6b67',marginBottom:18}},'O robô passa a acompanhar esta fonte e registra cada movimento encontrado.'),
         React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
           React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Tipo de fonte'),
-            React.createElement('select',{style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#12211e'}},tipos.map(t=>React.createElement('option',{key:t[0]},t[1])))),
+            React.createElement('select',{id:'fc-tipo',style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#12211e'}},tipos.map(t=>React.createElement('option',{key:t[0]},t[1])))),
           React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'Nome'),
-            React.createElement('input',{placeholder:'Ex: Site Concorrente / Perfil @',style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#12211e'}})),
+            React.createElement('input',{id:'fc-nome',placeholder:'Ex: Site Concorrente / Perfil @',style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#12211e'}})),
           React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'URL / @ do perfil'),
-            React.createElement('input',{placeholder:'https:// ou @perfil',style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#12211e'}})),
+            React.createElement('input',{id:'fc-url',placeholder:'https:// ou @perfil',style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#12211e'}})),
           React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},'O que monitorar'),
-            React.createElement('input',{placeholder:'Preços, lançamentos, promoções…',style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#12211e'}}))),
+            React.createElement('input',{id:'fc-desc',placeholder:'Preços, lançamentos, promoções…',style:{padding:'11px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',background:'#fff',color:'#12211e'}}))),
         React.createElement('div',{style:{display:'flex',gap:12,justifyContent:'flex-end',marginTop:22}},
           React.createElement('button',{onClick:()=>this.set({fonteModal:false}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Cancelar'),
-          React.createElement('button',{onClick:()=>{this.set({fonteModal:false});this.showToast('Fonte adicionada ao monitoramento');},style:{background:'#12b39a',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#fff',cursor:'pointer'}},'Adicionar fonte'))));
+          React.createElement('button',{onClick:()=>this.salvarCanalCustom(),style:{background:'#12b39a',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#fff',cursor:'pointer'}},'Adicionar fonte'))));
   }
   climaModule(){
     const sel=this.state.climaSel??0;
@@ -3764,6 +3996,7 @@ class Component extends DCLogic {
     const preco=parseFloat((v||'0').replace(/\./g,'').replace(',','.'))||0;
     this.setState({campDraftProds:(this.state.campDraftProds||[]).map(x=>x.id===id?{...x,preco}:x)});
   }
+  novoProdutoNaCampanha(){ this.setState({produtoNew:true,produtoEdit:null,produtoFoto:null,produtoSpecs:'',produtoMats:[],matTipo:'Vídeo',matTitulo:'',matUrl:'',produtoFromCamp:true}); }
   salvarProduto(){
     const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
     const nome=g('pr-nome'); if(!nome){ this.showToast('Informe o nome do produto'); return; }
@@ -3771,9 +4004,12 @@ class Component extends DCLogic {
     const prod={ id:this.state.produtoEdit||Date.now(), nome, cultura:g('pr-cultura')||'—', saco:g('pr-saco')||'—', preco, foto:this.state.produtoFoto||null, specs:(this.state.produtoSpecs||'').trim(), materiais:(this.state.produtoMats||[]).slice() };
     let cat=this.state.catalogo||[];
     cat = this.state.produtoEdit ? cat.map(p=>p.id===this.state.produtoEdit?prod:p) : [prod,...cat];
-    this.setState({catalogo:cat,produtoNew:false,produtoEdit:null,produtoFoto:null,produtoSpecs:'',produtoMats:[]});
+    const fromCamp=this.state.produtoFromCamp;
+    const patch={catalogo:cat,produtoNew:false,produtoEdit:null,produtoFoto:null,produtoSpecs:'',produtoMats:[],produtoFromCamp:false};
+    if(fromCamp){ const cur=this.state.campDraftProds||[]; if(!cur.find(x=>x.id===prod.id)) patch.campDraftProds=[...cur,{id:prod.id,preco:prod.preco}]; }
+    this.setState(patch);
     try{ this.apiSend('produtos','POST',prod).catch(()=>{}); }catch(e){}
-    this.showToast('Produto salvo no catálogo ✓');
+    this.showToast(fromCamp?'Produto criado e anexado à campanha ✓':'Produto salvo no catálogo ✓');
   }
   produtoModal(){
     if(!this.state.produtoNew) return null;
@@ -3817,16 +4053,319 @@ class Component extends DCLogic {
           React.createElement('button',{onClick:()=>this.set({produtoNew:false}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Cancelar'),
           React.createElement('button',{onClick:()=>this.salvarProduto(),style:{background:'#12b39a',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#fff',cursor:'pointer'}},'Salvar produto'))));
   }
+  csvEscape(v){ const s=(v==null?'':String(v)); return /[",\n;]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s; }
+  baixarCSV(nome,texto){
+    try{
+      const blob=new Blob(['\ufeff'+texto],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a');
+      a.href=url; a.download=nome; document.body.appendChild(a); a.click();
+      setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+    }catch(e){ this.showToast('Não foi possível gerar o arquivo'); }
+  }
+  exportarCatalogoCSV(){
+    const cat=this.state.catalogo||[];
+    const head=['nome','cultura','saco','preco'];
+    const linhas=[head.join(',')].concat(cat.map(p=>[p.nome,p.cultura,p.saco,(p.preco||0)].map(x=>this.csvEscape(x)).join(',')));
+    this.baixarCSV('catalogo-sbs.csv',linhas.join('\n'));
+    this.showToast('Catálogo exportado ('+cat.length+' produtos) ✓');
+  }
+  baixarModeloCatalogo(){
+    const ex=['nome,cultura,saco,preco','Soja SBS 8579 IPRO,Soja,40 kg,320.00','Milho SBS Híbrido 300,Milho,60.000 sementes,890.00'];
+    this.baixarCSV('modelo-catalogo.csv',ex.join('\n'));
+  }
+  parseCSVLinha(linha){
+    const out=[]; let cur=''; let q=false;
+    for(let i=0;i<linha.length;i++){ const c=linha[i];
+      if(q){ if(c==='"'){ if(linha[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+      else { if(c==='"') q=true; else if(c===','||c===';') { out.push(cur); cur=''; } else cur+=c; }
+    }
+    out.push(cur); return out.map(s=>s.trim());
+  }
+  importarCatalogoCSV(files){
+    const f=files&&files[0]; if(!f) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        let txt=String(reader.result||'').replace(/^\ufeff/,'');
+        const linhas=txt.split(/\r?\n/).filter(l=>l.trim());
+        if(!linhas.length){ this.showToast('Arquivo vazio'); return; }
+        const head=this.parseCSVLinha(linhas[0]).map(h=>h.toLowerCase());
+        const iNome=head.findIndex(h=>/nome|produto/.test(h));
+        const iCult=head.findIndex(h=>/cultura|categoria/.test(h));
+        const iSaco=head.findIndex(h=>/saco|embalagem|tamanho/.test(h));
+        const iPreco=head.findIndex(h=>/pre[cç]o|valor|tabela/.test(h));
+        if(iNome<0){ this.showToast('CSV precisa de uma coluna "nome"'); const el=document.getElementById('cat-import-file'); if(el)el.value=''; return; }
+        const novos=[];
+        for(let i=1;i<linhas.length;i++){
+          const c=this.parseCSVLinha(linhas[i]); const nome=(c[iNome]||'').trim(); if(!nome) continue;
+          const precoRaw=iPreco>=0?(c[iPreco]||'').replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}(\D|$))/g,'').replace(',','.'):'';
+          novos.push({ id:'p'+Date.now()+'_'+i, nome, cultura:(iCult>=0?c[iCult]:'')||'—', saco:(iSaco>=0?c[iSaco]:'')||'—', preco:precoRaw?parseFloat(precoRaw)||0:0, foto:null });
+        }
+        if(!novos.length){ this.showToast('Nenhuma linha de produto encontrada'); const el=document.getElementById('cat-import-file'); if(el)el.value=''; return; }
+        const cat=this.state.catalogo||[];
+        const map={}; cat.forEach(p=>map[(p.nome||'').toLowerCase()]=p);
+        let add=0,upd=0;
+        novos.forEach(n=>{ const k=n.nome.toLowerCase(); if(map[k]){ Object.assign(map[k],{cultura:n.cultura,saco:n.saco,preco:n.preco}); upd++; } else { map[k]=n; cat.unshift(n); add++; } });
+        this.setState({catalogo:cat.slice()});
+        novos.forEach(n=>{ try{ this.apiSend('produtos','POST',map[n.nome.toLowerCase()]).catch(()=>{}); }catch(e){} });
+        const el=document.getElementById('cat-import-file'); if(el)el.value='';
+        this.showToast('Importação concluída: '+add+' novo(s), '+upd+' atualizado(s) ✓');
+      }catch(e){ this.showToast('Erro ao ler o CSV — confira o formato'); }
+    };
+    reader.onerror=()=>this.showToast('Não foi possível ler o arquivo');
+    reader.readAsText(f,'UTF-8');
+  }
+  // ================= SOLICITAÇÕES SBS BRASIL (fluxo de aprovação) =================
+  solicRoleArea(){ return ({marketing:'marketing',gerente:'nacional',ceo:'ceo',mercado:'inteligencia'})[this.state.role]||null; }
+  areaLabel(a){ return ({marketing:'Marketing',nacional:'Nacional',inteligencia:'Inteligência',ceo:'CEO'})[a]||a; }
+  solicDemo(){
+    return [
+      {id:'sb1',sistema:'sbs-brasil',tipo:'solicitacoes',ref:'SOL-1001',titulo:'Banner para Dia de Campo',resumo:'materiais · custo: R$ 900',criadoEm:'2026-07-09T12:10:00Z',payload:{sugestaoId:'SOL-1001',categoria:'materiais',titulo:'Banner para Dia de Campo',descricao:'Precisamos de banner grande para o estande no Dia de Campo em Uberaba.',item:'Banner 2x1m',quantidade:'3',custo:'R$ 900',publico:'pecuaristas da região',orcamento:'R$ 15.000',data_evento:'2026-08-10',estado:'MG',criado_por:'Vendedor 1 — MG',papel:'supervisor',status:'aguardando_marketing'}},
+      {id:'sb2',sistema:'sbs-brasil',tipo:'solicitacoes',ref:'SOL-1002',titulo:'Campanha regional soja Sul',resumo:'campanha · orçamento: R$ 40.000',criadoEm:'2026-07-08T15:40:00Z',payload:{sugestaoId:'SOL-1002',categoria:'campanha',titulo:'Campanha regional soja Sul',descricao:'Sugestão de campanha para a região Sul focada na nova linha de soja.',item:'—',quantidade:'—',custo:'R$ 40.000',publico:'produtores de soja PR/RS',orcamento:'R$ 40.000',data_evento:'2026-09-01',estado:'PR',criado_por:'Gerente Regional Sul',papel:'gerente',status:'aguardando_marketing'}},
+      {id:'sb3',sistema:'sbs-brasil',tipo:'solicitacoes',ref:'SOL-1003',titulo:'Brindes (bonés) para feira',resumo:'materiais · custo: R$ 1.200',criadoEm:'2026-07-07T09:20:00Z',payload:{sugestaoId:'SOL-1003',categoria:'materiais',titulo:'Brindes (bonés) para feira',descricao:'500 bonés com a marca para distribuir na feira agropecuária.',item:'Boné bordado',quantidade:'500',custo:'R$ 1.200',publico:'visitantes da feira',orcamento:'R$ 8.000',data_evento:'2026-08-20',estado:'GO',criado_por:'Supervisor GO',papel:'supervisor',status:'aguardando_marketing'}},
+    ];
+  }
+  solicData(){ const r=this.state.solicRecs; return (r&&r.length)?r:this.solicDemo(); }
+  solicSid(sol){ return (sol.payload&&sol.payload.sugestaoId)||sol.ref||sol.id; }
+  solicDecMap(sol){
+    const sid=this.solicSid(sol); const map={};
+    // 1) pareceres que já venham no payload (sync do SBS Brasil)
+    const p=sol.payload||{};
+    ['marketing','nacional','inteligencia','ceo'].forEach(a=>{ const v=p[a]; if(v==='aprovada'||v==='reprovada') map[a]=v; });
+    // 2) decisões que este painel já publicou (mais recente vence)
+    (this.state.solicDecisoes||[]).slice().sort((a,b)=>String(a.criadoEm||'').localeCompare(String(b.criadoEm||''))).forEach(d=>{
+      const dp=d.payload||{}; if((dp.sugestaoId||d.ref)===sid && dp.area && dp.decisao){ map[dp.area]=dp.decisao; if(dp.parecer){ map['_p_'+dp.area]=dp.parecer; } }
+    });
+    return map;
+  }
+  solicStatus(dec){
+    if(dec.marketing==='reprovada') return 'reprovada';
+    if(dec.marketing!=='aprovada') return 'aguardando_marketing';
+    if(dec.nacional==='reprovada'||dec.inteligencia==='reprovada'||dec.ceo==='reprovada') return 'reprovada';
+    if(dec.marketing==='aprovada'&&dec.nacional==='aprovada'&&dec.inteligencia==='aprovada'&&dec.ceo==='aprovada') return 'aprovada';
+    return 'em_aprovacao';
+  }
+  solicStatusMeta(st){ return ({
+    aguardando_marketing:['Aguardando Marketing','#c26a00','#fff4e2'],
+    em_aprovacao:['Em aprovação','#0a6bd6','#e6f0fd'],
+    aprovada:['Aprovada','#0c8a4e','#e4f7ec'],
+    reprovada:['Reprovada','#c0392b','#fdeceb'],
+  })[st]||['—','#5c6b67','#eef1ee']; }
+  solicDecidir(sol,decisao){
+    const area=this.solicRoleArea();
+    if(!area){ this.showToast('Seu perfil não participa deste fluxo de aprovação'); return; }
+    const dec=this.solicDecMap(sol);
+    if(area!=='marketing' && dec.marketing!=='aprovada'){ this.showToast('O Marketing precisa aprovar primeiro (porteiro do fluxo)'); return; }
+    const sid=this.solicSid(sol);
+    const parecer=(this.state.solicParecer&&this.state.solicParecer[sid])||'';
+    const meta=this.roleMeta()[this.state.role]||{};
+    const env={ id:'sd'+Date.now(), sistema:'painel-sbs', tipo:'sugestao-decisao', ref:sid,
+      titulo:'Decisão '+this.areaLabel(area)+' — '+(sol.titulo||(sol.payload&&sol.payload.titulo)||sid), resumo:decisao,
+      payload:{sugestaoId:sid, area, decisao, parecer}, criadoEm:new Date().toISOString(), criadoPor:meta.name||this.state.role };
+    this.setState({solicDecisoes:[env,...(this.state.solicDecisoes||[])]});
+    try{ this.apiSend('integracao','POST',{sistema:env.sistema,tipo:env.tipo,ref:env.ref,titulo:env.titulo,resumo:env.resumo,payload:env.payload,criadoPor:env.criadoPor}).catch(()=>{}); }catch(e){}
+    this.showToast(this.areaLabel(area)+' — '+decisao+' registrada. Enviada ao SBS Brasil ✓');
+  }
+  solicSetParecer(sid,v){ const o=Object.assign({},this.state.solicParecer||{}); o[sid]=v; this.setState({solicParecer:o}); }
+  solicitacoesModule(){
+    const area=this.solicRoleArea();
+    const recs=this.solicData();
+    const demo=!(this.state.solicRecs&&this.state.solicRecs.length);
+    const filtro=this.state.solicFiltro||'todos';
+    const withStatus=recs.map(s=>{ const dec=this.solicDecMap(s); return {s, dec, st:this.solicStatus(dec)}; });
+    const cont={aguardando_marketing:0,em_aprovacao:0,aprovada:0,reprovada:0};
+    withStatus.forEach(x=>{ cont[x.st]=(cont[x.st]||0)+1; });
+    const lista=(filtro==='todos'?withStatus:withStatus.filter(x=>x.st===filtro)).sort((a,b)=>String(b.s.criadoEm||'').localeCompare(String(a.s.criadoEm||'')));
+    const catCor=c=>({campanha:'#7c3aed',evento:'#0a6bd6',materiais:'#0c8a4e',outro:'#5c6b67'})[c]||'#5c6b67';
+    return this.wrap([
+      React.createElement('div',{key:'hero',style:{background:'linear-gradient(120deg,#0e433d,#0a322e)',borderRadius:16,padding:'18px 20px',display:'flex',gap:14,alignItems:'center'}},
+        React.createElement('div',{style:{width:40,height:40,borderRadius:11,background:'#4fd1be',color:'#0c3b37',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(this.icons().inbox)),
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{style:{font:'800 16px Archivo',color:'#fff'}},'Solicitações do SBS Brasil'),
+          React.createElement('div',{style:{font:'500 13px Manrope',color:'#a9c6b6'}},'Pedidos de vendedores, supervisores e gerentes regionais (campanhas, eventos, materiais e itens com custo). Marketing é o porteiro; depois seguem para Nacional, Inteligência e CEO.')),
+        area?React.createElement('span',{style:{font:'700 10px Manrope',color:'#0c3b37',background:'#4fd1be',padding:'5px 11px',borderRadius:20,flex:'none'}},'Você decide como: '+this.areaLabel(area)):React.createElement('span',{style:{font:'700 10px Manrope',color:'#fff',background:'#ffffff33',padding:'5px 11px',borderRadius:20,flex:'none'}},'Somente leitura'),
+        demo?React.createElement('span',{style:{font:'700 10px Manrope',color:'#0c3b37',background:'#ffd98a',padding:'5px 11px',borderRadius:20,flex:'none'}},'DEMONSTRAÇÃO'):null),
+      this.grid(4,16,this.kpiCards([
+        {label:'Aguardando Marketing',value:cont.aguardando_marketing+''},
+        {label:'Em aprovação',value:cont.em_aprovacao+''},
+        {label:'Aprovadas',value:cont.aprovada+''},
+        {label:'Reprovadas',value:cont.reprovada+''},
+      ])),
+      React.createElement('div',{key:'flt',style:{display:'flex',gap:8,flexWrap:'wrap'}},[['todos','Todas'],['aguardando_marketing','Aguardando Marketing'],['em_aprovacao','Em aprovação'],['aprovada','Aprovadas'],['reprovada','Reprovadas']].map(ch=>
+        React.createElement('button',{key:ch[0],onClick:()=>this.set({solicFiltro:ch[0]}),style:{border:'none',borderRadius:20,padding:'8px 15px',font:'700 12px Manrope',cursor:'pointer',background:filtro===ch[0]?'#0c3b37':'#eef1ee',color:filtro===ch[0]?'#fff':'#5c6b67'}},ch[1]))),
+      this.card([this.h('Fila de solicitações',lista.length+' solicitação(ões) · clique para analisar e decidir'),
+        lista.length?React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:2}},lista.map(({s,dec,st})=>{ const p=s.payload||{}; const sm=this.solicStatusMeta(st);
+          return React.createElement('div',{key:s.id,onClick:()=>this.set({solicView:s}),style:{display:'flex',alignItems:'center',gap:12,padding:'13px 8px',borderRadius:9,cursor:'pointer',borderBottom:'1px solid rgba(12,59,55,.06)'}},
+            React.createElement('span',{style:{width:9,height:9,borderRadius:9,background:catCor(p.categoria),flex:'none'}}),
+            React.createElement('div',{style:{flex:1,minWidth:0}},
+              React.createElement('div',{style:{font:'700 13.5px Manrope',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},s.titulo||p.titulo||('#'+this.solicSid(s))),
+              React.createElement('div',{style:{font:'500 11.5px Manrope',color:'#8a9a94'}},(p.categoria||'—')+' · '+(p.criado_por||'—')+(p.estado?(' · '+p.estado):'')+(p.custo?(' · '+p.custo):''))),
+            ['marketing','nacional','inteligencia','ceo'].map(a=>React.createElement('span',{key:a,title:this.areaLabel(a)+(dec[a]?(': '+dec[a]):': pendente'),style:{width:8,height:8,borderRadius:8,flex:'none',background:dec[a]==='aprovada'?'#0c8a4e':dec[a]==='reprovada'?'#c0392b':'#d7ddda'}})),
+            React.createElement('span',{style:{font:'700 10.5px Manrope',color:sm[1],background:sm[2],padding:'4px 10px',borderRadius:20,flex:'none'}},sm[0]));
+        })):React.createElement('div',{style:{padding:'40px',textAlign:'center',color:'#8a9a94',font:'500 14px Manrope'}},'Nenhuma solicitação neste filtro.')]),
+      this.solicViewModal(),
+    ]);
+  }
+  solicViewModal(){
+    const s=this.state.solicView; if(!s) return null;
+    const p=s.payload||{}; const sid=this.solicSid(s);
+    const dec=this.solicDecMap(s); const st=this.solicStatus(dec); const sm=this.solicStatusMeta(st);
+    const myArea=this.solicRoleArea();
+    const bloqueado=myArea && myArea!=='marketing' && dec.marketing!=='aprovada';
+    const linha=(rot,val)=>val?React.createElement('div',{key:rot,style:{display:'flex',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(12,59,55,.07)'}},
+      React.createElement('span',{style:{flex:'none',width:150,font:'700 12px Manrope',color:'#5c6b67'}},rot),
+      React.createElement('span',{style:{flex:1,font:'600 12.5px Manrope',color:'#0c3b37',whiteSpace:'pre-wrap',wordBreak:'break-word'}},val)):null;
+    const areaRow=React.createElement('div',{style:{display:'flex',gap:8,flexWrap:'wrap',margin:'14px 0'}},['marketing','nacional','inteligencia','ceo'].map(a=>{
+      const d=dec[a]; const col=d==='aprovada'?'#0c8a4e':d==='reprovada'?'#c0392b':'#8a9a94'; const bg=d==='aprovada'?'#e4f7ec':d==='reprovada'?'#fdeceb':'#eef1ee';
+      return React.createElement('div',{key:a,style:{flex:'1 1 120px',background:bg,borderRadius:10,padding:'10px 12px'}},
+        React.createElement('div',{style:{font:'700 11px Manrope',color:'#5c6b67'}},this.areaLabel(a)+(a==='marketing'?' (porteiro)':'')),
+        React.createElement('div',{style:{font:'800 13px Manrope',color:col,marginTop:2}},d?(d.charAt(0).toUpperCase()+d.slice(1)):'Pendente'),
+        dec['_p_'+a]?React.createElement('div',{style:{font:'500 11px Manrope',color:'#5c6b67',marginTop:3}},dec['_p_'+a]):null);
+    }));
+    const podeDecidir = myArea && !bloqueado;
+    const decisaoArea = myArea?dec[myArea]:null;
+    return React.createElement('div',{style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:70,display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'40px 20px',overflowY:'auto'},onClick:()=>this.set({solicView:null})},
+      React.createElement('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:18,width:600,maxWidth:'100%',boxShadow:'0 30px 80px rgba(0,0,0,.35)'}},
+        React.createElement('div',{style:{background:'#0c3b37',borderRadius:'18px 18px 0 0',padding:'18px 22px',display:'flex',alignItems:'flex-start',gap:12}},
+          React.createElement('div',{style:{flex:1,minWidth:0}},
+            React.createElement('div',{style:{font:'700 10.5px Manrope',color:'#8fd9cb',marginBottom:4}},'SOLICITAÇÃO · '+(p.categoria||'—').toUpperCase()+' · do SBS Brasil'),
+            React.createElement('div',{style:{font:'800 20px Archivo',color:'#fff',lineHeight:1.2}},s.titulo||p.titulo||('#'+sid))),
+          React.createElement('span',{style:{flex:'none',font:'700 10.5px Manrope',color:sm[1],background:sm[2],padding:'5px 11px',borderRadius:20}},sm[0])),
+        React.createElement('div',{style:{padding:'8px 22px 22px'}},
+          linha('Solicitante',(p.criado_por||'—')+(p.papel?(' ('+p.papel+')'):'')),
+          linha('Estado',p.estado),
+          linha('Item',p.item),
+          linha('Quantidade',p.quantidade),
+          linha('Custo',p.custo),
+          linha('Orçamento',p.orcamento),
+          linha('Público',p.publico),
+          linha('Data do evento',p.data_evento),
+          p.descricao?React.createElement('div',{style:{marginTop:12}},React.createElement('div',{style:{font:'700 12px Manrope',color:'#0c3b37',marginBottom:5}},'Justificativa'),React.createElement('div',{style:{font:'500 13px Manrope',color:'#3a4a46',lineHeight:1.55,whiteSpace:'pre-wrap',background:'#f7f9f7',borderRadius:10,padding:'12px 13px'}},p.descricao)):null,
+          React.createElement('div',{style:{marginTop:16,font:'700 12px Manrope',color:'#0c3b37'}},'Pareceres por área'),
+          areaRow,
+          myArea?React.createElement('div',{style:{marginTop:8,background:'#f7f9f7',borderRadius:12,padding:'14px'}},
+            React.createElement('div',{style:{font:'700 12.5px Manrope',color:'#0c3b37',marginBottom:8}},'Sua decisão como '+this.areaLabel(myArea)+(decisaoArea?(' — já registrou: '+decisaoArea):'')),
+            bloqueado?React.createElement('div',{style:{font:'600 12.5px Manrope',color:'#c26a00',background:'#fff4e2',borderRadius:9,padding:'10px 12px'}},'Aguardando o Marketing aprovar antes de você decidir (Marketing é o porteiro do fluxo).'):[
+              React.createElement('textarea',{key:'txt',value:(this.state.solicParecer&&this.state.solicParecer[sid])||'',onChange:e=>this.solicSetParecer(sid,e.target.value),placeholder:'Parecer (opcional)…',style:{width:'100%',minHeight:60,border:'1px solid #d7e2dc',borderRadius:9,padding:'9px 11px',font:'500 12.5px Manrope',color:'#0c3b37',outline:'none',resize:'vertical',boxSizing:'border-box'}}),
+              React.createElement('div',{key:'btns',style:{display:'flex',gap:10,marginTop:10}},
+                React.createElement('button',{onClick:()=>this.solicDecidir(s,'aprovada'),style:{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,background:'#0c8a4e',color:'#fff',border:'none',borderRadius:10,padding:'11px',font:'800 13px Archivo',cursor:'pointer'}},this.ic(this.icons().check),'Aprovar'),
+                React.createElement('button',{onClick:()=>this.solicDecidir(s,'reprovada'),style:{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,background:'#fff',color:'#c0392b',border:'1px solid #f0c4bf',borderRadius:10,padding:'11px',font:'800 13px Archivo',cursor:'pointer'}},'Reprovar'))]
+          ):React.createElement('div',{style:{marginTop:8,font:'500 12.5px Manrope',color:'#8a9a94'}},'Seu perfil acompanha, mas não decide neste fluxo.'),
+          React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',marginTop:18}},
+            React.createElement('button',{onClick:()=>this.set({solicView:null}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Fechar')))));
+  }
+  // ================= INTEGRAÇÃO SBS BRASIL ↔ PAINEL =================
+  intTipos(){ return ['vendas','vendedores','clientes','campanhas','pedidos','produtos','eventos']; }
+  intDemo(){
+    return [
+      {id:'ib1',sistema:'sbs-brasil',tipo:'vendas',ref:'V-8842',titulo:'Venda — Fazenda Santa Clara',resumo:'R$ 148.500 · Soja · MT',criadoEm:'2026-07-08T13:20:00Z',criadoPor:'SBS Brasil',payload:{cliente:'Fazenda Santa Clara',cnpj:'12.345.678/0001-90',uf:'MT',produto:'Soja SBS 8579 IPRO',qtd:250,valor:148500,consultor:'Marcos Lima'}},
+      {id:'ib2',sistema:'sbs-brasil',tipo:'vendedores',ref:'C-311',titulo:'Consultor — Marcos Lima',resumo:'Ativo · MT/GO · 42 vendas',criadoEm:'2026-07-08T11:05:00Z',criadoPor:'SBS Brasil',payload:{nome:'Marcos Lima',regiao:'Centro-Oeste',estados:['MT','GO'],vendasMes:42,faturamento:1240000}},
+      {id:'ib3',sistema:'sbs-brasil',tipo:'clientes',ref:'CLI-9027',titulo:'Cliente — Coop. Agro Vale',resumo:'Cooperativa · PR · potencial alto',criadoEm:'2026-07-07T16:40:00Z',criadoPor:'SBS Brasil',payload:{nome:'Coop. Agro Vale',tipo:'Cooperativa',uf:'PR',potencial:'Alto',ultimaCompra:'2026-06-12'}},
+      {id:'ib4',sistema:'sbs-brasil',tipo:'pedidos',ref:'PED-5510',titulo:'Pedido — Grupo Terra Boa',resumo:'R$ 92.300 · aguardando faturamento',criadoEm:'2026-07-06T09:15:00Z',criadoPor:'SBS Brasil',payload:{cliente:'Grupo Terra Boa',valor:92300,itens:8,status:'Aguardando faturamento',uf:'MS'}},
+    ];
+  }
+  intData(){ const r=this.state.integracaoRecs; return (r&&r.length)?r:this.intDemo(); }
+  intFmtData(iso){ try{ const d=new Date(iso); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return '—'; } }
+  intLocalFonte(tipo){
+    switch(tipo){
+      case 'vendas': return (this.state.vendas||[]).map(v=>({ref:String(v.id||v.ref||''),titulo:'Venda — '+(v.cliente||v.lead||'—'),resumo:(v.valor?this.brl(v.valor):'')+' · '+(v.uf||v.estado||''),payload:v}));
+      case 'vendedores': return (this.state.vendedoresReal||[]).map(v=>({ref:String(v.id||''),titulo:'Vendedor — '+(v.nome||'—'),resumo:(v.regiao||'')+' · '+(v.uf||''),payload:v}));
+      case 'clientes': return (this.state.leads||[]).map(l=>({ref:String(l.id||''),titulo:'Lead — '+(l.nome||l.prop||'—'),resumo:(l.status||'')+' · '+(l.potencial||''),payload:l}));
+      case 'campanhas': return (this.allCampaigns()||[]).map(c=>({ref:String(c.id||''),titulo:'Campanha — '+(c.nome||'—'),resumo:(c.periodo||'')+' · '+(c.canal||''),payload:c}));
+      case 'pedidos': return (this.state.orcamentos||[]).map(o=>({ref:String(o.id||''),titulo:'Orçamento — '+(o.leadNome||'—'),resumo:(o.status||''),payload:o}));
+      case 'produtos': return (this.state.catalogo||[]).map(p=>({ref:String(p.id||''),titulo:'Produto — '+(p.nome||'—'),resumo:(p.cultura||'')+' · '+(p.preco?this.brl(p.preco):''),payload:p}));
+      case 'eventos': return (this.evAll()||[]).map(e=>({ref:String(e.id||''),titulo:'Evento — '+(e.nome||'—'),resumo:(e.cidade||'')+(e.uf?('/'+e.uf):''),payload:e}));
+      default: return [];
+    }
+  }
+  intEnviar(tipo){
+    const fonte=this.intLocalFonte(tipo).slice(0,50);
+    if(!fonte.length){ this.showToast('Nada em "'+tipo+'" para enviar ainda'); return; }
+    const meta=this.roleMeta()[this.state.role]||{};
+    const novos=fonte.map((f,i)=>({ id:'io'+Date.now()+'_'+i, sistema:'painel-sbs', tipo, ref:f.ref, titulo:f.titulo, resumo:f.resumo, payload:f.payload, criadoEm:new Date().toISOString(), criadoPor:meta.name||this.state.role }));
+    const base=(this.state.integracaoRecs&&this.state.integracaoRecs.length)?this.state.integracaoRecs:this.intDemo();
+    this.setState({integracaoRecs:[...novos,...base]});
+    novos.forEach(n=>{ try{ this.apiSend('integracao','POST',{sistema:n.sistema,tipo:n.tipo,ref:n.ref,titulo:n.titulo,resumo:n.resumo,payload:n.payload,criadoPor:n.criadoPor}).catch(()=>{}); }catch(e){} });
+    this.showToast(novos.length+' registro(s) de "'+tipo+'" enviado(s) ao SBS Brasil ✓');
+  }
+  integracaoModule(){
+    const recs=this.intData();
+    const filtro=this.state.intFilter||'todos';
+    const recebidos=recs.filter(r=>r.sistema==='sbs-brasil');
+    const enviados=recs.filter(r=>r.sistema==='painel-sbs');
+    const tiposPresentes=Array.from(new Set(recs.map(r=>r.tipo)));
+    const lista=(filtro==='todos'?recs:recs.filter(r=>r.tipo===filtro)).slice().sort((a,b)=>String(b.criadoEm||'').localeCompare(String(a.criadoEm||'')));
+    const cor=s=>s==='sbs-brasil'?'#2b6cb0':'#12b39a';
+    const demo=!(this.state.integracaoRecs&&this.state.integracaoRecs.length);
+    return this.wrap([
+      React.createElement('div',{key:'hero',style:{background:'linear-gradient(120deg,#0e433d,#0a322e)',borderRadius:16,padding:'18px 20px',display:'flex',gap:14,alignItems:'center'}},
+        React.createElement('div',{style:{width:40,height:40,borderRadius:11,background:'#4fd1be',color:'#0c3b37',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(this.icons().share)),
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{style:{font:'800 16px Archivo',color:'#fff'}},'Integração · Painel SBS ↔ SBS Brasil'),
+          React.createElement('div',{style:{font:'500 13px Manrope',color:'#a9c6b6'}},'Os dois sistemas compartilham o mesmo banco (Cloudflare + Supabase). O que um grava, o outro lê aqui — em tempo real.')),
+        demo?React.createElement('span',{style:{font:'700 10px Manrope',color:'#0c3b37',background:'#ffd98a',padding:'5px 11px',borderRadius:20,flex:'none'}},'MODO DEMONSTRAÇÃO'):React.createElement('span',{style:{font:'700 10px Manrope',color:'#fff',background:'#12b39a',padding:'5px 11px',borderRadius:20,flex:'none'}},'CONECTADO')),
+      this.grid(4,16,this.kpiCards([
+        {label:'Recebidos do SBS Brasil',value:recebidos.length+''},
+        {label:'Enviados deste painel',value:enviados.length+''},
+        {label:'Tipos de dado',value:tiposPresentes.length+''},
+        {label:'Último recebido',value:recebidos.length?this.intFmtData(recebidos.slice().sort((a,b)=>String(b.criadoEm||'').localeCompare(String(a.criadoEm||'')))[0].criadoEm).split(' ')[0]:'—'},
+      ])),
+      this.card([this.h('Enviar dados para o SBS Brasil','Publica no barramento compartilhado — aparece lá no outro sistema'),
+        React.createElement('div',{style:{display:'flex',gap:8,flexWrap:'wrap'}},this.intTipos().map(t=>{
+          const n=this.intLocalFonte(t).length;
+          return React.createElement('button',{key:t,onClick:()=>this.intEnviar(t),disabled:!n,style:{display:'flex',alignItems:'center',gap:7,background:n?'#eafff9':'#f2f4f2',border:'1px solid '+(n?'#bfeee2':'rgba(12,59,55,.1)'),color:n?'#0B6B61':'#b0bdb8',borderRadius:10,padding:'9px 14px',font:'700 12.5px Manrope',cursor:n?'pointer':'default'}},
+            this.ic(this.icons().share),t.charAt(0).toUpperCase()+t.slice(1),React.createElement('span',{style:{font:'700 11px Manrope',color:n?'#12b39a':'#c3ccc8'}},'('+n+')'));
+        }))]),
+      React.createElement('div',{key:'flt',style:{display:'flex',gap:8,flexWrap:'wrap'}},[['todos','Todos']].concat(this.intTipos().map(t=>[t,t.charAt(0).toUpperCase()+t.slice(1)])).map(ch=>
+        React.createElement('button',{key:ch[0],onClick:()=>this.set({intFilter:ch[0]}),style:{border:'none',borderRadius:20,padding:'8px 15px',font:'700 12px Manrope',cursor:'pointer',background:filtro===ch[0]?'#0c3b37':'#eef1ee',color:filtro===ch[0]?'#fff':'#5c6b67'}},ch[1]))),
+      this.card([this.h('Registros no barramento',lista.length+' registro(s) · clique para ver o conteúdo completo'),
+        lista.length?React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:2}},lista.map(r=>
+          React.createElement('div',{key:r.id,onClick:()=>this.set({intView:r}),style:{display:'flex',alignItems:'center',gap:12,padding:'12px 8px',borderRadius:9,cursor:'pointer',borderBottom:'1px solid rgba(12,59,55,.06)'}},
+            React.createElement('span',{style:{width:9,height:9,borderRadius:9,background:cor(r.sistema),flex:'none'}}),
+            React.createElement('div',{style:{flex:1,minWidth:0}},
+              React.createElement('div',{style:{font:'700 13px Manrope',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},r.titulo||('#'+r.ref)),
+              React.createElement('div',{style:{font:'500 11.5px Manrope',color:'#8a9a94'}},r.resumo||'')),
+            React.createElement('span',{style:{font:'700 10px Manrope',color:cor(r.sistema),background:cor(r.sistema)+'18',padding:'3px 9px',borderRadius:20,flex:'none'}},r.sistema==='sbs-brasil'?'SBS Brasil':'Painel SBS'),
+            React.createElement('span',{style:{font:'700 10px Manrope',color:'#5c6b67',background:'#eef1ee',padding:'3px 9px',borderRadius:20,flex:'none'}},r.tipo),
+            React.createElement('span',{style:{font:'500 11px Manrope',color:'#8a9a94',flex:'none'}},this.intFmtData(r.criadoEm))))
+        ):React.createElement('div',{style:{padding:'40px',textAlign:'center',color:'#5c6b67',font:'500 14px Manrope'}},'Nenhum registro neste filtro.')]),
+      this.intViewModal(),
+    ]);
+  }
+  intViewModal(){
+    const r=this.state.intView; if(!r) return null;
+    const rows=Object.entries(r.payload||{});
+    return React.createElement('div',{style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:60,display:'flex',alignItems:'center',justifyContent:'center',padding:20},onClick:()=>this.set({intView:null})},
+      React.createElement('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:18,padding:26,width:520,maxWidth:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:'0 30px 80px rgba(0,0,0,.35)'}},
+        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:4}},
+          React.createElement('span',{style:{font:'700 10px Manrope',color:r.sistema==='sbs-brasil'?'#2b6cb0':'#12b39a',background:(r.sistema==='sbs-brasil'?'#2b6cb0':'#12b39a')+'18',padding:'3px 9px',borderRadius:20}},r.sistema==='sbs-brasil'?'SBS Brasil':'Painel SBS'),
+          React.createElement('span',{style:{font:'700 10px Manrope',color:'#5c6b67',background:'#eef1ee',padding:'3px 9px',borderRadius:20}},r.tipo)),
+        React.createElement('div',{style:{font:'800 18px Archivo',color:'#0c3b37',marginBottom:2}},r.titulo||('#'+r.ref)),
+        React.createElement('div',{style:{font:'500 12px Manrope',color:'#8a9a94',marginBottom:16}},'Recebido em '+this.intFmtData(r.criadoEm)+(r.criadoPor?(' · '+r.criadoPor):'')),
+        rows.length?React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:2}},rows.map(([k,v],i)=>
+          React.createElement('div',{key:i,style:{display:'flex',gap:12,padding:'9px 0',borderBottom:i<rows.length-1?'1px solid rgba(12,59,55,.07)':'none'}},
+            React.createElement('span',{style:{flex:'none',width:150,font:'700 12px Manrope',color:'#5c6b67'}},k),
+            React.createElement('span',{style:{flex:1,font:'600 12.5px Manrope',color:'#0c3b37',wordBreak:'break-word'}},typeof v==='object'?JSON.stringify(v):String(v))))
+        ):React.createElement('div',{style:{font:'500 13px Manrope',color:'#8a9a94'}},'Sem payload detalhado.'),
+        React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',marginTop:20}},
+          React.createElement('button',{onClick:()=>this.set({intView:null}),style:{background:'#0c3b37',color:'#fff',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',cursor:'pointer'}},'Fechar')))); 
+  }
   gerCatalogo(){
     const cat=this.state.catalogo||[];
     return this.wrap([
       React.createElement('div',{key:'note',style:{display:'flex',gap:10,alignItems:'flex-start',background:'#eafff9',borderRadius:13,padding:'14px 16px',font:'500 13px Manrope',color:'#0c3b37',lineHeight:1.5}},
         React.createElement('span',{style:{color:'#12b39a',flex:'none',marginTop:1}},this.ic(this.icons().cube)),
         'Catálogo único de produtos da SBS, com preço de tabela e tamanho do saco. Ao criar uma campanha você escolhe destes produtos e define o preço específico daquela campanha — é essa tabela que o vendedor vê no app.'),
-      React.createElement('div',{key:'hd',style:{display:'flex',alignItems:'center',gap:12}},
+      React.createElement('div',{key:'hd',style:{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
         React.createElement('div',{style:{font:'700 15px Archivo',color:'#0c3b37',flex:1}},cat.length+' produto(s) no catálogo'),
         cat.length>this.shownCount('catalogo')?React.createElement('button',{onClick:()=>this.carregarMais('catalogo'),style:{background:'#e7efe9',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer'}},'+ '+(cat.length-this.shownCount('catalogo'))+' — carregar mais'):null,
+        React.createElement('button',{onClick:()=>this.exportarCatalogoCSV(),style:{background:'#eef1ee',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 14px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().download),'Exportar CSV'),
+        React.createElement('button',{onClick:()=>{const i=document.getElementById('cat-import-file');if(i)i.click();},style:{background:'#eef1ee',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 14px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().file),'Importar CSV'),
+        React.createElement('input',{id:'cat-import-file',type:'file',accept:'.csv,text/csv',style:{display:'none'},onChange:e=>this.importarCatalogoCSV(e.target.files)}),
         React.createElement('button',{onClick:()=>this.novoProduto(),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().plus),'Adicionar produto')),
+      React.createElement('div',{key:'imphint',style:{font:'500 12px Manrope',color:'#8a9a94',marginTop:-4}},
+        'Importe uma planilha CSV com colunas: nome, cultura, saco, preco. ',
+        React.createElement('a',{href:'#',onClick:e=>{e.preventDefault();this.baixarModeloCatalogo();},style:{color:'#12b39a',fontWeight:700}},'Baixar modelo de planilha')),
       cat.length?this.grid(3,16,cat.slice(0,this.shownCount('catalogo')).map(p=>React.createElement('div',{key:p.id,style:{background:'#fff',border:'1px solid rgba(12,59,55,.08)',borderRadius:16,overflow:'hidden',boxShadow:'0 1px 2px rgba(12,59,55,.04)'}},
         React.createElement('div',{style:{height:120,background:'#eef1ee',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}},
           p.foto?React.createElement('img',{src:p.foto,style:{width:'100%',height:'100%',objectFit:'cover'}}):React.createElement('span',{style:{color:'#a9c6b6'}},this.ic(this.icons().cube))),
@@ -4476,11 +5015,11 @@ class Component extends DCLogic {
   navDefs(){
     const I=this.icons();
     return {
-      marketing:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['campanhas','Campanhas',I.campaign],['catalogo','Catálogo & materiais',I.cube],['__sec','Apps & parceiros'],['compartilhar','Compartilhar app',I.share],['parceiros','Apps de parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Inteligência & apoio'],['inteligencia','Inteligência',I.bulb],['assistente','Assistente IA',I.activity],['clima','Clima & tempo',I.cloud],['ranking','Ranking',I.trophy],['notificacoes','Notificações',I.bell],['historico','Histórico',I.history]],
+      marketing:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['campanhas','Campanhas',I.campaign],['catalogo','Catálogo & materiais',I.cube],['__sec','Apps & parceiros'],['compartilhar','Compartilhar app',I.share],['parceiros','Apps de parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Inteligência & apoio'],['inteligencia','Inteligência',I.bulb],['assistente','Assistente IA',I.activity],['ranking','Ranking',I.trophy],['notificacoes','Notificações',I.bell],['historico','Histórico',I.history],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
       _mkt_old:[['dash','Dashboard',I.dash],['agenda','Agenda',I.calendar],['eventos','Eventos',I.event],['cadastro','Cadastrar evento',I.plus],['ranking','Ranking',I.trophy],['comparativo','Comparativo',I.compare],['historico','Histórico',I.history]],
-      gerente:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['campanhas','Campanhas',I.campaign],['pipeline','Pipeline',I.funnel],['__sec','Metas & desempenho'],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['evolucao','Evolução',I.chart],['__sec','Produtos & parceiros'],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['notificacoes','Notificações',I.bell]],
-      ceo:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Estratégia'],['mercado','Mercado & decisão',I.activity],['indicadores','Indicadores',I.gauge],['evolucao','Evolução',I.chart],['comparativos','Comparativos',I.compare],['geo','Estados & regiões',I.map],['__sec','Estrutura'],['parceiros','Parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['produtos','Produtos',I.cube],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud]],
-      mercado:[['__sec','Principal'],['dash','Visão geral',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Mercado'],['cotacoes','Cotações',I.chart],['financeiro','Ações & bolsa',I.activity],['concorrentes','Concorrentes',I.gauge],['regioes','Regiões & mercado',I.map],['tendencias','Tendências',I.bulb],['panorama','Panorama setorial',I.cube],['__sec','Análise & fontes'],['fontes','Fontes & canais',I.radar],['mensuracao','Mensuração & ROI',I.activity],['assistente','Assistente IA',I.bulb],['insights','Insights de vendas',I.target],['__sec','Apps & apoio'],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['clima','Clima & tempo',I.cloud]],
+      gerente:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['campanhas','Campanhas',I.campaign],['pipeline','Pipeline',I.funnel],['__sec','Metas & desempenho'],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['evolucao','Evolução',I.chart],['__sec','Produtos & parceiros'],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['notificacoes','Notificações',I.bell],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
+      ceo:[['__sec','Principal'],['dash','Dashboard',I.dash],['mapaequipe','Mapa da equipe',I.map],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Estratégia'],['mercado','Mercado & decisão',I.activity],['indicadores','Indicadores',I.gauge],['evolucao','Evolução',I.chart],['comparativos','Comparativos',I.compare],['geo','Estados & regiões',I.map],['__sec','Estrutura'],['parceiros','Parceiros',I.share],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
+      mercado:[['__sec','Principal'],['dash','Visão geral',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Mercado'],['cotacoes','Cotações',I.chart],['financeiro','Ações & bolsa',I.activity],['concorrentes','Concorrentes',I.gauge],['regioes','Regiões & mercado',I.map],['tendencias','Tendências',I.bulb],['panorama','Panorama setorial',I.cube],['__sec','Análise & fontes'],['fontes','Fontes & canais',I.radar],['mensuracao','Mensuração & ROI',I.activity],['assistente','Assistente IA',I.bulb],['insights','Insights de vendas',I.target],['__sec','Apps & apoio'],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['clima','Clima & tempo',I.cloud],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
       ti:[['governanca','Governança dos painéis',I.gauge],['status','Status & saúde',I.activity],['acessos','Acessos & perfis',I.users],['auditoria','Auditoria (LGPD)',I.target]],
     };
   }
@@ -4662,16 +5201,30 @@ class Component extends DCLogic {
   iaExcluirConversa(id){ const list=(this.state.iaConvs||[]).filter(c=>c.id!==id); const act=this.state.iaActiveId===id?null:this.state.iaActiveId; this.setState({iaConvs:list,iaActiveId:act}); this.showToast('Conversa excluída'); }
   iaUpdateConv(id,patch){ const list=(this.state.iaConvs||[]).map(c=>c.id===id?Object.assign({},c,patch):c); this.setState({iaConvs:list}); }
   iaResumoConversa(conv){ const ias=((conv&&conv.msgs)||[]).filter(m=>m.r==='ia'); return ias.length?ias[ias.length-1].t:(((conv&&conv.msgs)||[]).map(m=>m.t).join('\n\n')); }
+  iaEstudoCompleto(conv){
+    const msgs=((conv&&conv.msgs)||[]).filter(m=>m.t&&m.t.trim());
+    if(!msgs.length) return '';
+    const titulo=(conv.titulo&&conv.titulo!=='Nova conversa')?conv.titulo:'Estudo do Assistente IA';
+    const linhas=['ESTUDO GERADO NO ASSISTENTE IA — '+titulo,'—'.repeat(40),''];
+    msgs.forEach(m=>{
+      const quem=m.r==='user'?'▸ SOLICITAÇÃO':'◆ ANÁLISE IA';
+      linhas.push(quem); linhas.push(String(m.t).trim()); linhas.push('');
+    });
+    const anexos=((conv.anexos)||[]).map(a=>a.name).filter(Boolean);
+    if(anexos.length){ linhas.push('ANEXOS DA CONVERSA: '+anexos.join(', ')); }
+    return linhas.join('\n').trim();
+  }
   iaGerarEvento(){
     const conv=this.iaActiveConv(); if(!conv||!((conv.msgs)||[]).length){ this.showToast('Abra ou crie uma conversa primeiro'); return; }
     const nome=(conv.titulo&&conv.titulo!=='Nova conversa')?conv.titulo:'Evento do estudo IA';
-    const pf={ 'ev-nome':String(nome).slice(0,60), 'ev-obj':String(this.iaResumoConversa(conv)||'').slice(0,400), 'ev-seg':'Evento' };
+    const pf={ 'ev-nome':String(nome).slice(0,60), 'ev-obj':String(this.iaResumoConversa(conv)||'').slice(0,200), 'ev-estudo':this.iaEstudoCompleto(conv), 'ev-seg':'Evento' };
     this.setState({ evNovo:true, evMsg:'', evPrefill:pf, evDemandaOrigem:null, evDemandaNome:null, evIAorigem:conv.id });
   }
   iaGerarDemanda(){
     const conv=this.iaActiveConv(); if(!conv||!((conv.msgs)||[]).length){ this.showToast('Abra ou crie uma conversa primeiro'); return; }
     const meta=this.roleMeta()[this.state.role]||{};
-    this._nd={ tipo:(this.state.role==='mercado'?'Estudo de mercado':'Campanha'), destino:(this.state.role==='mercado'?'Inteligência':'Marketing'), solic:meta.user||'', desc:String(this.iaResumoConversa(conv)||'').slice(0,600), prio:'Média' };
+    const nome=(conv.titulo&&conv.titulo!=='Nova conversa')?conv.titulo:'';
+    this._nd={ tipo:(this.state.role==='mercado'?'Estudo de mercado':'Campanha'), destino:(this.state.role==='mercado'?'Inteligência':'Marketing'), solic:meta.user||'', titulo:nome, desc:this.iaEstudoCompleto(conv), prio:'Média' };
     this.setState({ page:'demandas', demandaNew:true, iaDemandaOrigem:conv.id });
   }
   // ================= BIBLIOTECA (imagens e documentos compartilhados) =================
