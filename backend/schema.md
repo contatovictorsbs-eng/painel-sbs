@@ -133,7 +133,10 @@ o produto está na campanha ativa.
 ### campanhas
 Campanha comercial. Meta é POR CAMPANHA (aparece a todos os vendedores). Inclui
 premiação por colocação e a tabela de produtos com preço específico da campanha.
-| id, nome, gtn, inicio(date), fim(date), meta(R$), canal, status(Ativa/Encerrada), premios[{pos,premio,bonus}], produtos[{produtoId,preco}] |
+Toda campanha é **direcionada** (`destino`): ou a um **evento de parceira** (`destino:'evento'`,
+com `evento`/`app` — vendedores daquele evento) ou à **força de vendas comercial** do SBS Brasil
+(`destino:'comercial'`, com `publico` = todos|regionais|supervisores — sincroniza via `integracao`).
+| id, nome, gtn, inicio(date), fim(date), meta(R$), canal, status(Ativa/Encerrada), destino('evento'/'comercial'), evento, app, publico('todos'/'regionais'/'supervisores'\|null), premios[{pos,premio,bonus}], produtos[{produtoId,preco}] |
 
 ### governanca (TI)
 Controle da área de Tecnologia sobre os painéis (persistido no cliente e/ou coleção).

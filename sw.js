@@ -1,7 +1,7 @@
 /* SBS Green Seeds — Service Worker (habilita instalação PWA + funciona offline no shell).
    Estratégia: network-first para navegação (sempre pega o HTML novo do deploy),
    cache-first para assets estáticos. Chamadas /api/* NUNCA são cacheadas. */
-const CACHE = 'sbs-v4';
+const CACHE = 'sbs-v5';
 const SHELL = ['./', './index.html'];
 
 self.addEventListener('install', (e) => {
