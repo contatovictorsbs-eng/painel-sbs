@@ -316,7 +316,10 @@ class Component extends DCLogic {
     // Limpeza única para go-live: descarta estado de exemplo/teste acumulado no navegador.
     try{ const DV='2026-07-10-limpo'; if(localStorage.getItem('sbs_dataver')!==DV){ localStorage.removeItem('sbs_estado'); localStorage.setItem('sbs_dataver',DV); } }catch(e){}
     try{ const h=(location.hash||'').replace('#','').toLowerCase(); const mm=h.match(/^app(?:-(\d+))?$/);
-      if(mm){ const pid=mm[1]?+mm[1]:null; const pt=pid?(this.state.partners.find(p=>p.id===pid)||null):null; this.setState({role:'app',prevRole:'marketing',prevPage:'dash',appPage:'login',activePartner:pt}); }
+      if(mm){ const pid=mm[1]?+mm[1]:null; const pt=pid?(this.state.partners.find(p=>p.id===pid)||null):null;
+        let appPg='login', appNome=null;
+        try{ const as=JSON.parse(localStorage.getItem('sbs_app_sessao')||'null'); if(as&&as.usuario){ appPg='home'; appNome=as.nome||null; } }catch(e){}
+        this.setState({role:'app',prevRole:'marketing',prevPage:'dash',appPage:appPg,activePartner:pt,appVendedorNome:appNome||this.state.appVendedorNome}); }
       else { try{ const s=JSON.parse(localStorage.getItem('sbs_sessao')||'null'); if(s&&s.role){ if(s.isAdmin){ this.setState({auth:'admin',isAdmin:true,role:'marketing',page:'dash'}); } else { this.setState({auth:s.role,isAdmin:false,role:s.role,page:(this.roleMeta()[s.role]||{}).first||'dash'}); } } }catch(e){} }
     }catch(e){}
     try{ const isAppHash=/^app(?:-(\d+))?$/.test((location.hash||'').replace('#','').toLowerCase());
@@ -2734,7 +2737,8 @@ class Component extends DCLogic {
         this.isMobileUA()?null:React.createElement('div',{style:{font:'600 11px Manrope',color:pt?'#ffe0c2':'#4fd1be'}},(pt?('SBS × '+pt.nome+' · '):'')+eyebrow),
         React.createElement('div',{style:{font:'800 17px Archivo',marginTop:2}},p==='home'?('Olá, '+((this.state.appVendedorNome||'Vendedor').split(' ')[0])+' 👋'):(p==='venda'?'Registrar venda':(p==='leads'?'Leads capturados':(p==='orcamentos'?'Orçamentos':(p==='avisos'?'Avisos da central':(p==='politica'?'Política & Manual':(p==='materiais'?'Ficha técnica & materiais':(p==='ranking'?'Ranking & trilha':(p==='campcom'?'Campanhas comerciais':'Check-in da equipe')))))))))),
       React.createElement('button',{onClick:()=>this.set({appPage:'avisos'}),style:{position:'relative',width:38,height:38,borderRadius:11,background:'rgba(255,255,255,.12)',border:'none',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flex:'none'}},this.ic(this.icons().bell),
-        unread?React.createElement('span',{style:{position:'absolute',top:6,right:7,minWidth:15,height:15,padding:'0 3px',borderRadius:8,background:'#e0714f',color:'#fff',font:'700 9px Manrope',display:'flex',alignItems:'center',justifyContent:'center',border:'1.5px solid #0c3b37'}},unread):null));
+        unread?React.createElement('span',{style:{position:'absolute',top:6,right:7,minWidth:15,height:15,padding:'0 3px',borderRadius:8,background:'#e0714f',color:'#fff',font:'700 9px Manrope',display:'flex',alignItems:'center',justifyContent:'center',border:'1.5px solid #0c3b37'}},unread):null),
+      React.createElement('button',{onClick:()=>this.doAppLogout(),title:'Sair',style:{width:38,height:38,borderRadius:11,background:'rgba(255,255,255,.12)',border:'none',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flex:'none'}},this.ic(['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4','M16 17l5-5-5-5','M21 12H9'])));
     let body;
     if(p==='home'){
       const R=this.appRankingData(); const meR=R.me||{fat:0,pos:'—'}; const realizado=meR.fat; const meta=R.meta; const falta=Math.max(meta-realizado,0); const pctMeta=meta?Math.min(Math.round(realizado/meta*100),100):0; const premio1=(R.premios[0]&&R.premios[0][1])||'Prêmio 1º lugar';
@@ -4910,6 +4914,7 @@ class Component extends DCLogic {
     if(achado&&achado.nome) nome=achado.nome;
     else if(usuario){ nome=usuario.charAt(0).toUpperCase()+usuario.slice(1); }
     this.setState({appVendedorNome:nome});
+    try{ localStorage.setItem('sbs_app_sessao', JSON.stringify({usuario, nome, ptId:(this.state.activePartner&&this.state.activePartner.id)||null, ts:Date.now()})); }catch(e){}
     if(!Array.isArray(base)||!base.length) return;
     const now=new Date().toISOString();
     const upd=base.map(v=>((v.usuario&&usuario&&v.usuario.toLowerCase()===usuario.toLowerCase())||(v.nome&&usuario&&v.nome.toLowerCase()===usuario.toLowerCase()))
@@ -4944,6 +4949,7 @@ class Component extends DCLogic {
     const al={id:Date.now()+1,tipo:'cadastro',titulo:'Novo vendedor cadastrado',texto:dados.nome+' concluiu o cadastro pelo '+origem+'. Revise em Vendedores: quem cadastrou, se já fez login e se precisa redefinir a senha.',data:'Agora',areas:'Marketing · Gerência Nacional · Inteligência',page:'vendedores'};
     this.setState({ vendedoresReal:[novoVend,...base], vendNovos:(this.state.vendNovos||0)+1, appVendedorNome:dados.nome,
       alerts:[al,...(this.state.alerts||[])], appPage:'tour', tourStep:0 });
+    try{ localStorage.setItem('sbs_app_sessao', JSON.stringify({usuario:(dados.usuario||dados.nome), nome:dados.nome, ptId:(this.state.activePartner&&this.state.activePartner.id)||null, ts:Date.now()})); }catch(e){}
     try{ fetch('/api/app-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({acao:'cadastro'},dados))})
       .then(r=>r.json()).then(j=>{ if(j&&j.data&&j.data.token){ try{localStorage.setItem('sbs_app_token',j.data.token);}catch(e){} } }).catch(()=>{}); }catch(e){}
     try{ this.apiSend('vendedores','POST',novoVend).catch(()=>{}); }catch(e){}
@@ -5271,6 +5277,7 @@ class Component extends DCLogic {
   openEvent(id){ this.setState({eventId:id,page:'evento',evTab:'geral'}); }
   goArquitetura(){ this.setState({page:'arquitetura'}); }
   enterApp(){ this.setState({prevRole:this.state.role,prevPage:this.state.page,role:'app',appPage:'login'}); }
+  doAppLogout(){ try{ localStorage.removeItem('sbs_app_sessao'); localStorage.removeItem('sbs_app_token'); }catch(e){} this.setState({appPage:'login',appVendedorNome:null}); this.showToast('Sessão encerrada'); }
   exitApp(){ this.setState({role:this.state.prevRole||'marketing',page:this.state.prevPage||'dash',activePartner:null}); }
   contarTeste(){
     let n=0; const cols=['leads','orcamentos','appVendedores','campaigns','catalogo'];

@@ -8,7 +8,7 @@
    a documentação se atualiza sozinha a partir deste ponto único.
    =========================================================== */
 window.SBS_MANIFEST = {
-  versao: '1.60.0',
+  versao: '1.61.0',
   atualizadoEm: '2026-07-10',
 
   // ---- Perfis de acesso ----
@@ -124,6 +124,7 @@ window.SBS_MANIFEST = {
 
   // ---- Changelog (mais recente no topo) ----
   changelog: [
+    { versao:'1.61.0', data:'2026-07-10', itens:['APP DO VENDEDOR — login persistente: ao atualizar o app (refresh/reabrir) o vendedor CONTINUA logado; a sessão (sbs_app_sessao) só é encerrada ao tocar no botão Sair (ícone de saída no topo do app). Restaura nome e tela inicial automaticamente.'] },
     { versao:'1.60.0', data:'2026-07-10', itens:['GO-LIVE / LIMPEZA — sistema zerado para uso real: removidos todos os dados de exemplo ("TESTE —") do estado inicial e das coleções demo; estado salvo no navegador é descartado uma vez (sbs_dataver) e cache do Service Worker subiu para sbs-v5. Dashboards passam a mostrar vazio até chegarem dados reais (blindados contra listas vazias).','PRODUTOS POR PARCEIRO — passa a listar o CATÁLOGO COMPLETO real da SBS (state.catalogo); cada produto habilitado mostra se está Na campanha (faz parte da campanha do evento da parceira) ou Fora da campanha.','APPS DE PARCEIROS — botão "Excluir app" em cada card, com modal de confirmação (dados já capturados permanecem).','PERFORMANCE (Gerente) — removidos os cards com números fixos/ilustrativos (Conversão por etapa e Faturamento por canal); ficam só os orientados a dados reais.'] },
     { versao:'1.59.0', data:'2026-07-10', itens:['CAMPANHAS COMERCIAIS NO APP — o app do SBS (sem parceira) passa a mostrar as campanhas direcionadas à força comercial: novo card "Campanhas comerciais" no início e tela dedicada (appPage "campcom") com período, meta, público (todos/regionais/supervisores), produtos com preço de campanha e premiação. Lê de /api/campanhas (filtra destino=comercial e status Ativa); o card só aparece no app próprio SBS (não nos apps co-branded de parceira, que continuam mostrando só a campanha do evento).'] },
     { versao:'1.58.0', data:'2026-07-10', itens:['CAMPANHA DIRECIONADA — ao criar/editar uma campanha, escolhe-se o destino: App de eventos (vendedores de uma parceira/evento) OU Força comercial (regionais e supervisores do SBS Brasil). Para o comercial há seletor de público (todos/regionais/supervisores) e a campanha é sincronizada ao outro sistema pelo barramento (tipo "campanha"). Novos campos: destino, publico. Card da campanha mostra o destino.','App de eventos deixou de ficar fixo em "Agrishow": resolve o evento ativo com campanha e reflete no home/ranking/produtos.','Botão Editar da campanha abre o modal já preenchido e salva como atualização (não duplica).','Tag verde de localização oculta no app quando aberto no celular.'] }, → GERENTE NACIONAL — o Painel lê cotações/pedidos de desconto do barramento (app do vendedor e app de parceiro) e as mostra na fila de aprovação; ao decidir, devolve "cotacao-status" ao app para notificar o vendedor. Guia sbs-brasil-integracao/COTACOES-App-para-Painel.md.','Som de alerta 100% removido (função silenciosa) e cache do Service Worker atualizado (sbs-v4) para forçar a versão nova.'] },
