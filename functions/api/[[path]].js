@@ -119,6 +119,46 @@ async function hIntegracao(event){
   } catch (e) { return fail(e.message, 500); }
 }
 
+async function hStorage(event){
+  const H = { 'content-type': 'application/json' };
+  const SB = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+  const KEY = process.env.SUPABASE_SERVICE_KEY || '';
+  const BUCKET = 'materiais';
+  if (event.httpMethod !== 'POST') return { statusCode:405, headers:H, body: JSON.stringify({ ok:false, erro:'Método não suportado' }) };
+  // Sem Supabase configurado: devolve não-configurado (o front cai no base64/demonstração).
+  if (!SB || !KEY) return { statusCode:200, headers:H, body: JSON.stringify({ ok:true, data:{ configurado:false } }) };
+  try {
+    const b = JSON.parse(event.body || '{}');
+    let dataUrl = b.dataUrl || '';
+    const nome = (b.nome || ('arquivo-' + Date.now())).replace(/[^a-zA-Z0-9._-]/g, '_');
+    let mime = b.tipo || 'application/octet-stream';
+    let b64 = dataUrl;
+    const m = /^data:([^;]+);base64,(.*)$/.exec(dataUrl);
+    if (m) { mime = m[1] || mime; b64 = m[2]; }
+    if (!b64) return { statusCode:200, headers:H, body: JSON.stringify({ ok:false, erro:'arquivo vazio' }) };
+    // base64 -> bytes
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    const sbHead = k => ({ 'apikey': KEY, 'Authorization': 'Bearer ' + KEY });
+    // Garante o bucket público (ignora erro se já existir).
+    try {
+      await fetch(SB + '/storage/v1/bucket', { method:'POST', headers: Object.assign(sbHead(), { 'Content-Type':'application/json' }), body: JSON.stringify({ id: BUCKET, name: BUCKET, public: true }) });
+    } catch(e) {}
+    const path = new Date().toISOString().slice(0,10) + '/' + Date.now() + '-' + nome;
+    const up = await fetch(SB + '/storage/v1/object/' + BUCKET + '/' + encodeURI(path), {
+      method:'POST',
+      headers: Object.assign(sbHead(), { 'Content-Type': mime, 'x-upsert':'true' }),
+      body: bytes
+    });
+    if (!up.ok) { const t = await up.text(); return { statusCode:200, headers:H, body: JSON.stringify({ ok:false, erro:'upload ' + up.status + ' ' + t }) }; }
+    const publicUrl = SB + '/storage/v1/object/public/' + BUCKET + '/' + encodeURI(path);
+    return { statusCode:200, headers:H, body: JSON.stringify({ ok:true, data:{ configurado:true, url: publicUrl, path } }) };
+  } catch (e) {
+    return { statusCode:200, headers:H, body: JSON.stringify({ ok:false, erro: e.message }) };
+  }
+}
+
 async function hLocalizacoes(event){
   const H = { 'content-type': 'application/json' };
   const base = (process.env.SBS_BRASIL_URL || '').replace(/\/+$/, '');
@@ -166,6 +206,7 @@ const HANDLERS = {
   'produtos': pick(fProdutos),
   'ranking': pick(fRanking),
   'senha': pick(fSenha),
+  'storage': hStorage,
   'tenants': pick(fTenants),
   'vendas': pick(fVendas),
   'vendedores': pick(fVendedores)
