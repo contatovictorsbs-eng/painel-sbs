@@ -27,7 +27,7 @@ select sbs_criar_colecao(n) from unnest(array[
   'usuarios','tenants','auditoria',
   'vendedores','vendas','eventos','leads','orcamentos',
   'produtos','campanhas','notificacoes','demandas','parceiros','alertas',
-  'monitoramentos','aprovacoes','aprovacoes_hist','governanca','dossies','canais','integracao',
+  'monitoramentos','aprovacoes','aprovacoes_hist','governanca','dossies','canais','integracao','biblioteca',
   'mi_cotacoes','mi_concorrentes','mi_cc_movimentos','mi_regioes','mi_tendencias'
 ]) as n;
 
@@ -48,3 +48,13 @@ end $$;
 
 -- Pronto. O primeiro login semeia sbs_usuarios automaticamente
 -- (equipe SBS ou USERS_JSON), com senha inicial e precisaTrocar=true.
+
+-- ------------------------------------------------------------
+-- STORAGE (opcional, mas recomendado para arquivos grandes/vídeos):
+-- o endpoint /api/storage cria automaticamente um bucket PÚBLICO
+-- chamado "materiais" no primeiro upload (usando a SERVICE_KEY).
+-- Se preferir criar manualmente: Storage → New bucket → name "materiais",
+-- Public = ON. Os arquivos de Arquivos & mídia passam a ser servidos por
+-- URL pública (leve) em vez de base64. Nada a rodar aqui — apenas informativo.
+-- ------------------------------------------------------------
+
