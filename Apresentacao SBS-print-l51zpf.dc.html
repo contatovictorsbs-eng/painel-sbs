@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style data-omelette-print-defaults>
+@media print {
+  @page { margin: 0.5in; }
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+  figure, table, pre, blockquote, img, svg, tr, [class~="card" i] { break-inside: avoid; }
+  img, svg { max-width: 100%; }
+  p { orphans: 3; widows: 3; }
+}
+</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  .k{font:800 20px 'Plus Jakarta Sans',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#6FA331}
+  .h1{font-family:'Archivo',sans-serif;font-weight:900;line-height:.98;letter-spacing:-.02em}
+  .num{position:absolute;right:56px;bottom:44px;font:700 22px 'Plus Jakarta Sans',sans-serif;color:rgba(12,59,55,.35)}
+  .numd{position:absolute;right:56px;bottom:44px;font:700 22px 'Plus Jakarta Sans',sans-serif;color:rgba(255,255,255,.4)}
+</style>
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+<section data-label="Capa" data-speaker-notes="Abertura. Apresentar o ecossistema SBS Green Seeds: um sistema único que conecta o vendedor no campo até o CEO, passando por supervisão, gerência regional e nacional, marketing e inteligência de mercado." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:120px;background:radial-gradient(120% 120% at 15% 0%,#0f4a44 0%,#0c3b37 55%,#082b28 100%);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <div style="position:absolute;top:-140px;right:-120px;width:640px;height:640px;border-radius:50%;background:radial-gradient(circle,rgba(111,163,49,.28),transparent 62%)"></div>
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:40px">
+    <div style="width:52px;height:52px;border-radius:14px;background:#6FA331;display:flex;align-items:center;justify-content:center;font-family:'Archivo';font-weight:900;font-size:24px;color:#0c3b37">S</div>
+    <span style="font-weight:800;font-size:24px;letter-spacing:.04em">SBS Green Seeds</span>
+  </div>
+  <div class="h1" style="font-size:130px;max-width:1400px">Um sistema,<br>toda a operação<br><span style="color:#6FA331">conectada</span>.</div>
+  <p style="margin:44px 0 0;font-size:30px;font-weight:500;color:#c9dcd6;max-width:1120px">Do vendedor no campo ao CEO — como cada setor opera a plataforma e como o dado flui ponta a ponta.</p>
+  <div style="position:absolute;left:120px;bottom:56px;display:flex;gap:12px">
+    <span style="padding:10px 20px;border:1px solid rgba(255,255,255,.25);border-radius:999px;font-weight:600;font-size:19px">Apresentação da plataforma</span>
+    <span style="padding:10px 20px;border:1px solid rgba(255,255,255,.25);border-radius:999px;font-weight:600;font-size:19px">2026</span>
+  </div>
+</section>
+
+<section data-label="Oportunidade" data-speaker-notes="O problema que resolvemos: dados espalhados, decisões lentas, campo desconectado da gestão. A plataforma unifica tudo num fluxo só." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">A oportunidade</div>
+  <div class="h1" style="font-size:76px;color:#0c3b37;margin:22px 0 60px;max-width:1400px">O campo gera dado o tempo todo — mas a decisão vinha depois e desalinhada.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+    <div style="background:#fff;border-radius:20px;padding:40px 44px;border:1px solid rgba(12,59,55,.08)">
+      <div style="font:800 24px 'Archivo';color:#b4463a;margin-bottom:22px">Antes</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#4a5a55">
+        <div>Planilhas soltas, WhatsApp e memória.</div>
+        <div>Marketing sem visão do que o campo pede.</div>
+        <div>Aprovações travadas, sem rastro.</div>
+        <div>CEO enxergando resultado só no fim do mês.</div>
+      </div>
+    </div>
+    <div style="background:#0c3b37;border-radius:20px;padding:40px 44px;color:#fff">
+      <div style="font:800 24px 'Archivo';color:#6FA331;margin-bottom:22px">Com a plataforma</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#d6e6df">
+        <div>Um cadastro só, que todos os setores enxergam.</div>
+        <div>Pedido do campo vira demanda e campanha.</div>
+        <div>Aprovação em esteira, com parecer e histórico.</div>
+        <div>CEO acompanha equipe e mercado em tempo real.</div>
+      </div>
+    </div>
+  </div>
+  <div class="num">02</div>
+</section>
+
+<section data-label="Ecossistema" data-speaker-notes="Três peças: o App SBS Brasil (campo), o Painel de Gestão (marketing/gerência/inteligência/CEO) e a Integração que liga os dois pelo mesmo banco." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Visão geral</div>
+  <div class="h1" style="font-size:76px;color:#0c3b37;margin:22px 0 56px">Três peças, um só dado.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:28px">
+    <div style="background:#fff;border-radius:22px;padding:44px 40px;border-top:6px solid #6FA331">
+      <div style="font:800 30px 'Archivo';color:#0c3b37;margin-bottom:14px">App SBS Brasil</div>
+      <div style="font-size:20px;font-weight:600;color:#6FA331;margin-bottom:20px">O campo</div>
+      <div style="font-size:22px;font-weight:500;color:#4a5a55;line-height:1.5">Vendedores e supervisores: leads, orçamentos, check-in em evento e localização ao vivo — do celular.</div>
+    </div>
+    <div style="background:#fff;border-radius:22px;padding:44px 40px;border-top:6px solid #0B6B61">
+      <div style="font:800 30px 'Archivo';color:#0c3b37;margin-bottom:14px">Painel de Gestão</div>
+      <div style="font-size:20px;font-weight:600;color:#0B6B61;margin-bottom:20px">A gestão</div>
+      <div style="font-size:22px;font-weight:500;color:#4a5a55;line-height:1.5">Marketing, Gerência Nacional, Inteligência e CEO: campanhas, aprovações, mercado e decisão.</div>
+    </div>
+    <div style="background:#fff;border-radius:22px;padding:44px 40px;border-top:6px solid #0c3b37">
+      <div style="font:800 30px 'Archivo';color:#0c3b37;margin-bottom:14px">Integração</div>
+      <div style="font-size:20px;font-weight:600;color:#5a6b66;margin-bottom:20px">A ponte</div>
+      <div style="font-size:22px;font-weight:500;color:#4a5a55;line-height:1.5">Um barramento no mesmo banco: o que nasce no campo chega à gestão — e a decisão volta ao campo.</div>
+    </div>
+  </div>
+  <div class="num">03</div>
+</section>
+
+<section data-label="Fluxo" data-speaker-notes="O caminho do dado: vendedor no campo, supervisor, gerente regional, gerente nacional, marketing, inteligência, e CEO no topo. Cada elo agrega e devolve." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 110px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Fluxo ponta a ponta</div>
+  <div class="h1" style="font-size:70px;margin:22px 0 60px">Do campo à decisão — em um só trilho.</div>
+  <div style="display:flex;align-items:stretch;gap:14px">
+    <div style="flex:1;background:rgba(111,163,49,.16);border:1px solid rgba(111,163,49,.4);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo';color:#6FA331">Vendedor</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">lead · orçamento · check-in</div></div>
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Supervisor</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">acompanha equipe</div></div>
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Regional</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">aprova desconto</div></div>
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Nacional</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">campanhas · metas</div></div>
+  </div>
+  <div style="display:flex;align-items:stretch;gap:14px;margin-top:16px">
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Marketing</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">eventos · aprovações</div></div>
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
+    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Inteligência</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">mercado · concorrência</div></div>
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
+    <div style="flex:1.6;background:#6FA331;border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo';color:#0c3b37">CEO</div><div style="font-size:16px;color:#0c3b37;font-weight:600;margin-top:8px">visão total · decisão</div></div>
+  </div>
+  <div class="numd">04</div>
+</section>
+
+<section data-label="Vendedor" data-speaker-notes="Perfil Vendedor — usa o app no celular, em campo. Cadastra leads, monta orçamento, faz check-in em evento e compartilha localização (com consentimento)." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Perfil · Campo</div>
+  <div class="h1" style="font-size:82px;color:#0c3b37;margin:20px 0 8px">Vendedor</div>
+  <p style="margin:0 0 48px;font-size:26px;font-weight:500;color:#5a6b66">No celular, em campo — registra tudo onde a venda acontece.</p>
+  <div style="display:grid;grid-template-columns:1.2fr .9fr;gap:32px">
+    <div style="background:#fff;border-radius:20px;padding:38px 42px;border:1px solid rgba(12,59,55,.08)">
+      <div style="font:800 22px 'Archivo';color:#0B6B61;margin-bottom:22px">O que opera</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#3a4a45">
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Cadastra e move <b>leads</b> na esteira (SWOT no motivo de perda)</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Monta <b>orçamento</b> e pede desconto/bonificação</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Check-in</b> e registra vendas em eventos</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Compartilha <b>localização</b> ao vivo (consentida)</div>
+      </div>
+    </div>
+    <div style="background:#0B6B61;border-radius:20px;padding:38px 40px;color:#fff;display:flex;flex-direction:column;justify-content:center">
+      <div style="font:800 22px 'Archivo';color:#bfe3a6;margin-bottom:16px">Valor</div>
+      <div style="font-size:26px;font-weight:600;line-height:1.45">Zero retrabalho: o que ele registra já alimenta metas, ranking e a gestão — na hora.</div>
+    </div>
+  </div>
+  <div class="num">05</div>
+</section>
+
+<section data-label="Supervisor" data-speaker-notes="Supervisor — acompanha a equipe de vendedores da sua área, apoia leads e vê desempenho. Também aparece no mapa ao vivo do CEO." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Perfil · Campo</div>
+  <div class="h1" style="font-size:82px;color:#0c3b37;margin:20px 0 8px">Supervisor</div>
+  <p style="margin:0 0 48px;font-size:26px;font-weight:500;color:#5a6b66">A ponte entre o vendedor e a gerência regional.</p>
+  <div style="display:grid;grid-template-columns:1.2fr .9fr;gap:32px">
+    <div style="background:#fff;border-radius:20px;padding:38px 42px;border:1px solid rgba(12,59,55,.08)">
+      <div style="font:800 22px 'Archivo';color:#0B6B61;margin-bottom:22px">O que opera</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#3a4a45">
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Acompanha a <b>equipe</b> e a esteira de leads da área</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Apoia <b>orçamentos</b> e prioriza atendimentos</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Consolida presença em <b>eventos</b> do time</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Visível no <b>mapa ao vivo</b> da equipe</div>
+      </div>
+    </div>
+    <div style="background:#0B6B61;border-radius:20px;padding:38px 40px;color:#fff;display:flex;flex-direction:column;justify-content:center">
+      <div style="font:800 22px 'Archivo';color:#bfe3a6;margin-bottom:16px">Valor</div>
+      <div style="font-size:26px;font-weight:600;line-height:1.45">Gestão de time em tempo real, sem cobrar relatório manual de cada vendedor.</div>
+    </div>
+  </div>
+  <div class="num">06</div>
+</section>
+
+<section data-label="Regional" data-speaker-notes="Gerente Regional — o portão do desconto. Aprova ou nega orçamentos e bonificações da sua região, liberando a venda com margem controlada." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Perfil · Gestão regional</div>
+  <div class="h1" style="font-size:82px;color:#0c3b37;margin:20px 0 8px">Gerente Regional</div>
+  <p style="margin:0 0 48px;font-size:26px;font-weight:500;color:#5a6b66">Controla a margem onde a negociação acontece.</p>
+  <div style="display:grid;grid-template-columns:1.2fr .9fr;gap:32px">
+    <div style="background:#fff;border-radius:20px;padding:38px 42px;border:1px solid rgba(12,59,55,.08)">
+      <div style="font:800 22px 'Archivo';color:#0B6B61;margin-bottom:22px">O que opera</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#3a4a45">
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Aprova/nega</b> desconto e bonificação do orçamento</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Enxerga o <b>pipeline</b> e as perdas da região</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Acompanha <b>metas</b> por campanha</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Vê a equipe da região no <b>mapa</b></div>
+      </div>
+    </div>
+    <div style="background:#0B6B61;border-radius:20px;padding:38px 40px;color:#fff;display:flex;flex-direction:column;justify-content:center">
+      <div style="font:800 22px 'Archivo';color:#bfe3a6;margin-bottom:16px">Valor</div>
+      <div style="font-size:26px;font-weight:600;line-height:1.45">Desconto liberado em minutos, com rastro — margem protegida sem travar a venda.</div>
+    </div>
+  </div>
+  <div class="num">07</div>
+</section>
+
+<section data-label="Nacional" data-speaker-notes="Gerente Nacional — define campanhas, metas por campanha e o catálogo de produtos/preços que todos usam. Enxerga vendedores por parceiro." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Perfil · Gestão nacional</div>
+  <div class="h1" style="font-size:82px;color:#0c3b37;margin:20px 0 8px">Gerente Nacional</div>
+  <p style="margin:0 0 48px;font-size:26px;font-weight:500;color:#5a6b66">Define a régua comercial que o país inteiro segue.</p>
+  <div style="display:grid;grid-template-columns:1.2fr .9fr;gap:32px">
+    <div style="background:#fff;border-radius:20px;padding:38px 42px;border:1px solid rgba(12,59,55,.08)">
+      <div style="font:800 22px 'Archivo';color:#0B6B61;margin-bottom:22px">O que opera</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#3a4a45">
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Cria <b>campanhas</b> (data, canal, produtos e preços)</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Define <b>metas por campanha</b> — visíveis a todos no app</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Mantém o <b>catálogo</b> (preço, saco, foto) + importar/exportar</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Vê <b>vendedores por parceiro</b> e o que venderam</div>
+      </div>
+    </div>
+    <div style="background:#0B6B61;border-radius:20px;padding:38px 40px;color:#fff;display:flex;flex-direction:column;justify-content:center">
+      <div style="font:800 22px 'Archivo';color:#bfe3a6;margin-bottom:16px">Valor</div>
+      <div style="font-size:26px;font-weight:600;line-height:1.45">Uma campanha publicada chega imediatamente ao celular de cada vendedor, com meta e preço certos.</div>
+    </div>
+  </div>
+  <div class="num">08</div>
+</section>
+
+<section data-label="Marketing" data-speaker-notes="Marketing — orquestra eventos, recebe demandas, é o porteiro das aprovações e usa o assistente de IA para transformar estudos em demandas e eventos." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Perfil · Gestão</div>
+  <div class="h1" style="font-size:82px;color:#0c3b37;margin:20px 0 8px">Marketing</div>
+  <p style="margin:0 0 48px;font-size:26px;font-weight:500;color:#5a6b66">O motor das ações — e o primeiro filtro de tudo que é pedido.</p>
+  <div style="display:grid;grid-template-columns:1.2fr .9fr;gap:32px">
+    <div style="background:#fff;border-radius:20px;padding:38px 42px;border:1px solid rgba(12,59,55,.08)">
+      <div style="font:800 22px 'Archivo';color:#0B6B61;margin-bottom:22px">O que opera</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#3a4a45">
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Eventos</b> e agenda compartilhada (co-branded por parceiro)</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Quadro de demandas</b> com anexos e envolvidos</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Porteiro das aprovações</b> — libera para as demais áreas</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Assistente de IA</b>: estudo → demanda ou evento</div>
+      </div>
+    </div>
+    <div style="background:#0B6B61;border-radius:20px;padding:38px 40px;color:#fff;display:flex;flex-direction:column;justify-content:center">
+      <div style="font:800 22px 'Archivo';color:#bfe3a6;margin-bottom:16px">Valor</div>
+      <div style="font-size:26px;font-weight:600;line-height:1.45">Nada avança sem passar pelo marketing — consistência de marca e priorização em um só lugar.</div>
+    </div>
+  </div>
+  <div class="num">09</div>
+</section>
+
+<section data-label="Inteligência" data-speaker-notes="Inteligência de Mercado — robôs monitoram concorrentes e canais, acompanha commodities, câmbio e tendências, e cadastra vendedores/fontes." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Perfil · Gestão</div>
+  <div class="h1" style="font-size:82px;color:#0c3b37;margin:20px 0 8px">Inteligência de Mercado</div>
+  <p style="margin:0 0 48px;font-size:26px;font-weight:500;color:#5a6b66">Os olhos da empresa para fora — mercado e concorrência.</p>
+  <div style="display:grid;grid-template-columns:1.2fr .9fr;gap:32px">
+    <div style="background:#fff;border-radius:20px;padding:38px 42px;border:1px solid rgba(12,59,55,.08)">
+      <div style="font:800 22px 'Archivo';color:#0B6B61;margin-bottom:22px">O que opera</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#3a4a45">
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Robôs</b> de monitoramento com fontes referenciadas</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Fontes & canais</b> editáveis (@ e sites, custom)</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Concorrentes</b>, commodities, câmbio e tendências</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Cadastra <b>vendedores</b> e alimenta o assistente de IA</div>
+      </div>
+    </div>
+    <div style="background:#0B6B61;border-radius:20px;padding:38px 40px;color:#fff;display:flex;flex-direction:column;justify-content:center">
+      <div style="font:800 22px 'Archivo';color:#bfe3a6;margin-bottom:16px">Valor</div>
+      <div style="font-size:26px;font-weight:600;line-height:1.45">Decisão embasada: o que o mercado faz vira insumo direto para campanhas e para o CEO.</div>
+    </div>
+  </div>
+  <div class="num">10</div>
+</section>
+
+<section data-label="CEO" data-speaker-notes="CEO — dashboard executivo, mapa da equipe ao vivo (novidade), e a decisão final na esteira de aprovações. Visão total do negócio." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Perfil · Direção</div>
+  <div class="h1" style="font-size:82px;color:#fff;margin:20px 0 8px">CEO</div>
+  <p style="margin:0 0 48px;font-size:26px;font-weight:500;color:#c9dcd6">A visão do todo — e a palavra final.</p>
+  <div style="display:grid;grid-template-columns:1.2fr .9fr;gap:32px">
+    <div style="background:rgba(255,255,255,.06);border-radius:20px;padding:38px 42px;border:1px solid rgba(255,255,255,.14)">
+      <div style="font:800 22px 'Archivo';color:#6FA331;margin-bottom:22px">O que opera</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#e2ede8">
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Dashboard executivo</b>: regiões, evolução e comparativos</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Mapa da equipe ao vivo</b>: gerentes e vendedores no mapa</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Decisão final</b> na esteira de aprovações</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Mercado & decisão: commodities, ações e câmbio</div>
+      </div>
+    </div>
+    <div style="background:#6FA331;border-radius:20px;padding:38px 40px;color:#0c3b37;display:flex;flex-direction:column;justify-content:center">
+      <div style="font:800 22px 'Archivo';margin-bottom:16px">Valor</div>
+      <div style="font-size:26px;font-weight:700;line-height:1.45">Onde a equipe está, o que o mercado faz e o que decidir — numa tela só, agora.</div>
+    </div>
+  </div>
+  <div class="numd">11</div>
+</section>
+
+<section data-label="Solicitações" data-speaker-notes="Fluxo de solicitações vindas do app SBS Brasil: o campo pede (campanha, evento, material, custo), Marketing é o porteiro, depois Nacional, Inteligência e CEO. A decisão volta e notifica o solicitante." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Colaboração</div>
+  <div class="h1" style="font-size:72px;color:#0c3b37;margin:22px 0 20px;max-width:1400px">O campo pede, a gestão decide — com rastro.</div>
+  <p style="margin:0 0 46px;font-size:24px;font-weight:500;color:#5a6b66;max-width:1300px">Solicitações criadas no app SBS Brasil (campanha, evento, material, item com custo) entram numa esteira de aprovação sequencial.</p>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="flex:1;background:#fff;border-radius:16px;padding:28px 22px;text-align:center;border:1px solid rgba(12,59,55,.08)"><div style="font:800 20px 'Archivo';color:#0c3b37">Solicitação</div><div style="font-size:16px;color:#7d8b86;margin-top:6px">criada no campo</div></div>
+    <div style="color:#6FA331;font-size:30px">→</div>
+    <div style="flex:1;background:#0c3b37;border-radius:16px;padding:28px 22px;text-align:center;color:#fff"><div style="font:800 20px 'Archivo';color:#6FA331">Marketing</div><div style="font-size:16px;color:#c9dcd6;margin-top:6px">porteiro</div></div>
+    <div style="color:#6FA331;font-size:30px">→</div>
+    <div style="flex:1;background:#fff;border-radius:16px;padding:28px 22px;text-align:center;border:1px solid rgba(12,59,55,.08)"><div style="font:800 20px 'Archivo';color:#0c3b37">Nacional</div></div>
+    <div style="color:#6FA331;font-size:30px">+</div>
+    <div style="flex:1;background:#fff;border-radius:16px;padding:28px 22px;text-align:center;border:1px solid rgba(12,59,55,.08)"><div style="font:800 20px 'Archivo';color:#0c3b37">Inteligência</div></div>
+    <div style="color:#6FA331;font-size:30px">+</div>
+    <div style="flex:1;background:#6FA331;border-radius:16px;padding:28px 22px;text-align:center"><div style="font:800 20px 'Archivo';color:#0c3b37">CEO</div></div>
+  </div>
+  <p style="margin:38px 0 0;font-size:22px;font-weight:600;color:#0B6B61">Cada área aprova ou reprova com parecer. A decisão volta ao app e notifica quem pediu.</p>
+  <div class="num">12</div>
+</section>
+
+<section data-label="Integração" data-speaker-notes="Os dois sistemas (App SBS Brasil e Painel) compartilham o MESMO banco Supabase, ligados por um barramento com payload livre. Novas features trocam dados sem mudar o schema." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Arquitetura</div>
+  <div class="h1" style="font-size:74px;color:#0c3b37;margin:22px 0 54px;max-width:1400px">Dois sistemas, um só banco.</div>
+  <div style="display:flex;align-items:center;gap:28px">
+    <div style="flex:1;background:#fff;border-radius:20px;padding:40px;text-align:center;border-top:6px solid #6FA331"><div style="font:800 28px 'Archivo';color:#0c3b37">App SBS Brasil</div><div style="font-size:19px;color:#5a6b66;margin-top:10px">vendas · vendedores · pedidos · localização</div></div>
+    <div style="flex:.9;background:#0c3b37;border-radius:20px;padding:34px;text-align:center;color:#fff"><div style="font:800 22px 'Archivo';color:#6FA331">Barramento</div><div style="font-size:18px;color:#c9dcd6;margin-top:10px">Supabase · payload JSON livre</div><div style="font-size:16px;color:#8fb0a7;margin-top:8px">campos sobrando p/ o futuro</div></div>
+    <div style="flex:1;background:#fff;border-radius:20px;padding:40px;text-align:center;border-top:6px solid #0B6B61"><div style="font:800 28px 'Archivo';color:#0c3b37">Painel de Gestão</div><div style="font-size:19px;color:#5a6b66;margin-top:10px">campanhas · aprovações · mercado</div></div>
+  </div>
+  <p style="margin:46px 0 0;font-size:23px;font-weight:600;color:#0B6B61;max-width:1300px">Nova funcionalidade? Basta um novo “tipo” no payload — sem migração, sem quebrar nada.</p>
+  <div class="num">13</div>
+</section>
+
+<section data-label="LGPD" data-speaker-notes="Segurança e LGPD: login por perfil, acesso segmentado, log de auditoria, chaves só no servidor, e localização sempre com consentimento e transparência." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Segurança & LGPD</div>
+  <div class="h1" style="font-size:74px;margin:22px 0 54px">Cada um vê o que é seu.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px">
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:34px 38px"><div style="font:800 24px 'Archivo';color:#6FA331;margin-bottom:12px">Acesso por perfil</div><div style="font-size:22px;color:#d6e6df;font-weight:500">Login segmentado: cada setor enxerga só os módulos que opera.</div></div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:34px 38px"><div style="font:800 24px 'Archivo';color:#6FA331;margin-bottom:12px">Auditoria</div><div style="font-size:22px;color:#d6e6df;font-weight:500">Dados de clientes e vendedores com log de quem acessou.</div></div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:34px 38px"><div style="font:800 24px 'Archivo';color:#6FA331;margin-bottom:12px">Chaves protegidas</div><div style="font-size:22px;color:#d6e6df;font-weight:500">Segredos ficam no servidor — nunca no navegador.</div></div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:34px 38px"><div style="font:800 24px 'Archivo';color:#6FA331;margin-bottom:12px">Localização consentida</div><div style="font-size:22px;color:#d6e6df;font-weight:500">Só com o app aberto e aviso visível. Sem rastreio oculto.</div></div>
+  </div>
+  <div class="numd">14</div>
+</section>
+
+<section data-label="Roadmap" data-speaker-notes="Próximos passos: mapa da equipe ao vivo em produção, aprofundar integração bidirecional, e evoluir o assistente de IA com os dados reais." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Próximos passos</div>
+  <div class="h1" style="font-size:74px;color:#0c3b37;margin:22px 0 52px">O que vem a seguir.</div>
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;align-items:center;gap:24px;background:#fff;border-radius:16px;padding:28px 36px;border:1px solid rgba(12,59,55,.08)"><div style="width:44px;height:44px;border-radius:12px;background:#6FA331;color:#0c3b37;font:800 22px 'Archivo';display:flex;align-items:center;justify-content:center">1</div><div style="font-size:25px;font-weight:600;color:#3a4a45"><b>Mapa da equipe ao vivo</b> — em produção, com as chaves de integração.</div></div>
+    <div style="display:flex;align-items:center;gap:24px;background:#fff;border-radius:16px;padding:28px 36px;border:1px solid rgba(12,59,55,.08)"><div style="width:44px;height:44px;border-radius:12px;background:#0B6B61;color:#fff;font:800 22px 'Archivo';display:flex;align-items:center;justify-content:center">2</div><div style="font-size:25px;font-weight:600;color:#3a4a45"><b>Integração bidirecional</b> — mais tipos de dados entre campo e gestão.</div></div>
+    <div style="display:flex;align-items:center;gap:24px;background:#fff;border-radius:16px;padding:28px 36px;border:1px solid rgba(12,59,55,.08)"><div style="width:44px;height:44px;border-radius:12px;background:#0c3b37;color:#fff;font:800 22px 'Archivo';display:flex;align-items:center;justify-content:center">3</div><div style="font-size:25px;font-weight:600;color:#3a4a45"><b>Assistente de IA</b> — decisões cada vez mais embasadas nos dados reais.</div></div>
+  </div>
+  <div class="num">15</div>
+</section>
+
+<section data-label="Encerramento" data-speaker-notes="Fechamento: a plataforma conecta todos os setores num fluxo só. Abrir para perguntas e definir próximos passos de treinamento por equipe." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:120px;background:radial-gradient(120% 120% at 85% 100%,#0f4a44 0%,#0c3b37 55%,#082b28 100%);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <div style="position:absolute;bottom:-160px;left:-120px;width:620px;height:620px;border-radius:50%;background:radial-gradient(circle,rgba(111,163,49,.24),transparent 62%)"></div>
+  <div class="k">Vamos operar juntos</div>
+  <div class="h1" style="font-size:104px;margin:26px 0 0;max-width:1400px">Um sistema<br>para <span style="color:#6FA331">todos nós</span>.</div>
+  <p style="margin:44px 0 0;font-size:28px;font-weight:500;color:#c9dcd6;max-width:1120px">Do campo à direção, o mesmo dado, na hora certa. Próximo passo: treinamento por equipe.</p>
+  <div style="display:flex;align-items:center;gap:16px;margin-top:60px">
+    <div style="width:46px;height:46px;border-radius:12px;background:#6FA331;display:flex;align-items:center;justify-content:center;font-family:'Archivo';font-weight:900;font-size:22px;color:#0c3b37">S</div>
+    <span style="font-weight:800;font-size:22px">SBS Green Seeds</span>
+  </div>
+</section>
+
+</x-import>
+</x-dc>
+<script>
+(async () => {
+  if (!document.title || !document.title.trim()) document.title = "Apresentacao SBS";
+  // Prepend so page-supplied @page / break rules (deck-stage's margin:0,
+  // author CSS) keep source-order precedence over the baseline.
+  const baseCss = document.createElement('style');
+  baseCss.textContent = "@media print {\n  figure, table { break-inside: avoid; }\n  *, *::before, *::after {\n    print-color-adjust: exact; -webkit-print-color-adjust: exact;\n    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;\n    animation-delay: -99s !important; animation-duration: .001s !important;\n    animation-iteration-count: 1 !important; animation-fill-mode: both !important;\n    animation-play-state: running !important; transition-duration: 0s !important;\n  }\n}";
+  document.head.prepend(baseCss);
+  if (document.readyState === 'loading') {
+    await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
+  }
+  let ds = document.querySelector('deck-stage');
+  // whenDefined never resolves when nothing registers the element, so only
+  // await it when a <deck-stage> tag exists (and race a timeout regardless).
+  if (ds && !customElements.get('deck-stage')) {
+    try {
+      await Promise.race([
+        customElements.whenDefined('deck-stage'),
+        new Promise((r) => setTimeout(r, 3000)),
+      ]);
+    } catch (e) {}
+    ds = document.querySelector('deck-stage');
+  }
+  // dc-runtime assigns window.DCLogic at init and mounts into #dc-root on
+  // DOMContentLoaded; settle on that subtree so React has rendered before
+  // print(). Non-DC pages fall through to weighing body.
+  const isDc = !ds && 'DCLogic' in window;
+  const settleRoot = ds || (isDc ? document.getElementById('dc-root') : null) || document.body;
+  if (settleRoot) {
+    // Weigh only content children — skip script/style/template so inline
+    // Babel/CSS doesn't register as stable "content" before the framework
+    // has mounted anything.
+    const MEDIA = 'img,svg,canvas,video,picture,iframe,embed,object';
+    const weigh = () => {
+      let text = 0, media = 0;
+      for (const c of settleRoot.children) {
+        const t = c.tagName;
+        if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+        text += (c.textContent || '').trim().length;
+        media += c.querySelectorAll(MEDIA).length + (c.matches(MEDIA) ? 1 : 0);
+      }
+      return text + media * 100;
+    };
+    // "Non-zero and stable" alone is not sufficient to mean rendered: generic
+    // body can carry a static shell while async main content is pending, and
+    // #dc-root can carry the root DC's static text while child refs are still
+    // .sc-placeholder boxes. Gate generic on readyState 'complete', and never
+    // accept stability while a dc-runtime placeholder is present.
+    const isGeneric = settleRoot === document.body;
+    const deadline = Date.now() + 15000;
+    let last = -1, stable = 0;
+    while (Date.now() < deadline) {
+      const n = weigh();
+      const ready =
+        (!isGeneric || document.readyState === 'complete') &&
+        !settleRoot.querySelector('.sc-placeholder');
+      if (n > 0 && n === last && ready) { if (++stable >= 2) break; } else { stable = 0; }
+      last = n;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  }
+  // Project support.js may predate runtime default-seeding; push via bridge.
+  if (isDc && window.__dcSetProps && window.__dcRootName) {
+    try {
+      const dpEl = document.querySelector('script[data-dc-script]');
+      const meta = JSON.parse((dpEl && dpEl.getAttribute('data-props')) || '{}');
+      const bag = {};
+      for (const k in meta)
+        if (k[0] !== '$' && meta[k] && meta[k].default !== undefined)
+          bag[k] = meta[k].default;
+      if (Object.keys(bag).length) {
+        window.__dcSetProps(window.__dcRootName(), bag);
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    } catch (e) {}
+  }
+  // Reveal content gated on scroll or visibility before printing. Lazy <img>,
+  // IntersectionObserver fade-ins, and collapsed <details> don't render while
+  // off-screen, so a long page would print with them blank or closed. Open
+  // every <details>, force native-lazy images eager, and scroll the document
+  // through its full height to trip lazy-load + IO; then wait (bounded) for the
+  // newly-triggered images. Inert for deck-stage (slides aren't scroll-gated).
+  try {
+    for (const d of document.querySelectorAll('details')) d.open = true;
+    for (const img of document.querySelectorAll('img[loading="lazy"]'))
+      img.loading = 'eager';
+    const scroller = document.scrollingElement || document.documentElement;
+    const full = Math.max(scroller.scrollHeight, document.body.scrollHeight);
+    const step = window.innerHeight || 800;
+    for (let y = 0; y <= full; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    window.scrollTo(0, 0);
+    await Promise.race([
+      Promise.all(
+        [...document.images].map((img) =>
+          img.complete
+            ? null
+            : new Promise((res) => {
+                img.addEventListener('load', res, { once: true });
+                img.addEventListener('error', res, { once: true });
+              })
+        )
+      ),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]);
+  } catch (e) {}
+  try { await document.fonts.ready; } catch (e) {}
+  // Jump every animation to its end state so print() never captures a slide
+  // mid-entrance. Ordering matters: the 0s-transition style must be live
+  // BEFORE data-deck-active is set so attribute-keyed transitions don't
+  // start a (now-0s) run from the pre-active base.
+  const st = document.createElement('style');
+  st.textContent = '*,*::before,*::after{animation-delay:-99s !important;animation-duration:.001s !important;animation-iteration-count:1 !important;animation-fill-mode:both !important;animation-play-state:running !important;transition-duration:0s !important}';
+  document.head.appendChild(st);
+  for (const d of document.querySelectorAll('deck-stage')) {
+    for (const c of d.children) {
+      const t = c.tagName;
+      if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+      c.setAttribute('data-deck-active', '');
+    }
+  }
+  // Re-append deck-stage's @page last so no author @page can add a margin and
+  // spill each full-bleed slide onto two sheets. Backstop for old copies.
+  if (ds) {
+    let pg = document.getElementById('deck-stage-print-page');
+    if (!pg) {
+      pg = document.createElement('style');
+      pg.textContent = '@page{size:' + (+ds.getAttribute('width') || 1920) +
+        'px ' + (+ds.getAttribute('height') || 1080) + 'px;margin:0}';
+    }
+    document.body.appendChild(pg);
+  }
+  try {
+    const sweep = () => {
+      for (const a of document.getAnimations()) {
+        try { a.finish(); } catch (e) {
+          try { a.currentTime = (a.effect && a.effect.getComputedTiming().duration) || 0; a.pause(); } catch (e2) {}
+        }
+      }
+    };
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+  } catch (e) {}
+  // A document that owns its print CSS (the doc-page starter injects the
+  // meta at runtime; hand-rolled print designs author it) gets no automatic
+  // page geometry and keeps its forced breaks: strip the injected default
+  // @page — write time cannot see a runtime-injected meta — skip the frame
+  // override below, and skip the fakepage-flattening further down. What
+  // still applies: the print baseline and break-hygiene defaults (no @page
+  // in either; low specificity, so the document's own print CSS wins) and
+  // the break-inside relaxation on >page elements (avoid on those cannot
+  // be honored whoever authored it).
+  var ownsPrint = !!document.querySelector('meta[name="omelette-owns-print" i]');
+  if (ownsPrint) {
+    var dst = document.querySelector('style[data-omelette-print-defaults]');
+    if (dst && dst.textContent) {
+      dst.textContent = dst.textContent.replace(/@page\b[^{}]*\{[^}]*\}/, '');
+    }
+  }
+  // Size the PDF page to the rendered design unless the file opted into
+  // standard paper via @page{size:letter|A4|…} or declared print ownership
+  // via the meta above. Decks own their own @page.
+  // Wrappers (body, …) lose padding+margin so the frame sits at (0,0); the
+  // frame itself loses only margin — its padding is INSIDE the measured
+  // rect and must stay, or content shifts and leaves a gap at bottom/right.
+  var __m = null;
+  try { __m = (() => {
+  var STAMP = true;
+  var docEl = document.documentElement;
+  var doc = { width: docEl.scrollWidth, height: docEl.scrollHeight };
+
+  var ds = document.querySelector('deck-stage');
+  if (ds) {
+    var dw = Number(ds.getAttribute('width')) || 1920;
+    var dh = Number(ds.getAttribute('height')) || 1080;
+    var n = typeof ds.length === 'number' ? ds.length : ds.children.length;
+    var idx = typeof ds.index === 'number' ? ds.index : 0;
+    var frames = [];
+    for (var i = 0; i < n; i++) frames.push({ left: 0, top: 0, width: dw, height: dh });
+    return { kind: 'deck', source: 'declared', doc: doc, frames: frames,
+      authored: frames.map(function(){return{width:true,height:true}}),
+      deck: { width: dw, height: dh, slideCount: n, index: idx },
+      signals: { paperPage: false, pxPage: false } };
+  }
+
+  // Declared kind: a doc-page tag names the kind outright, so no signal
+  // heuristics run (like the deck branch above, signals report false —
+  // they describe inferred classifications only). The tag alone is not
+  // trusted: the element must have upgraded (shadowRoot present), so a
+  // leftover tag whose script was deleted falls through to the heuristics
+  // that handle plain markup.
+  var stageSx = window.scrollX || 0, stageSy = window.scrollY || 0;
+  var dp = document.querySelector('doc-page');
+  if (dp && dp.shadowRoot) {
+    // Crop to the sheet, not the host — the desk around it is screen-only
+    // chrome that must not land in PNG exports.
+    var sheet = dp.shadowRoot.querySelector('.sheet');
+    var sr = (sheet || dp).getBoundingClientRect();
+    return { kind: 'paper-doc', source: 'declared', doc: doc,
+      frames: [{ left: sr.left + stageSx, top: sr.top + stageSy,
+        width: sr.width, height: sr.height }],
+      authored: [{ width: false, height: false }],
+      signals: { paperPage: false, pxPage: false } };
+  }
+  var paperPage = false, pxPage = false;
+  var eachRule = function (fn) {
+    for (var s = 0; s < document.styleSheets.length; s++) {
+      var rs; try { rs = document.styleSheets[s].cssRules; } catch (e) { continue; }
+      for (var r = 0; r < rs.length; r++) {
+        fn(rs[r]);
+        if (rs[r].cssRules) for (var n = 0; n < rs[r].cssRules.length; n++) fn(rs[r].cssRules[n]);
+      }
+    }
+  };
+  eachRule(function (r) {
+    if (r.type !== 6) return;
+    var m = /\bsize\s*:\s*([^;}]+)/i.exec(r.cssText || '');
+    if (!m) return;
+    if (/\b(letter|a[3-5]|legal|ledger)\b/i.test(m[1])) paperPage = true;
+    if (/\d+(?:\.\d+)?px\b/i.test(m[1])) pxPage = true;
+  });
+  var signals = { paperPage: paperPage, pxPage: pxPage };
+
+  var pxVal = function (v) {
+    var m = /^(\d+(?:\.\d+)?)px$/.exec(v || ''); return m ? +m[1] : 0;
+  };
+  var authoredPx = function (el, prop) {
+    if (pxVal(el.style[prop])) return true;
+    var attr = el.getAttribute(prop);
+    if (attr && /^\d+$/.test(attr)) return true;
+    var hit = false;
+    eachRule(function (r) {
+      if (hit || r.type !== 1 || !r.style) return;
+      try { if (el.matches(r.selectorText) && pxVal(r.style[prop])) hit = true; } catch (e) {}
+    });
+    return hit;
+  };
+
+  var el = document.body, rootPxW = false;
+  for (;;) {
+    var kids = [];
+    for (var c = 0; c < el.children.length; c++) {
+      var t = el.children[c].tagName;
+      if (t !== 'SCRIPT' && t !== 'STYLE' && t !== 'TEMPLATE') kids.push(el.children[c]);
+    }
+    if (kids.length !== 1 || !(kids[0] instanceof HTMLElement)) break;
+    if (STAMP) el.setAttribute('data-om-frame-wrap', '');
+    el = kids[0];
+    rootPxW = authoredPx(el, 'width');
+    if (rootPxW) break;
+  }
+  if (!rootPxW) rootPxW = authoredPx(el, 'width');
+
+  // @page{size:letter} alone is a flowing doc; with a px-width root it's a
+  // fixed sheet pretending to be paper — fall through and size to render.
+  if (paperPage && !rootPxW) {
+    return { kind: 'paper-doc', source: 'inferred', doc: doc, signals: signals,
+      frames: [{ left: 0, top: 0, width: doc.width, height: doc.height }],
+      authored: [{ width: false, height: false }] };
+  }
+
+  var sx = window.scrollX || 0, sy = window.scrollY || 0;
+  var rectOf = function (e) {
+    var r = e.getBoundingClientRect();
+    var oy; try { oy = getComputedStyle(e).overflowY; } catch (err) {}
+    var h = oy === 'visible' ? Math.max(r.height, e.scrollHeight || 0) : r.height;
+    return { left: r.left + sx, top: r.top + sy, width: r.width, height: h };
+  };
+
+  // Multi-frame: off unless the page opts in via data-om-multi-frame on the
+  // stop element — the explicit opt-in is what guards against card grids
+  // and pricing tables that match the geometry but aren't separate
+  // canvases. Two ways to name the frames, explicit first:
+  // 1. Descendants marked data-om-frame-export (the social-frames starter
+  //    marks each asset frame; shells/panels around them are presentation,
+  //    so nesting is expected). Document order.
+  // 2. Fallback, no marked descendants: direct children with an authored px
+  //    width AND height (the original geometry heuristic).
+  // Frames may be different sizes (a gallery mixes 1080×1920 stories with
+  // 728×90 banners); data-om-frame-label rides along for export filenames.
+  if (el.hasAttribute('data-om-multi-frame')) {
+    var visOk = function (e) {
+      var cs; try { cs = getComputedStyle(e); } catch (err) { return false; }
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && cs.position !== 'fixed';
+    };
+    // A frame's crop is its VISUAL box — never the scrollHeight-inflated
+    // rect that rectOf computes for page roots. Shadow-DOM hover controls
+    // (image-slot's Replace bar parks 29px below its host) and similar
+    // escaping UI contribute scrollable overflow to the frame, and the
+    // inflated height both squashes the nominal-size resize and drags
+    // content below the frame into the crop. Zoom-independent; bit every
+    // slot-bearing frame.
+    var frameRectOf = function (e) {
+      var r = e.getBoundingClientRect();
+      return { left: r.left + sx, top: r.top + sy, width: r.width, height: r.height };
+    };
+    var pushCand = function (list, e) {
+      if (!visOk(e)) return;
+      var rc = frameRectOf(e);
+      if (rc.width < 2 || rc.height < 2) return;
+      var lbl = e.getAttribute('data-om-frame-label');
+      if (lbl) rc.label = lbl;
+      list.push(rc);
+    };
+    var cands = [];
+    var marked = el.querySelectorAll('[data-om-frame-export]');
+    if (marked.length) {
+      for (var mk = 0; mk < marked.length; mk++) pushCand(cands, marked[mk]);
+    } else {
+      for (var k = 0; k < el.children.length; k++) {
+        var ch = el.children[k];
+        if (!authoredPx(ch, 'width') || !authoredPx(ch, 'height')) continue;
+        pushCand(cands, ch);
+      }
+    }
+    if (cands.length >= 2) {
+      return { kind: 'multi-frame', source: 'inferred', doc: doc, signals: signals,
+        frames: cands, authored: cands.map(function(){return{width:true,height:true}}) };
+    }
+  }
+
+  if (STAMP) el.setAttribute('data-om-frame', '');
+  return { kind: 'single-canvas', source: 'inferred', doc: doc, signals: signals,
+    frames: [rectOf(el)],
+    authored: [{ width: rootPxW, height: authoredPx(el, 'height') }] };
+})(); } catch (e) {}
+  var frame = null;
+  if (!ownsPrint && __m && __m.kind === 'single-canvas') {
+    var f = __m.frames && __m.frames[0];
+    if (f && f.width >= 200 && f.height >= 200) {
+      frame = f;
+      var fst = document.createElement('style');
+      fst.textContent = '@media print{@page{size:' + Math.ceil(f.width) + 'px ' +
+        Math.ceil(f.height) + 'px;margin:0}' +
+        'html,body,[data-om-frame-wrap]{padding:0!important;margin:0!important;background:none!important}' +
+        '[data-om-frame]{margin:0!important}}';
+      document.body.appendChild(fst);
+    }
+  }
+  // Relax break-inside on oversized elements. An element taller than a
+  // printable page can't honor break-inside: avoid — browsers either overflow
+  // it or push it whole to the next page, leaving a blank gap, then break it
+  // anyway at an arbitrary point. After the final layout (content revealed,
+  // animations jumped), find elements taller than a page that still compute
+  // break-inside: avoid and reset them to auto, so the browser breaks them at
+  // their children's boundaries instead (children keep their own avoid). PAGE_PX
+  // is a conservative portrait estimate at 96 CSS px/in — Letter/A4 usable
+  // height minus our 0.5in margins — so only clearly-oversized elements are
+  // touched and under-page elements still stay whole. Skipped for decks (slides
+  // are sized to the page) and for fixed-size canvases (frame set, or an author
+  // px-based @page) — runs as before for flowing docs on letter/A4.
+  try {
+    if (!ds && !frame && !(__m && __m.signals && __m.signals.pxPage)) {
+      const PAGE_PX = 1024;
+      // Our print defaults add a real @page margin only when the source has
+      // no @page of its own; computed style can't tell us (it reports screen
+      // media), so read the injected rule directly.
+      const defaults = document.querySelector('style[data-omelette-print-defaults]');
+      const pageInset = /@page\s*\{[^}]*margin/.test(defaults ? defaults.textContent || '' : '');
+      const SEL = 'section,article,figure,table,pre,blockquote,[class~="card" i],[class~="page" i],[class~="sheet" i]';
+      for (const el of document.body.querySelectorAll(SEL)) {
+        if (el instanceof HTMLElement && el.offsetHeight > PAGE_PX) {
+          el.setAttribute('data-om-oversized', '');
+          // Fake-paged docs simulate sheets with over-tall break-after:page
+          // boxes; honoring the break spills half-blank pages and ends a
+          // colored box mid-sheet. Flow them, and (only when we own the page
+          // inset) drop the redundant padding/background via the rule below.
+          const cs = getComputedStyle(el);
+          // An owns-print doc's forced breaks are intentional sheet
+          // boundaries, never fake-paged simulation — don't strip them.
+          // The break-inside relaxation above still applies: avoid on a
+          // >page element is impossible to honor whoever authored it.
+          if (
+            !ownsPrint &&
+            (cs.breakAfter === 'page' || cs.pageBreakAfter === 'always')
+          ) {
+            el.setAttribute('data-om-fakepage', '');
+          }
+        }
+      }
+      const ost = document.createElement('style');
+      ost.textContent = '@media print{' +
+        '[data-om-oversized]{break-inside:auto !important;page-break-inside:auto !important}' +
+        '[data-om-fakepage]{break-after:auto !important;page-break-after:auto !important}' +
+        (pageInset ? '[data-om-fakepage]{padding:0 !important;background:none !important}' : '') +
+        '}';
+      document.head.appendChild(ost);
+    }
+  } catch (e) {}
+  // macOS Preview renders Skia-PDF Luminosity soft-masks as opaque grey boxes;
+  // swap the CSS that triggers them for Preview-safe forms.
+  try {
+    for (const el of document.body.querySelectorAll('*')) {
+      const cs = getComputedStyle(el);
+
+      if (cs.boxShadow !== 'none' && cs.filter === 'none') {
+        const outs = [], kept = [];
+        for (const s of cs.boxShadow.split(/,(?![^(]*[)])/)) {
+          const t = s.trim();
+          const m = t.match(/^(rgba?[(][^)]+[)]) (-?[0-9.]+px) (-?[0-9.]+px) ([0-9.]+px) -?[0-9.]+px$/);
+          if (m && parseFloat(m[4]) > 0) outs.push('drop-shadow(' + m[2] + ' ' + m[3] + ' ' + m[4] + ' ' + m[1] + ')');
+          else kept.push(t);
+        }
+        if (outs.length) {
+          el.style.setProperty('filter', outs.join(' '), 'important');
+          el.style.setProperty('box-shadow', kept.join(', ') || 'none', 'important');
+        }
+      }
+
+      const mask = cs.maskImage && cs.maskImage !== 'none' ? cs.maskImage : cs.webkitMaskImage;
+      if (mask && mask !== 'none' && cs.filter === 'none') el.style.setProperty('filter', 'opacity(1)', 'important');
+    }
+  } catch (e) {}
+  setTimeout(() => { try { window.print(); } catch (e) {} }, 200);
+})();
+</script>
+</body>
+</html>

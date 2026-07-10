@@ -354,7 +354,7 @@ class Component extends DCLogic {
     try{ this.loadReal(); }catch(e){}
     try{ this.loadGov(); }catch(e){}
   }
-  componentWillUnmount(){ try{ window.removeEventListener('resize',this._onResize); }catch(e){} try{ window.removeEventListener('sbs-install-ready',this._onInstallReady); }catch(e){} try{ if(this._locTimer){ clearInterval(this._locTimer); this._locTimer=null; } }catch(e){} try{ if(this._map){ this._map.remove(); this._map=null; } }catch(e){} }
+  componentWillUnmount(){ try{ window.removeEventListener('resize',this._onResize); }catch(e){} try{ window.removeEventListener('sbs-install-ready',this._onInstallReady); }catch(e){} try{ if(this._locTimer){ clearInterval(this._locTimer); this._locTimer=null; } }catch(e){} try{ if(this._solTimer){ clearInterval(this._solTimer); this._solTimer=null; } }catch(e){} try{ if(this._cotTimer){ clearInterval(this._cotTimer); this._cotTimer=null; } }catch(e){} try{ if(this._map){ this._map.remove(); this._map=null; } }catch(e){} }
   _persistKeys(){ return ['auth','isAdmin','role','page','appPage','appUser','eventos','orcamentos','catalogo','leads','partners','robots','notifs','estudo','estudoAplic','campaigns','vendedoresReal','evAnexos','logFiltro','mktDashTab','rankTab','vendFilter','iaConvs','iaActiveId']; }
   salvarEstado(){ try{ if(this.state.role==='app'||!this.state.auth){ return; } const st={}; for(const k of this._persistKeys()){ if(this.state[k]!==undefined) st[k]=this.state[k]; } localStorage.setItem('sbs_estado', JSON.stringify(st)); }catch(e){} }
   componentDidUpdate(prevProps,prevState){
@@ -366,31 +366,39 @@ class Component extends DCLogic {
       if(curLen>prevLen || curU>prevU){ this.tocarAlertaNotif(); }
     }catch(e){}
     try{ this.syncMapaEquipe(); }catch(e){}
+    try{ this.syncSolic(prevState); }catch(e){}
+    try{ this.syncCotacoes(prevState); }catch(e){}
   }
-  tocarAlertaNotif(){
-    try{ if(navigator.vibrate) navigator.vibrate([200,100,200]); }catch(e){}
-    try{
-      const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
-      if(!this._audioCtx) this._audioCtx=new AC();
-      const ctx=this._audioCtx; if(ctx.state==='suspended'){ try{ctx.resume();}catch(e){} }
-      const tocaBip=(t,freq)=>{
-        const o=ctx.createOscillator(); const g=ctx.createGain();
-        o.type='square'; o.frequency.setValueAtTime(freq,t);
-        g.gain.setValueAtTime(0.0001,t);
-        g.gain.exponentialRampToValueAtTime(0.9,t+0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001,t+0.32);
-        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.34);
-      };
-      const now=ctx.currentTime;
-      tocaBip(now,880); tocaBip(now+0.38,1180); tocaBip(now+0.76,880);
-    }catch(e){}
+  syncCotacoes(prevState){
+    const active=(this.state.role==='gerente'||this.state.isAdmin) && this.state.page==='orcamentos';
+    const wasActive=prevState&&prevState.page==='orcamentos';
+    if(active && !wasActive){ this.loadCotacoes(); }
+    if(active && !this._cotTimer){ this._cotTimer=setInterval(()=>this.loadCotacoes(),30000); }
+    if(!active && this._cotTimer){ clearInterval(this._cotTimer); this._cotTimer=null; }
   }
+  loadCotacoes(){
+    this.apiGet('integracao',{de:'sbs-brasil',tipo:'cotacoes',limite:500}).then(rows=>{ if(this.state.backend!=='online') this.setState({backend:'online'}); if(Array.isArray(rows)) this.mergeCotacoesApp(rows); }).catch(()=>{});
+  }
+  syncSolic(prevState){
+    const active=this.state.page==='solicitacoes-sbs';
+    const wasActive=prevState&&prevState.page==='solicitacoes-sbs';
+    if(active && !wasActive){ this.loadSolic(); }
+    if(active && !this._solTimer){ this._solTimer=setInterval(()=>this.loadSolic(),30000); }
+    if(!active && this._solTimer){ clearInterval(this._solTimer); this._solTimer=null; }
+  }
+  loadSolic(){
+    this.apiGet('integracao',{de:'sbs-brasil',tipo:'solicitacoes',limite:500}).then(rows=>{ if(Array.isArray(rows)) this.setState({solicRecs:rows,backend:'online'}); }).catch(()=>{});
+    this.apiGet('integracao',{de:'painel-sbs',tipo:'sugestao-decisao',limite:500}).then(rows=>{ if(Array.isArray(rows)) this.setState({solicDecisoes:rows}); }).catch(()=>{});
+  }
+  tocarAlertaNotif(){ /* silencioso — sem som nem vibração */ }
   // ---------- API CLIENT (com fallback demo) ----------
   apiBase(){ return '/api'; }
   api(nome, opts){
+    const o0 = opts||{};
     const ctrl = (typeof AbortController!=='undefined') ? new AbortController() : null;
-    if(ctrl) setTimeout(()=>{ try{ctrl.abort();}catch(e){} }, 6000);
-    const o = Object.assign({ headers:{'Content-Type':'application/json'} }, opts||{});
+    if(ctrl) setTimeout(()=>{ try{ctrl.abort();}catch(e){} }, o0.timeout||6000);
+    const o = Object.assign({ headers:{'Content-Type':'application/json'} }, o0);
+    delete o.timeout;
     try{ const tk=localStorage.getItem('sbs_token')||localStorage.getItem('sbs_app_token'); if(tk) o.headers['Authorization']='Bearer '+tk; }catch(e){}
     if(ctrl) o.signal = ctrl.signal;
     return fetch(this.apiBase()+'/'+nome, o)
@@ -506,6 +514,31 @@ class Component extends DCLogic {
     // Solicitações vindas do SBS Brasil (fluxo de aprovação) + decisões já publicadas
     this.apiGet('integracao',{de:'sbs-brasil',tipo:'solicitacoes',limite:500}).then(rows=>{ on(); if(Array.isArray(rows)) this.setState({solicRecs:rows}); }).catch(()=>{});
     this.apiGet('integracao',{de:'painel-sbs',tipo:'sugestao-decisao',limite:500}).then(rows=>{ on(); if(Array.isArray(rows)) this.setState({solicDecisoes:rows}); }).catch(()=>{});
+    // Cotações / pedidos de desconto vindos do app (vendedor e parceiro) → fila do Gerente Nacional
+    this.apiGet('integracao',{de:'sbs-brasil',tipo:'cotacoes',limite:500}).then(rows=>{ on(); if(Array.isArray(rows)) this.mergeCotacoesApp(rows); }).catch(()=>{});
+  }
+  // Converte envelopes de cotação do app em orçamentos e junta à fila (sem duplicar)
+  mergeCotacoesApp(rows){
+    if(!rows||!rows.length) return;
+    const atuais=(this.state.orcamentos||[]).slice();
+    const idsBus=new Set(atuais.filter(o=>o._ref).map(o=>o._ref));
+    let mudou=false;
+    rows.forEach(env=>{
+      const p=(env&&env.payload)||{}; const ref=env.ref||p.cotacaoId||env.id; if(!ref||idsBus.has(ref)) return;
+      const valor=parseFloat(p.valor||p.precoTabela||0)||0;
+      atuais.unshift({
+        id:'cot-'+ref, _ref:ref, _fromBus:true, _sistema:env.sistema||'sbs-brasil',
+        leadNome:p.cliente||p.leadNome||'Cliente (app)', produto:p.produto||'—',
+        qtd:parseFloat(p.quantidade||p.qtd||1)||1, precoTabela:valor,
+        descontoSolic:parseFloat(p.descontoSolic||p.desconto||0)||0, descontoAprov:null,
+        bonifSolic:p.bonificacao||p.bonifSolic||'', bonifAprov:'',
+        justificativa:p.observacoes||p.justificativa||('Cotação do app — '+(p.municipio||p.cidade||'')),
+        municipio:p.municipio||p.cidade||'', estado:p.estado||'', vendedor:p.vendedor||p.criado_por||'',
+        origem:(env.sistema==='sbs-brasil'?'App SBS Brasil':'App'), status:'Solicitado', criadoEm:env.criadoEm||new Date().toISOString()
+      });
+      mudou=true;
+    });
+    if(mudou) this.setState({orcamentos:atuais});
   }
   // Fontes de Inteligência: preferem o dado real (state) e caem no demo enquanto vazio.
   cotData(){ const s=this.state.miCotacoes; return (s&&s.length)?s:this.data().cotacoes; }
@@ -2409,6 +2442,21 @@ class Component extends DCLogic {
       this.setState({notifs:[notif,...(this.state.notifs||[])]});
     }catch(e){}
     try{ this.apiSend('orcamentos','PATCH',{id,aprovar,descontoAprov:descAprov,bonifAprov:bonif,notaGerente:nota}).catch(()=>{}); }catch(e){}
+    // Se a cotação veio do app (barramento), devolve a decisão para o vendedor lá
+    try{
+      const orc=(this.state.orcamentos||[]).find(o=>o.id===id)||{};
+      if(orc._fromBus && orc._ref){
+        const meta=this.roleMeta()[this.state.role]||{};
+        const stEnv={ sistema:'painel-sbs', tipo:'cotacao-status', ref:orc._ref,
+          titulo:'Cotação — '+(orc.leadNome||orc._ref),
+          resumo:aprovar?('Liberado '+descAprov+'%'):'Recusado',
+          payload:{ cotacaoId:orc._ref, status:aprovar?'liberado':'recusado',
+            descontoAprov:aprovar?descAprov:0, bonifAprov:aprovar?(bonif||orc.bonifSolic||''):'',
+            nota:nota||'', decididoPor:meta.name||this.state.role, decididoEm:new Date().toISOString() },
+          criadoEm:new Date().toISOString(), criadoPor:meta.name||this.state.role };
+        this.apiSend('integracao','POST',stEnv).catch(()=>{});
+      }
+    }catch(e){}
     this.showToast(aprovar?'Desconto liberado — vendedor notificado':'Orçamento recusado — vendedor notificado');
   }
   // Atalho: cria o app de parceiro já vinculado a um evento em "a criar / não consta"
@@ -3763,7 +3811,7 @@ class Component extends DCLogic {
             this.chip(x.cid+': '+(x.tipo==='seca'?'estiagem':'chuva forte'),x.tipo==='seca'?'#c2564b':'#c98a1e')))]),
       ]),
       React.createElement('div',{key:'fonte',style:{display:'flex',gap:9,alignItems:'center',padding:'12px 16px',background:'#eef1ee',borderRadius:12,font:'600 12px Manrope',color:'#5c6b67'}},
-        this.ic(this.icons().globe),'Fonte: previsão via Open-Meteo / INMET (gratuitas). No protótipo os valores são exemplares; após hospedar, o painel busca a previsão real por coordenada de cada praça.'),
+        this.ic(this.icons().globe), this.state.backend==='online' ? 'Fonte: previsão via Open-Meteo / INMET (gratuitas), por coordenada de cada praça.' : 'Fonte: previsão via Open-Meteo / INMET (gratuitas). Valores de exemplo enquanto o backend está offline; conectado, busca a previsão real por coordenada de cada praça.'),
     ]);
   }
   roleName(r){ return {marketing:'Marketing',gerente:'Gerente Nacional',ceo:'Diretoria (CEO)',mercado:'Inteligência de Mercado'}[r]||''; }
@@ -4125,7 +4173,7 @@ class Component extends DCLogic {
       {id:'sb3',sistema:'sbs-brasil',tipo:'solicitacoes',ref:'SOL-1003',titulo:'Brindes (bonés) para feira',resumo:'materiais · custo: R$ 1.200',criadoEm:'2026-07-07T09:20:00Z',payload:{sugestaoId:'SOL-1003',categoria:'materiais',titulo:'Brindes (bonés) para feira',descricao:'500 bonés com a marca para distribuir na feira agropecuária.',item:'Boné bordado',quantidade:'500',custo:'R$ 1.200',publico:'visitantes da feira',orcamento:'R$ 8.000',data_evento:'2026-08-20',estado:'GO',criado_por:'Supervisor GO',papel:'supervisor',status:'aguardando_marketing'}},
     ];
   }
-  solicData(){ const r=this.state.solicRecs; return (r&&r.length)?r:this.solicDemo(); }
+  solicData(){ const r=this.state.solicRecs; if(r&&r.length) return r; return this.state.backend==='online' ? [] : this.solicDemo(); }
   solicSid(sol){ return (sol.payload&&sol.payload.sugestaoId)||sol.ref||sol.id; }
   solicDecMap(sol){
     const sid=this.solicSid(sol); const map={};
@@ -4164,6 +4212,22 @@ class Component extends DCLogic {
       payload:{sugestaoId:sid, area, decisao, parecer}, criadoEm:new Date().toISOString(), criadoPor:meta.name||this.state.role };
     this.setState({solicDecisoes:[env,...(this.state.solicDecisoes||[])]});
     try{ this.apiSend('integracao','POST',{sistema:env.sistema,tipo:env.tipo,ref:env.ref,titulo:env.titulo,resumo:env.resumo,payload:env.payload,criadoPor:env.criadoPor}).catch(()=>{}); }catch(e){}
+    // Publica também o STATUS CONSOLIDADO da solicitação (retorno ao vendedor).
+    try{
+      const decNovo=Object.assign({},dec); decNovo[area]=decisao;
+      const stAtual=this.solicStatus(decNovo);
+      const stLabel=(this.solicStatusMeta(stAtual)||[])[0]||stAtual;
+      const stEnv={ sistema:'painel-sbs', tipo:'solicitacao-status', ref:sid,
+        titulo:'Status — '+(sol.titulo||(sol.payload&&sol.payload.titulo)||sid),
+        resumo:stLabel,
+        payload:{ sugestaoId:sid, status:stAtual, statusLabel:stLabel,
+          area, decisao, parecer,
+          marketing:decNovo.marketing||'pendente', nacional:decNovo.nacional||'pendente',
+          inteligencia:decNovo.inteligencia||'pendente', ceo:decNovo.ceo||'pendente',
+          atualizadoEm:new Date().toISOString(), atualizadoPor:meta.name||this.state.role },
+        criadoEm:new Date().toISOString(), criadoPor:meta.name||this.state.role };
+      this.apiSend('integracao','POST',stEnv).catch(()=>{});
+    }catch(e){}
     this.showToast(this.areaLabel(area)+' — '+decisao+' registrada. Enviada ao SBS Brasil ✓');
   }
   solicSetParecer(sid,v){ const o=Object.assign({},this.state.solicParecer||{}); o[sid]=v; this.setState({solicParecer:o}); }
@@ -4183,8 +4247,7 @@ class Component extends DCLogic {
         React.createElement('div',{style:{flex:1}},
           React.createElement('div',{style:{font:'800 16px Archivo',color:'#fff'}},'Solicitações do SBS Brasil'),
           React.createElement('div',{style:{font:'500 13px Manrope',color:'#a9c6b6'}},'Pedidos de vendedores, supervisores e gerentes regionais (campanhas, eventos, materiais e itens com custo). Marketing é o porteiro; depois seguem para Nacional, Inteligência e CEO.')),
-        area?React.createElement('span',{style:{font:'700 10px Manrope',color:'#0c3b37',background:'#4fd1be',padding:'5px 11px',borderRadius:20,flex:'none'}},'Você decide como: '+this.areaLabel(area)):React.createElement('span',{style:{font:'700 10px Manrope',color:'#fff',background:'#ffffff33',padding:'5px 11px',borderRadius:20,flex:'none'}},'Somente leitura'),
-        demo?React.createElement('span',{style:{font:'700 10px Manrope',color:'#0c3b37',background:'#ffd98a',padding:'5px 11px',borderRadius:20,flex:'none'}},'DEMONSTRAÇÃO'):null),
+        area?React.createElement('span',{style:{font:'700 10px Manrope',color:'#0c3b37',background:'#4fd1be',padding:'5px 11px',borderRadius:20,flex:'none'}},'Você decide como: '+this.areaLabel(area)):React.createElement('span',{style:{font:'700 10px Manrope',color:'#fff',background:'#ffffff33',padding:'5px 11px',borderRadius:20,flex:'none'}},'Somente leitura')),
       this.grid(4,16,this.kpiCards([
         {label:'Aguardando Marketing',value:cont.aguardando_marketing+''},
         {label:'Em aprovação',value:cont.em_aprovacao+''},
@@ -4303,7 +4366,7 @@ class Component extends DCLogic {
         React.createElement('div',{style:{flex:1}},
           React.createElement('div',{style:{font:'800 16px Archivo',color:'#fff'}},'Integração · Painel SBS ↔ SBS Brasil'),
           React.createElement('div',{style:{font:'500 13px Manrope',color:'#a9c6b6'}},'Os dois sistemas compartilham o mesmo banco (Cloudflare + Supabase). O que um grava, o outro lê aqui — em tempo real.')),
-        demo?React.createElement('span',{style:{font:'700 10px Manrope',color:'#0c3b37',background:'#ffd98a',padding:'5px 11px',borderRadius:20,flex:'none'}},'MODO DEMONSTRAÇÃO'):React.createElement('span',{style:{font:'700 10px Manrope',color:'#fff',background:'#12b39a',padding:'5px 11px',borderRadius:20,flex:'none'}},'CONECTADO')),
+        (demo&&this.state.backend!=='online')?React.createElement('span',{style:{font:'700 10px Manrope',color:'#0c3b37',background:'#ffd98a',padding:'5px 11px',borderRadius:20,flex:'none'}},'MODO DEMONSTRAÇÃO'):React.createElement('span',{style:{font:'700 10px Manrope',color:'#fff',background:'#12b39a',padding:'5px 11px',borderRadius:20,flex:'none'}},'CONECTADO')),
       this.grid(4,16,this.kpiCards([
         {label:'Recebidos do SBS Brasil',value:recebidos.length+''},
         {label:'Enviados deste painel',value:enviados.length+''},
@@ -4999,7 +5062,7 @@ class Component extends DCLogic {
     return this.wrap([
       React.createElement('div',{key:'n',style:{display:'flex',gap:10,alignItems:'flex-start',background:'#eef3ff',borderRadius:13,padding:'14px 16px',font:'500 13px Manrope',color:'#1e2a3a',lineHeight:1.5}},
         React.createElement('span',{style:{color:'#3b6ef5',flex:'none',marginTop:1}},this.ic(this.icons().users)),
-        'Perfis de acesso ao sistema. Cada usuário vê apenas o seu painel; o painel de TI é exclusivo da Tecnologia. Senha padrão do protótipo: 12345678.'),
+        'Perfis de acesso ao sistema. Cada usuário vê apenas o seu painel; o painel de TI é exclusivo da Tecnologia. Senha padrão no primeiro acesso: 12345678 (troca obrigatória).'),
       this.card([this.h('Usuários e perfis'),this.table([{t:'Usuário'},{t:'E-mail'},{t:'Perfil'}],
         rows.map(r=>[React.createElement('span',{style:{font:'700 13px Manrope',color:'#0c3b37'}},r[0]),React.createElement('span',{style:{font:'500 12px Manrope',color:'#5c6b67'}},r[1]),this.chip(r[2],r[2].indexOf('TI')>=0?'#3b6ef5':(r[2].indexOf('Todos')>=0?'#8b5cf6':'#12b39a'))]))]),
     ]);
@@ -5248,10 +5311,47 @@ class Component extends DCLogic {
     const meta=this.roleMeta()[this.state.role]||{};
     const aud=(document.getElementById('bib-aud')||{}).value||'Todos';
     const cat=(document.getElementById('bib-cat')||{}).value||(st.isImg?'Imagem':'Documento');
-    const item={ id:'b'+Date.now(), titulo, tipo:st.tipo, audiencia:aud, categoria:cat, dataUrl:st.dataUrl, tamanho:st.tamanho, criadoPor:this.state.isAdmin?'Admin master':(meta.user||'—'), criadoEm:new Date().toISOString() };
-    this.setState({biblioteca:[item,...this.bibList()],bibNew:false,bibStaged:null});
-    try{ this.apiSend('biblioteca','POST',item).catch(()=>{}); }catch(e){}
-    this.showToast('Arquivo publicado ✓ — visível para '+aud);
+    const criadoPor=this.state.isAdmin?'Admin master':(meta.user||'—');
+    const base={ id:'b'+Date.now(), titulo, tipo:st.tipo, audiencia:aud, categoria:cat, tamanho:st.tamanho, isImg:st.isImg, criadoPor, criadoEm:new Date().toISOString() };
+    const finalize=(item)=>{
+      this.setState({biblioteca:[item,...this.bibList()],bibNew:false,bibStaged:null,bibUploading:false});
+      try{ this.apiSend('biblioteca','POST',item).catch(()=>{}); }catch(e){}
+      this.showToast('Arquivo publicado ✓ — no app dos vendedores para '+aud);
+    };
+    // Robusto: sobe para o Supabase Storage (URL leve). Se não configurado/falhar,
+    // cai para base64 (dataUrl) — funciona igual, só mais pesado.
+    this.setState({bibUploading:true});
+    let done=false;
+    const fallback=()=>{ if(done) return; done=true; finalize(Object.assign({},base,{dataUrl:st.dataUrl,url:null})); };
+    try{
+      this.apiSend('storage','POST',{ nome:(titulo+'.'+(st.tipo||'bin')), tipo:st.dataUrl&&/^data:([^;]+);/.exec(st.dataUrl)?/^data:([^;]+);/.exec(st.dataUrl)[1]:'', dataUrl:st.dataUrl },{timeout:60000})
+        .then(res=>{
+          if(done) return; done=true;
+          if(res && res.configurado && res.url){ finalize(Object.assign({},base,{url:res.url,dataUrl:null})); }
+          else { finalize(Object.assign({},base,{dataUrl:st.dataUrl,url:null})); }
+        }).catch(fallback);
+    }catch(e){ fallback(); }
+    // rede muito lenta: não trava a UI — mantém base64 após 62s
+    setTimeout(fallback,62000);
+  }
+  bibWhats(it){
+    try{
+      const nav=window.navigator;
+      const legenda=(it.titulo||'Material SBS')+' — SBS Green Seeds';
+      const src=it.url||it.dataUrl||'';
+      const isImg=it.isImg||/^(png|jpg|jpeg|gif|webp|svg)$/i.test(it.tipo||'');
+      // Se der para compartilhar o arquivo direto (imagem), usa a folha nativa (inclui WhatsApp).
+      if(src && isImg && nav.canShare){
+        fetch(src).then(r=>r.blob()).then(b=>{
+          const f=new File([b],(it.titulo||'material')+'.'+(it.tipo||'png'),{type:b.type||'image/png'});
+          if(nav.canShare({files:[f]})){ nav.share({files:[f],text:legenda}).catch(()=>{}); }
+          else { window.open('https://wa.me/?text='+encodeURIComponent(legenda+(it.url?(' '+it.url):'')),'_blank','noopener'); }
+        }).catch(()=>{ window.open('https://wa.me/?text='+encodeURIComponent(legenda+(it.url?(' '+it.url):'')),'_blank','noopener'); });
+      } else {
+        // Documento/vídeo com URL pública: manda a legenda + link (o destinatário baixa).
+        window.open('https://wa.me/?text='+encodeURIComponent(legenda+(it.url?(' '+it.url):'')),'_blank','noopener');
+      }
+    }catch(e){ window.open('https://wa.me/?text='+encodeURIComponent((it.titulo||'Material SBS')),'_blank','noopener'); }
   }
   bibExcluir(id){ if(!confirm('Remover este arquivo da biblioteca?')) return; this.setState({biblioteca:this.bibList().filter(x=>x.id!==id)}); try{ this.apiSend('biblioteca?id='+encodeURIComponent(id),'DELETE',{}).catch(()=>{}); }catch(e){} this.showToast('Arquivo removido'); }
   bibAbrir(it){ try{ if(it.dataUrl){ const w=window.open(); if(w){ if(it.isImg||/^(png|jpg|jpeg|gif|webp|svg)$/.test(it.tipo)){ w.document.write('<img src="'+it.dataUrl+'" style="max-width:100%">'); } else { w.location=it.dataUrl; } } } else if(it.url){ window.open(it.url,'_blank','noopener'); } else { this.showToast('Arquivo indisponível'); } }catch(e){ this.showToast('Não foi possível abrir'); } }
@@ -5280,7 +5380,7 @@ class Component extends DCLogic {
         ),
         React.createElement('div',{style:{display:'flex',gap:12,justifyContent:'flex-end',marginTop:22}},
           React.createElement('button',{onClick:()=>this.set({bibNew:false,bibStaged:null}),style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',color:'#0c3b37',cursor:'pointer'}},'Cancelar'),
-          React.createElement('button',{onClick:()=>this.bibSalvar(),style:{background:'#12b39a',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#fff',cursor:'pointer'}},'Publicar'))));
+          React.createElement('button',{disabled:this.state.bibUploading,onClick:()=>this.bibSalvar(),style:{background:this.state.bibUploading?'#7fb9ac':'#12b39a',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',color:'#fff',cursor:this.state.bibUploading?'wait':'pointer'}},this.state.bibUploading?'Enviando…':'Publicar'))));
   }
   pgBiblioteca(){
     const filtro=this.state.bibFiltro||'Todos';
@@ -5296,16 +5396,18 @@ class Component extends DCLogic {
           React.createElement('div',{style:{font:'700 13.5px Manrope',color:'#0c3b37',lineHeight:1.3}},it.titulo),
           React.createElement('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},
             this.chip(it.audiencia,audCor[it.audiencia]||'#0c3b37'),
-            React.createElement('span',{style:{font:'700 10px Manrope',color:'#5c6b67',background:'#eef1ee',padding:'3px 8px',borderRadius:20,textTransform:'uppercase'}},(it.tipo||'arquivo'))),
+            React.createElement('span',{style:{font:'700 10px Manrope',color:'#5c6b67',background:'#eef1ee',padding:'3px 8px',borderRadius:20,textTransform:'uppercase'}},(it.tipo||'arquivo')),
+            React.createElement('span',{title:'Disponível no app dos vendedores e supervisores',style:{font:'700 10px Manrope',color:'#0b6b61',background:'#d6f5ee',padding:'3px 8px',borderRadius:20}},'No app ✓')),
           React.createElement('div',{style:{font:'500 11px Manrope',color:'#8a9a94'}},this.bibFmtKB(it.tamanho)+' · por '+(it.criadoPor||'—')),
           React.createElement('div',{style:{display:'flex',gap:8,marginTop:'auto'}},
             React.createElement('button',{onClick:()=>this.bibAbrir(it),style:{flex:1,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'9px',font:'700 12px Manrope',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}},this.ic(this.icons().share),'Abrir'),
+            React.createElement('button',{onClick:()=>this.bibWhats(it),title:'Compartilhar no WhatsApp',style:{flex:'none',background:'#25d366',color:'#fff',border:'none',borderRadius:9,padding:'9px 12px',font:'700 12px Manrope',cursor:'pointer'}},'WhatsApp'),
             React.createElement('button',{onClick:()=>this.bibExcluir(it.id),title:'Remover',style:{flex:'none',background:'#fff',color:'#c2564b',border:'1px solid #edd2ce',borderRadius:9,padding:'9px 12px',font:'700 12px Manrope',cursor:'pointer'}},'×'))));
     };
     return this.wrap([
       React.createElement('div',{key:'note',style:{display:'flex',gap:10,alignItems:'flex-start',background:'#eafff9',borderRadius:13,padding:'14px 16px',font:'500 13px Manrope',color:'#0c3b37',lineHeight:1.5}},
         React.createElement('span',{style:{color:'#12b39a',flex:'none',marginTop:1}},this.ic(this.icons().share)),
-        'Central de arquivos da equipe: publique imagens e documentos (guias, tabelas, materiais de campanha) e escolha se vão para todos, para os gerentes regionais ou para os supervisores. Eles acessam por aqui, no painel.'),
+        'Central de arquivos da equipe: publique imagens e documentos (guias, tabelas, materiais de campanha) e escolha se vão para todos, para os gerentes regionais ou para os supervisores. Tudo que você publica aqui aparece no app dos vendedores e supervisores (SBS Brasil), onde eles baixam e compartilham no WhatsApp.'),
       React.createElement('div',{key:'hd',style:{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
         React.createElement('div',{style:{font:'700 15px Archivo',color:'#0c3b37',flex:1}},all.length+' arquivo(s) na biblioteca'),
         React.createElement('div',{style:{display:'flex',gap:6}},this.bibAudiencias().map(a=>React.createElement('button',{key:a,onClick:()=>this.set({bibFiltro:a}),style:{border:'none',cursor:'pointer',borderRadius:20,padding:'8px 13px',font:'700 11.5px Manrope',background:filtro===a?'#0c3b37':'#eef1ee',color:filtro===a?'#fff':'#5c6b67'}},a))),
