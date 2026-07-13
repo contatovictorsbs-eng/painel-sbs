@@ -32,6 +32,7 @@ import * as fOrcamentos from '../../server/orcamentos.js';
 import * as fParceiros from '../../server/parceiros.js';
 import * as fProdutos from '../../server/produtos.js';
 import * as fRanking from '../../server/ranking.js';
+import * as fResultados from '../../server/resultados.js';
 import * as fSenha from '../../server/senha.js';
 import * as fTenants from '../../server/tenants.js';
 import * as fVendas from '../../server/vendas.js';
@@ -179,6 +180,60 @@ async function hLocalizacoes(event){
   }
 }
 
+async function hParceiroIndicadores(event){
+  // Proxy v2 dos indicadores da equipe de campo (SBS Brasil).
+  // Worker: GET <SBS_BRASIL_URL>/api/integ/v1/indicadores  (Authorization: Bearer <INTEG_KEY>)
+  //   + x-integ-key e ?key= como compat v1. Timeout 5s. Erro → DEMONSTRAÇÃO.
+  //   "online/TEMPO REAL" só quando vier atualizadoEm (regra do handoff §5).
+  const H = { 'content-type': 'application/json', 'cache-control': 'no-store' };
+  const base = (process.env.SBS_BRASIL_URL || '').replace(/\/+$/, '');
+  const key = process.env.INTEG_KEY || '';
+  if (!base || !key) {
+    return { statusCode: 200, headers: H, body: JSON.stringify({ ok: true, data: { configurado: false, online: false, indicadores: null } }) };
+  }
+  const num = (d, ...ks) => { for (const k of ks) { if (d[k] != null && !isNaN(Number(d[k]))) return Number(d[k]); } return 0; };
+  const timeout = Number(process.env.INTEG_TIMEOUT_MS || 5000);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeout);
+  try {
+    const url = base + '/api/integ/v1/indicadores?key=' + encodeURIComponent(key);
+    const r = await fetch(url, {
+      signal: ctrl.signal,
+      headers: {
+        'authorization': 'Bearer ' + key,   // v2 — chave no header (não vaza em log)
+        'x-integ-key': key,                  // compat v1
+        'accept': 'application/json'
+      }
+    });
+    if (!r.ok) throw new Error('HTTP_' + r.status);
+    const txt = await r.text();
+    let raw = {};
+    try { raw = JSON.parse(txt); } catch (e) { raw = {}; }
+    const d = (raw && (raw.indicadores || raw.data || raw)) || {};
+    const indicadores = {
+      estados: num(d,'estados','estadosAtivos','estados_ativos'),
+      clientes: num(d,'clientes','carteira'),
+      prospects: num(d,'prospects','prospeccao'),
+      rotas: num(d,'rotas','rotasVisitas','rotas_visitas'),
+      agendadas: num(d,'agendadas','visitasAgendadas','visitas_agendadas'),
+      validadas: num(d,'validadas','rotasValidadas','rotas_validadas'),
+      cotacoes: num(d,'cotacoes','cotacoesAbertas'),
+      vendasRS: num(d,'vendasRS','vendas','vendas_rs','faturamento')
+    };
+    const atualizadoEm = raw && raw.atualizadoEm ? String(raw.atualizadoEm) : null;
+    const periodo = raw && raw.periodo ? String(raw.periodo) : null;
+    const versao = raw && raw.versao != null ? raw.versao : null;
+    // TEMPO REAL só quando o worker devolve atualizadoEm (handoff §2/§5).
+    const online = !!atualizadoEm;
+    return { statusCode: 200, headers: H, body: JSON.stringify({ ok: true, data: { configurado: true, online, versao, periodo, atualizadoEm, indicadores } }) };
+  } catch (e) {
+    const motivo = e && e.name === 'AbortError' ? 'TIMEOUT' : (e && e.message) || 'ERRO';
+    return { statusCode: 200, headers: H, body: JSON.stringify({ ok: true, data: { configurado: true, online: false, erro: motivo, indicadores: null } }) };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 function pick(m){ return (m && (m.handler || (m.default && m.default.handler))) || null; }
 
 const HANDLERS = {
@@ -198,6 +253,7 @@ const HANDLERS = {
   'leads': pick(fLeads),
   'limpar-teste': pick(fLimparTeste),
   'localizacoes': hLocalizacoes,
+  'parceiro-indicadores': hParceiroIndicadores,
   'mercado': pick(fMercado),
   'monitoramento': pick(fMonitoramento),
   'notificacoes': pick(fNotificacoes),
@@ -205,6 +261,7 @@ const HANDLERS = {
   'parceiros': pick(fParceiros),
   'produtos': pick(fProdutos),
   'ranking': pick(fRanking),
+  'resultados': pick(fResultados),
   'senha': pick(fSenha),
   'storage': hStorage,
   'tenants': pick(fTenants),

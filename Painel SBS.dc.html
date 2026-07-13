@@ -473,6 +473,8 @@ class Component extends DCLogic {
     this.apiGet('produtos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({catalogo:rows}); }).catch(()=>{});
     if(!this.state.eventos) this.setState({eventos:(this.data().events||[]).slice()});
     this.apiGet('eventos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({eventos:rows}); }).catch(()=>{});
+    this.carregarResultados();
+    this.carregarIndParceiro();
     this.apiGet('tenants').then(rows=>{ if(Array.isArray(rows)&&rows.length){ const parts=rows.map(t=>({id:t.slug,slug:t.slug,nome:t.nome,cor:t.cor,logo:t.logo,sigla:(t.nome||'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(),produtos:t.produtos||[],politica:t.politica||'',status:t.status,evento:'—',local:'—',vendedores:0,fat:0,eventos:0,leads:0,roi:0})); this.setState({partners:parts, backend:'online'}); } }).catch(()=>{});
     // Vendas (alimenta receita real do CEO e dashboards)
     this.apiGet('vendas',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({vendas:rows}); }).catch(()=>{});
@@ -778,6 +780,7 @@ class Component extends DCLogic {
       if(p==='dash') return this.gerDash();
       if(p==='demandas') return this.quadroDemandas();
       if(p==='campanhas') return this.gerCampanhas();
+      if(p==='resultados') return this.pgResultados();
       if(p==='metas') return this.gerMetas();
       if(p==='performance') return this.gerPerformance();
       if(p==='rankings') return this.gerRankings();
@@ -806,6 +809,7 @@ class Component extends DCLogic {
     if(r==='mercado'){
       if(p==='dash') return this.mercDash();
       if(p==='demandas') return this.quadroDemandas();
+      if(p==='resultados') return this.pgResultados();
       if(p==='cotacoes') return this.mercCotacoes();
       if(p==='financeiro') return this.mercadoFinanceiro();
       if(p==='concorrentes') return this.mercConcorrentes();
@@ -3483,6 +3487,144 @@ class Component extends DCLogic {
     let i=cols.indexOf(cur.status); i=Math.max(0,Math.min(cols.length-1,i+dir));
     this.patchDemanda(id,{status:cols[i]});
   }
+  // ===== RESULTADOS DAS AÇÕES (Gerência Nacional + Inteligência) =====
+  // Consolida cada demanda que virou ação (evento/campanha) com o resultado
+  // esperado (meta) × obtido (realizado), status e ROI. Fonte: demandas + eventos + campanhas.
+  acoesResultado(){
+    const evs=this.evAll()||[]; const evById={}; evs.forEach(e=>{ evById[String(e.id)]=e; });
+    const camps=this.allCampaigns()||[]; const projs=this.state.projetos||[];
+    const vendas=this.state.vendas||[];
+    return (this.allDemandas()||[]).map(d=>{
+      const ev=d.eventoId?evById[String(d.eventoId)]:null;
+      const camp=ev?camps.find(c=>c.evento===ev.nome):null;
+      const proj=ev?projs.find(p=>p.origemEvento===ev.id):null;
+      // REALIZADO = soma das vendas registradas nesse evento (App de Eventos → base). Fallback: receita do evento / fat da campanha.
+      const vend=ev?vendas.filter(v=>String(v.eventoId)===String(ev.id)):[];
+      const recVend=vend.reduce((s,v)=>s+(Number(v.valor)||0),0);
+      const pedidos=vend.length;
+      const esperado=Number((camp&&camp.meta)||(proj&&proj.ger&&proj.ger.metaReceita)||0)||0;
+      const obtido=recVend>0?recVend:(camp?Number(camp.fat||0):(ev?Number(ev.receita||0):0));
+      const custo=Number((ev&&ev.custo)||(proj&&proj.mkt&&proj.mkt.orcamento)||(camp&&camp.custo)||0)||0;
+      const roi=(obtido>0&&custo>0)?(obtido/custo):(ev?Number(ev.roi||0):(camp?Number(camp.roi||0):0));
+      const conv=ev?Number(ev.conv||0):0;
+      let status; if(ev){ status=ev.status==='Realizado'?'Concluída':(ev.aprovacao?'Em aprovação':'Ativa'); } else { status=d.status||'Solicitado'; }
+      return { id:d.id, nome:d.convertidoEvento||d.tipo||String(d.desc||'').slice(0,60)||'Ação',
+        area:d.destino||d.area||'—', origem:d.origem||d.solic||'—', resp:d.resp||'A definir',
+        prazo:d.prazo||'', regiao:d.regiao||'', status:status, tipo:ev?'Evento':(d.tipo||'Demanda'),
+        esperado:esperado, obtido:obtido, roi:roi, conv:conv, pedidos:pedidos, eventoId:d.eventoId||null, convertido:!!ev, ts:d.ts||0 };
+    }).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  }
+  resultadosData(){ const r=this.state.resultadosReal; return (Array.isArray(r)&&r.length)?r:this.acoesResultado(); }
+  carregarResultados(){ this.apiGet('resultados').then(d=>{ if(d&&Array.isArray(d.itens)) this.setState({resultadosReal:d.itens,backend:'online'}); }).catch(()=>{}); }
+  // Indicadores do Painel do Vendedor (SBS Brasil) — carteira/prospecção da equipe de campo.
+  indParceiroDemo(){ return { estados:4, clientes:561, prospects:645, rotas:3, agendadas:3, validadas:1, cotacoes:7, vendasRS:0 }; }
+  indParceiroData(){ const d=this.state.indParceiro; return (d&&typeof d==='object')?d:this.indParceiroDemo(); }
+  carregarIndParceiro(){ this.apiGet('parceiro-indicadores').then(d=>{ if(d&&d.indicadores){ this.setState({indParceiro:d.indicadores, indParceiroOnline:!!d.online, indParceiroPeriodo:d.periodo||null, indParceiroAtualizado:d.atualizadoEm||null}); } }).catch(()=>{}); }
+  indParceiroBloco(){
+    const h=React.createElement; const d=this.indParceiroData();
+    const online=!!this.state.indParceiroOnline; const AZ='#2b6cb0';
+    const periodo=this.state.indParceiroPeriodo; const atualizado=this.state.indParceiroAtualizado;
+    const periodoLabel={acumulado:'acumulado (histórico)',safra_atual:'safra atual'}[periodo]||periodo||null;
+    const quando=atualizado?(()=>{ try{ return new Date(atualizado).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return null; } })():null;
+    const brl=n=>'R$ '+(Number(n)||0).toLocaleString('pt-BR');
+    const isMobile=(this.state.vw||1200)<760;
+    const stats=[
+      ['Estados ativos', String(d.estados||0)],
+      ['Clientes (carteira)', (d.clientes||0).toLocaleString('pt-BR')],
+      ['Prospects', (d.prospects||0).toLocaleString('pt-BR')],
+      ['Rotas / visitas', String(d.rotas||0)],
+      ['Visitas agendadas', String(d.agendadas||0)],
+      ['Rotas validadas', String(d.validadas||0)],
+      ['Cotações', String(d.cotacoes||0)],
+      ['Vendas (R$)', brl(d.vendasRS||0)]
+    ];
+    return h('div',{key:'indpar',style:{border:'1px solid #cfe0f2',borderRadius:16,overflow:'hidden',background:'#fff'}},
+      h('div',{style:{display:'flex',gap:12,alignItems:'flex-start',flexWrap:'wrap',background:'linear-gradient(120deg,#1e4f86,#16385f)',padding:'15px 18px'}},
+        h('div',{style:{flex:1,minWidth:200}},
+          h('div',{style:{font:'800 10px Manrope',letterSpacing:'.1em',color:'#a8cdf2',marginBottom:4}},'PAINEL DO VENDEDOR · PROSPECÇÃO'),
+          h('div',{style:{font:'800 15px Archivo',color:'#fff'}},'Indicadores do SBS Brasil — equipe de campo'),
+          h('div',{style:{font:'500 12px Manrope',color:'#bcd6f0',marginTop:2,lineHeight:1.5,maxWidth:660}},'Números da carteira de clientes e da prospecção em campo, vindos do sistema SBS Brasil (Painel Nacional do vendedor). Não são as vendas de eventos — são a operação comercial da equipe de campo (clientes, prospects, rotas e visitas).')),
+        h('span',{style:{font:'700 10px Manrope',color:online?'#0c3b37':'#16385f',background:online?'#7ff0dd':'#ffd98a',padding:'5px 11px',borderRadius:20,flex:'none',alignSelf:'center'}},online?'TEMPO REAL':'DEMONSTRAÇÃO')),
+      h('div',{style:{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(4,1fr)',gap:1,background:'#e8eef6'}},
+        stats.map((s,i)=>h('div',{key:i,style:{background:'#fff',padding:'14px 16px',display:'flex',flexDirection:'column',gap:3}},
+          h('div',{style:{font:'800 24px/1 Archivo',color:AZ,letterSpacing:'-.01em'}},s[1]),
+          h('div',{style:{font:'600 11.5px Manrope',color:'#5c6b67'}},s[0])))),
+      h('div',{style:{display:'flex',flexWrap:'wrap',gap:'4px 14px',alignItems:'center',padding:'9px 18px',background:'#f4f8fd',borderTop:'1px solid #e2ecf7',font:'600 10.5px Manrope',color:'#6b7f93'}},
+        periodoLabel?h('span',{key:'p'},'Janela do dado: ',h('b',{style:{color:'#3a5a7a'}},periodoLabel)):null,
+        online&&quando?h('span',{key:'q'},'Atualizado em '+quando):null,
+        !online?h('span',{key:'d'},'Valores de exemplo — aguardando conexão com o SBS Brasil.'):null));
+  }
+  resStatusColor(s){ return {'Concluída':'#00867f','Ativa':'#2b7bce','Em aprovação':'#c98a1e','Solicitado':'#5c6b67','Em análise':'#c98a1e','Em desenvolvimento':'#2b7bce','Aguardando aprovação':'#c98a1e','Finalizado':'#00867f'}[s]||'#5c6b67'; }
+  pgResultados(){
+    const h=React.createElement; const I=this.icons();
+    const acoes=this.resultadosData();
+    const flt=this.state.resFilter||'todas';
+    const vis=acoes.filter(a=> flt==='andamento'?!a.convertido : (flt==='concluidas'?a.status==='Concluída':true));
+    const conv=acoes.filter(a=>a.convertido);
+    const receita=conv.reduce((s,a)=>s+(a.obtido||0),0);
+    const rr=conv.filter(a=>a.roi>0); const roiMed=rr.length?(rr.reduce((s,a)=>s+a.roi,0)/rr.length):0;
+    const andamento=acoes.filter(a=>!a.convertido).length;
+    const concl=acoes.filter(a=>a.status==='Concluída').length;
+    const isMobile=(this.state.vw||1200)<760;
+    const cols=isMobile?'1fr':'1.6fr .9fr 160px 130px 66px';
+    const tab=(k,l,n)=>h('button',{key:k,onClick:()=>this.set({resFilter:k}),style:{display:'inline-flex',alignItems:'center',gap:7,background:flt===k?'#0c3b37':'#fff',color:flt===k?'#fff':'#3a4a44',border:'1px solid '+(flt===k?'#0c3b37':'rgba(12,59,55,.15)'),borderRadius:10,padding:'9px 15px',font:'700 12.5px Manrope',cursor:'pointer'}},l,h('span',{style:{font:'800 11px Manrope',color:flt===k?'#9fd8cd':'#8a9a94'}},String(n)));
+    const barra=a=>{ const frac=a.esperado>0?Math.max(.02,Math.min(1,a.obtido/a.esperado)):(a.obtido>0?1:0); const bater=a.esperado>0&&a.obtido>=a.esperado; const cor=bater?'#00867f':(a.obtido>0?'#12b39a':'#c9a94b'); return h('div',{style:{minWidth:150}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',gap:8,font:'700 11px Manrope',color:'#0c3b37',marginBottom:4}}, h('span',null,a.obtido>0?this.brl(a.obtido):'—'), h('span',{style:{color:'#8a9a94'}},a.esperado>0?('meta '+this.brl(a.esperado)):'sem meta')),
+      h('div',{style:{height:7,borderRadius:20,background:'#eef1ee',overflow:'hidden'}}, h('div',{style:{height:'100%',width:(frac*100)+'%',background:cor,borderRadius:20}}))); };
+    const linha=a=>h('div',{key:a.id,style:{display:'grid',gridTemplateColumns:cols,gap:14,alignItems:'center',padding:'14px 16px',borderTop:'1px solid rgba(12,59,55,.06)'}},
+      h('div',{style:{minWidth:0}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}, h('span',{style:{font:'700 13.5px Manrope',color:'#12211e'}},a.nome), this.chip(a.tipo,a.tipo==='Evento'?'#0B6B61':'#6b7c77')),
+        h('div',{style:{font:'500 11.5px Manrope',color:'#8a9a94',marginTop:3}}, (a.origem||'—')+(a.regiao&&a.regiao!=='—'?(' · '+a.regiao):'')+(a.prazo?(' · prazo '+a.prazo):'')+(a.pedidos?(' · '+a.pedidos+' venda'+(a.pedidos>1?'s':'')):''))),
+      h('div',{style:{font:'600 12.5px Manrope',color:'#3a4a44'}},a.resp||'—'),
+      barra(a),
+      h('div',null,this.chip(a.status,this.resStatusColor(a.status))),
+      h('div',{style:{font:'800 13px Archivo',color:a.roi>0?'#0c3b37':'#b9c4bf',textAlign:isMobile?'left':'right'}},a.roi>0?(a.roi.toFixed(1)+'x'):'—'));
+    const head=isMobile?null:h('div',{style:{display:'grid',gridTemplateColumns:cols,gap:14,padding:'0 16px 10px',font:'700 10.5px Manrope',letterSpacing:'.08em',textTransform:'uppercase',color:'#9aa8a2'}},
+      h('div',null,'Ação'),h('div',null,'Responsável'),h('div',null,'Esperado × obtido'),h('div',null,'Status'),h('div',{style:{textAlign:'right'}},'ROI'));
+    const vazio=h('div',{style:{padding:'40px 16px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94'}},'Nenhuma ação neste filtro. As demandas aparecem aqui como ações — e ganham resultado (meta × realizado) ao virar evento ou campanha.');
+    const secHead=(marca,fonte,fonteCor,titulo,desc)=>h('div',{style:{display:'flex',gap:12,alignItems:'flex-start',marginTop:4}},
+      h('span',{style:{width:5,alignSelf:'stretch',minHeight:38,borderRadius:20,background:marca,flex:'none'}}),
+      h('div',{style:{flex:1,minWidth:0}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:9,flexWrap:'wrap'}},
+          h('div',{style:{font:'800 16px Archivo',color:'#12211e',letterSpacing:'-.01em'}},titulo),
+          h('span',{style:{font:'700 9.5px Manrope',letterSpacing:'.06em',color:fonteCor,background:fonteCor+'1a',border:'1px solid '+fonteCor+'40',borderRadius:20,padding:'3px 9px'}},'FONTE · '+fonte)),
+        h('div',{style:{font:'500 12.5px Manrope',color:'#5c6b67',marginTop:3,lineHeight:1.5,maxWidth:720}},desc)));
+    // Seletor de visualização: separa a fonte deste painel (plataforma) da fonte do outro painel (SBS Brasil)
+    const view=this.state.resView||'plataforma';
+    const segBtn=(k,marca,titulo,fonte)=>{ const on=view===k; return h('button',{key:k,onClick:()=>this.set({resView:k}),style:{flex:1,minWidth:230,textAlign:'left',display:'flex',alignItems:'center',gap:11,background:on?'#fff':'transparent',color:'#12211e',border:'1px solid '+(on?marca:'transparent'),boxShadow:on?'0 2px 8px rgba(12,59,55,.08)':'none',borderRadius:12,padding:'11px 14px',cursor:'pointer'}},
+      h('span',{style:{width:5,alignSelf:'stretch',minHeight:30,borderRadius:20,background:marca,flex:'none',opacity:on?1:.4}}),
+      h('div',{style:{minWidth:0}},
+        h('div',{style:{font:'800 13px Archivo',color:on?'#12211e':'#5c6b67',letterSpacing:'-.01em'}},titulo),
+        h('div',{style:{font:'700 9.5px Manrope',letterSpacing:'.05em',color:on?marca:'#9aa8a2',marginTop:2}},'FONTE · '+fonte)));
+    };
+    const seletor=h('div',{key:'seg',style:{display:'flex',gap:8,flexWrap:'wrap',background:'#eef1ee',borderRadius:16,padding:6}},
+      segBtn('plataforma','#0B6B61','Ações de evento e dia de campo','PLATAFORMA SBS'),
+      segBtn('brasil','#2b6cb0','Prospecção dos estados','SBS BRASIL'));
+    const blocoPlataforma=[
+      secHead('#0B6B61','PLATAFORMA SBS','#0B6B61','Ações de evento e dia de campo','Eventos e dias de campo que criamos e medimos aqui — cada ação mostra o esperado (meta) × o obtido (realizado), o status e o ROI. É a frente em que dá para lançar um app para medir a performance do evento em tempo real.'),
+      this.grid(isMobile?2:5,14,this.kpiCards([
+        {label:'Ações no total',value:String(acoes.length)},
+        {label:'Em andamento',value:String(andamento)},
+        {label:'Concluídas',value:String(concl)},
+        {label:'Receita realizada',value:this.brl(receita)},
+        {label:'ROI médio',value:roiMed?roiMed.toFixed(1)+'x':'—'}
+      ])),
+      h('div',{key:'tabs',style:{display:'flex',gap:9,flexWrap:'wrap'}}, tab('todas','Todas',acoes.length), tab('andamento','Em andamento',andamento), tab('concluidas','Concluídas',concl)),
+      this.card([ head, vis.length?vis.map(linha):vazio ])
+    ];
+    const blocoBrasil=[
+      secHead('#2b6cb0','SBS BRASIL','#2b6cb0','Prospecção dos estados','Resultado do trabalho comercial da equipe de campo — carteira, prospects, rotas e visitas. Vem do Painel Nacional do vendedor (outro sistema), não das nossas ações de evento.'),
+      this.indParceiroBloco()
+    ];
+    return this.wrap([
+      h('div',{key:'note',style:{display:'flex',gap:12,alignItems:'flex-start',background:'linear-gradient(120deg,#0e433d,#0a322e)',borderRadius:16,padding:'16px 18px'}},
+        h('span',{style:{width:38,height:38,borderRadius:11,background:'#4fd1be',color:'#0c3b37',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(I.gauge)),
+        h('div',null, h('div',{style:{font:'800 15px Archivo',color:'#fff'}},'Resultados das ações'),
+          h('div',{style:{font:'500 12.5px Manrope',color:'#a9c6b6',marginTop:2,lineHeight:1.5}},'Escolha a fonte: as ações de evento e dia de campo que esta plataforma cria e mede, ou a prospecção dos estados que vem do Painel Nacional do vendedor (SBS Brasil).'))),
+      seletor,
+      h('div',{key:'body',style:{display:'flex',flexDirection:'column',gap:14}}, view==='plataforma'?blocoPlataforma:blocoBrasil)
+    ]);
+  }
   quadroDemandas(){
     const c=this.demandaCounts();
     const flt=this.state.demFilter||'todas';
@@ -5148,9 +5290,9 @@ class Component extends DCLogic {
     return {
       marketing:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['campanhas','Campanhas',I.campaign],['catalogo','Catálogo & materiais',I.cube],['__sec','Apps & parceiros'],['compartilhar','Compartilhar app',I.share],['parceiros','Apps de parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Inteligência & apoio'],['inteligencia','Inteligência',I.bulb],['assistente','Assistente IA',I.activity],['ranking','Ranking',I.trophy],['notificacoes','Notificações',I.bell],['historico','Histórico',I.history],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
       _mkt_old:[['dash','Dashboard',I.dash],['agenda','Agenda',I.calendar],['eventos','Eventos',I.event],['cadastro','Cadastrar evento',I.plus],['ranking','Ranking',I.trophy],['comparativo','Comparativo',I.compare],['historico','Histórico',I.history]],
-      gerente:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['campanhas','Campanhas',I.campaign],['pipeline','Pipeline',I.funnel],['__sec','Metas & desempenho'],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['evolucao','Evolução',I.chart],['__sec','Produtos & parceiros'],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['notificacoes','Notificações',I.bell],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
+      gerente:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['campanhas','Campanhas',I.campaign],['pipeline','Pipeline',I.funnel],['__sec','Metas & desempenho'],['resultados','Resultados das ações',I.gauge],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['evolucao','Evolução',I.chart],['__sec','Produtos & parceiros'],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['notificacoes','Notificações',I.bell],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
       ceo:[['__sec','Principal'],['dash','Dashboard',I.dash],['mapaequipe','Mapa da equipe',I.map],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Estratégia'],['mercado','Mercado & decisão',I.activity],['indicadores','Indicadores',I.gauge],['evolucao','Evolução',I.chart],['comparativos','Comparativos',I.compare],['geo','Estados & regiões',I.map],['__sec','Estrutura'],['parceiros','Parceiros',I.share],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
-      mercado:[['__sec','Principal'],['dash','Visão geral',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Mercado'],['cotacoes','Cotações',I.chart],['financeiro','Ações & bolsa',I.activity],['concorrentes','Concorrentes',I.gauge],['regioes','Regiões & mercado',I.map],['tendencias','Tendências',I.bulb],['panorama','Panorama setorial',I.cube],['__sec','Análise & fontes'],['fontes','Fontes & canais',I.radar],['mensuracao','Mensuração & ROI',I.activity],['assistente','Assistente IA',I.bulb],['insights','Insights de vendas',I.target],['__sec','Apps & apoio'],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['clima','Clima & tempo',I.cloud],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
+      mercado:[['__sec','Principal'],['dash','Visão geral',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Mercado'],['cotacoes','Cotações',I.chart],['financeiro','Ações & bolsa',I.activity],['concorrentes','Concorrentes',I.gauge],['regioes','Regiões & mercado',I.map],['tendencias','Tendências',I.bulb],['panorama','Panorama setorial',I.cube],['__sec','Análise & fontes'],['resultados','Resultados das ações',I.gauge],['fontes','Fontes & canais',I.radar],['mensuracao','Mensuração & ROI',I.activity],['assistente','Assistente IA',I.bulb],['insights','Insights de vendas',I.target],['__sec','Apps & apoio'],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['clima','Clima & tempo',I.cloud],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Brasil',I.inbox],['integracao','Integração SBS Brasil',I.share]],
       ti:[['governanca','Governança dos painéis',I.gauge],['status','Status & saúde',I.activity],['acessos','Acessos & perfis',I.users],['auditoria','Auditoria (LGPD)',I.target]],
     };
   }

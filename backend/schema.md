@@ -93,6 +93,16 @@ Fontes & canais de monitoramento (Inteligência de Mercado). Guarda tanto a EDI�
 Barramento compartilhado entre Painel SBS e SBS Brasil (mesmo Supabase). Envelope genérico com payload JSON livre — ver `backend/contrato-integracao.md`.
 | id, sistema('painel-sbs'/'sbs-brasil'), tipo(vendas/vendedores/clientes/campanhas/pedidos/produtos/eventos/…), ref, titulo, resumo, payload(json), criadoEm, criadoPor, tenant |
 
+### parceiro-indicadores (proxy — não grava)
+Indicadores do **Painel do Vendedor (SBS Brasil)** exibidos dentro de *Resultados das ações*
+(Gerente Nacional + Inteligência) — carteira e **prospecção** da equipe de campo. NÃO é coleção:
+`parceiro-indicadores.js` é um PROXY que lê `SBS_BRASIL_URL` e `INTEG_KEY` do ambiente e busca
+`GET <SBS_BRASIL_URL>/api/integ/v1/indicadores` **autenticando por `Authorization: Bearer <INTEG_KEY>`**
+(mantendo `x-integ-key` e `?key=` como compat v1), com **timeout de 5s**. Sem config → `configurado:false` e o
+front cai no fallback de demonstração; erro/timeout → `online:false` (DEMONSTRAÇÃO). Roteado inline em `functions/api/[[path]].js` (como `localizacoes`).
+Contrato v2 devolve também `versao`, `periodo` (janela do dado, ex.: `"acumulado"`) e `atualizadoEm` (ISO). Regra do handoff: **selo "TEMPO REAL" só quando vem `atualizadoEm`**; `agendadas:0` é valor legítimo (visitas de campo registradas), não bug. A chave nunca chega ao navegador.
+| saída: { configurado, online, versao, periodo, atualizadoEm, indicadores:{ estados, clientes, prospects, rotas, agendadas, validadas, cotacoes, vendasRS } } |
+
 ### localizacoes (proxy — não grava)
 Mapa da equipe ao vivo do CEO. NÃO é uma coleção: `server/localizacoes.js` é um PROXY que lê `SBS_BRASIL_URL` e `INTEG_KEY` do ambiente e busca as posições atuais no Worker do SBS Brasil (`GET /api/integ/localizacoes?key=`). Devolve `{ok, data:{configurado, localizacoes:[{supervisor_id, vendedor, papel(gerente/supervisor), estado, lat, lng, criado}]}}`. Front chama `GET /api/localizacoes` (polling 35s). Sem as variáveis → `configurado:false` (modo demonstração).
 
@@ -124,9 +134,18 @@ a função `ranking.js` soma o faturamento das `vendas` por vendedor no recorte
 (parceira/evento), ordena e calcula gap para o 1º lugar e corte de cada prêmio.
 | entrada: parceira, eventoId, campanhaId, me(vendedorId) → saída: sellers[{vendedorId,nome,fat,pedidos,pos}], me, need1, pctToFirst, tiers[{pos,premio,corte,falta}] |
 
+### resultados (derivado de demandas + eventos + campanhas + vendas)
+Acompanhamento das ações no painel de **Gerente Nacional** e **Inteligência de Mercado**.
+Não é coleção própria: `resultados.js` (`GET /api/resultados[?area=]`) faz o JOIN — cada
+`demanda` é uma ação; quando ela tem `eventoId` (virou evento), busca o `evento`
+e o **REALIZADO** vem da soma de `vendas.valor` por `eventoId` (App de Eventos → base);
+se não houver vendas, cai em `evento.receita`/`campanha.fat`. O **ESPERADO** vem da
+`meta` da campanha vinculada (ou `metaReceita` do estudo de aprovação). ROI = obtido/custo.
+| saída: itens[{id, nome, area, origem, resp, prazo, regiao, status(Solicitado/…/Ativa/Em aprovação/Concluída), tipo(Evento/Demanda), esperado(meta R$), obtido(realizado R$), roi, conv, eventoId, convertido}], kpis{total, andamento, concluidas, receita, meta, roiMedio} |
+O front prefere o endpoint e cai na agregação local (mesma forma) em modo demonstração.
+
 ### produtos
-Catálogo único da SBS. Base para a tabela de preço de cada campanha e para o app.
-Ficha técnica (specs) e materiais de apoio ficam acessíveis ao vendedor no app quando
+Catálogo único da SBS. Base para a tabela de preço de cada campanha e para o app.Ficha técnica (specs) e materiais de apoio ficam acessíveis ao vendedor no app quando
 o produto está na campanha ativa.
 | id, nome, cultura, saco(tamanho do saco), preco(tabela R$), foto(dataURL\|null), specs(texto ficha técnica), materiais[{tipo(Vídeo/PDF/Excel/Texto/Foto/Link), titulo, url, nome}], criadoEm |
 

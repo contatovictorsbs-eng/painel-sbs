@@ -9,8 +9,8 @@
 <x-dc>
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box}
   .k{font:800 20px 'Plus Jakarta Sans',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#6FA331}
@@ -19,199 +19,148 @@
   .numd{position:absolute;right:56px;bottom:44px;font:700 22px 'Plus Jakarta Sans',sans-serif;color:rgba(255,255,255,.4)}
 </style>
 </helmet>
-<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%" data-uneditable="">
 
-<section data-label="Capa" data-speaker-notes="Abertura. Apresentar o ecossistema SBS Green Seeds: um sistema único que conecta o vendedor no campo até o CEO, passando por supervisão, gerência regional e nacional, marketing e inteligência de mercado." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:120px;background:radial-gradient(120% 120% at 15% 0%,#0f4a44 0%,#0c3b37 55%,#082b28 100%);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
-  <div style="position:absolute;top:-140px;right:-120px;width:640px;height:640px;border-radius:50%;background:radial-gradient(circle,rgba(111,163,49,.28),transparent 62%)"></div>
-  <div style="align-self:flex-start;display:inline-flex;align-items:center;background:#fff;border-radius:18px;padding:20px 30px;margin-bottom:40px;box-shadow:0 18px 40px rgba(0,0,0,.25)">
-    <img src="logo-sbs.png" alt="SBS Green Seeds" style="height:58px;display:block">
-  </div>
-  <div class="h1" style="font-size:130px;max-width:1400px">Um sistema,<br>toda a operação<br><span style="color:#6FA331">conectada</span>.</div>
-  <p style="margin:44px 0 0;font-size:30px;font-weight:500;color:#c9dcd6;max-width:1120px">Do vendedor no campo ao CEO — como cada setor opera a plataforma e como o dado flui ponta a ponta.</p>
-  <div style="position:absolute;left:120px;bottom:56px;display:flex;gap:12px">
-    <span style="padding:10px 20px;border:1px solid rgba(255,255,255,.25);border-radius:999px;font-weight:600;font-size:19px">Apresentação da plataforma</span>
-    <span style="padding:10px 20px;border:1px solid rgba(255,255,255,.25);border-radius:999px;font-weight:600;font-size:19px">2026</span>
+<section data-label="Capa" data-speaker-notes="Abertura. Apresentar o ecossistema SBS Green Seeds: um sistema único que conecta o vendedor no campo até o CEO, passando por supervisão, gerência regional e nacional, marketing e inteligência de mercado." style="position:relative;display:flex;flex-direction:column;justify-content:flex-end;height:100%;background:#0c3b37;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <img src="assets/capa-sbs.png" alt="SBS Green Seeds — Semeando o futuro regenerativo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,43,40,0) 40%,rgba(8,43,40,.55) 100%)"></div>
+  <div style="position:relative;padding:0 120px 72px">
+    <div style="display:inline-flex;align-items:center;gap:10px;padding:9px 18px;border:1px solid rgba(255,255,255,.3);border-radius:999px;color:#eaf4f0;font-weight:600;font-size:19px;backdrop-filter:blur(4px)">Apresentação da plataforma</div>
+    <div class="h1" style="color:#fff;font-size:60px;margin:26px 0 0;max-width:1300px;text-shadow:0 4px 24px rgba(0,0,0,.35)">Um sistema, toda a operação <span style="color:#7fd8c6">conectada</span>.</div>
+    <p style="margin:18px 0 0;font-size:26px;font-weight:500;color:#d7e7e1;max-width:1120px;text-shadow:0 2px 12px rgba(0,0,0,.35)">Do vendedor no campo ao CEO — como cada setor opera a plataforma e como o dado flui ponta a ponta.</p>
   </div>
 </section>
 
-<section data-label="Oportunidade" data-speaker-notes="O problema que resolvemos: dados espalhados, decisões lentas, campo desconectado da gestão. A plataforma unifica tudo num fluxo só." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
-  <div class="k">A oportunidade</div>
-  <div class="h1" style="font-size:76px;color:#0c3b37;margin:22px 0 60px;max-width:1400px">O campo gera dado o tempo todo — mas a decisão vinha depois e desalinhada.</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
-    <div style="background:#fff;border-radius:20px;padding:40px 44px;border:1px solid rgba(12,59,55,.08)">
-      <div style="font:800 24px 'Archivo';color:#b4463a;margin-bottom:22px">Antes</div>
-      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#4a5a55">
-        <div>Planilhas soltas, WhatsApp e memória.</div>
-        <div>Marketing sem visão do que o campo pede.</div>
-        <div>Aprovações travadas, sem rastro.</div>
-        <div>CEO enxergando resultado só no fim do mês.</div>
+
+
+<section data-label="Proposta" data-speaker-notes="A proposta do projeto. Hoje a operação da SBS vive espalhada em planilhas, mensagens e decisões no achismo, sem histórico. Propomos uma plataforma única: um painel por perfil (Marketing, Gerente Nacional, CEO e Inteligência de Mercado) mais o app de eventos, onde a demanda do campo vira ação e sobe até o CEO sem perder o rastro. O ganho é operar ponta a ponta com dado real e histórico compartilhado." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <div class="k" style="color:#a8e06b">A proposta</div>
+  <div class="h1" style="font-size:64px;color:#fff;margin:16px 0 44px;max-width:1500px">Fluxo de trabalho: <span style="color:#a8e06b">Inteligência de Mercado</span> e Gerente Nacional.</div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
+
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:32px">
+      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#a8e06b">O problema</div>
+      <div style="font:900 30px 'Archivo';color:#fff;margin:12px 0 16px;line-height:1.05">Gestão de demandas</div>
+      <p style="margin:0;font-size:19px;font-weight:500;color:#c7ded7;line-height:1.5">Gestão de demandas e visualização do fluxo de trabalho.</p>
+    </div>
+
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:32px">
+      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#a8e06b">A proposta</div>
+      <div style="font:900 30px 'Archivo';color:#fff;margin:12px 0 16px;line-height:1.05">Fluxo de trabalho único</div>
+      <p style="margin:0;font-size:19px;font-weight:500;color:#c7ded7;line-height:1.5">Um fluxo de trabalho único, com uma visão para cada papel.</p>
+    </div>
+
+    <div style="background:rgba(111,163,49,.22);border:1px solid rgba(168,224,107,.4);border-radius:20px;padding:32px">
+      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#d6f2ac">O ganho</div>
+      <div style="font:900 30px 'Archivo';color:#fff;margin:12px 0 16px;line-height:1.05">Da demanda à ação</div>
+      <p style="margin:0;font-size:19px;font-weight:500;color:#e4f3d5;line-height:1.5">A demanda do campo vira evento ou campanha e sobe até o CEO — ponta a ponta, com dado real e histórico compartilhado.</p>
+    </div>
+
+  </div>
+
+  <div style="display:flex;align-items:center;gap:14px;margin-top:28px;padding:18px 26px;background:rgba(168,224,107,.12);border:1px solid rgba(168,224,107,.35);border-radius:16px;max-width:1500px">
+    <span style="flex:none;font:900 13px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#0B6B61;background:#a8e06b;padding:6px 12px;border-radius:999px">Aviso</span>
+    <p style="margin:0;font-size:19px;font-weight:600;color:#eaf4f0;line-height:1.45">O fluxo deste projeto é a <span style="color:#a8e06b">gestão de demandas entre o Gerente Nacional e a Inteligência de Mercado</span> — da demanda até virar ação, com histórico compartilhado.</p>
+  </div>
+  <div class="numd">02</div>
+</section>
+
+
+<section data-label="Inteligência · Da demanda à ação" data-speaker-notes="ESTE É O FOCO. Como a Inteligência de Mercado transforma uma demanda em ação concreta. 1) A demanda nasce — do campo, do Nacional ou do próprio radar de mercado da Inteligência (concorrência, preço, sazonalidade, região quente). 2) Passa pelo fluxo de estudo, conduzido pela Inteligência: viabilidade, leitura de preço e concorrência, público e região, e o parecer com recomendação. 3) Vira um Evento ou uma Campanha — com meta, praça e verba sugeridas — e segue para a esteira de aprovação. Tudo no mesmo painel, com histórico." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k" style="color:#0B6B61">Inteligência de Mercado · o motor</div>
+  <div class="h1" style="font-size:64px;color:#0c3b37;margin:16px 0 8px;max-width:1500px">Da <span style="color:#0e857a;white-space:nowrap">demanda</span> à <span style="color:#4d7a1f;white-space:nowrap">ação</span> — passando pelo estudo.</div>
+  <p style="margin:0 0 40px;font-size:24px;font-weight:500;color:#5a6b66;max-width:1300px">Nenhum evento ou campanha nasce no achismo: a Inteligência capta a demanda, estuda e só então ela vira ação.</p>
+
+  <div style="display:grid;grid-template-columns:1fr auto 1.35fr auto 1fr;align-items:stretch;gap:22px">
+
+    <!-- 1 · Criação da demanda -->
+    <div style="background:rgba(12,59,55,.05);border:1px solid rgba(12,59,55,.14);border-radius:20px;padding:30px 30px">
+      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#0B6B61">1 · Criação da demanda</div>
+      <div style="font:900 30px 'Archivo';color:#0c3b37;margin:10px 0 18px;line-height:1.05">De onde nasce</div>
+      <div style="display:flex;flex-direction:column;gap:14px;font-size:19px;font-weight:500;color:#46584f;line-height:1.45">
+        <div style="display:flex;gap:12px"><span style="color:#6FA331;font-weight:800">•</span> Proposta do Gerente Nacional</div>
+        <div style="display:flex;gap:12px"><span style="color:#6FA331;font-weight:800">•</span> Radar da Inteligência: concorrência, preço, sazonalidade e região quente</div>
       </div>
     </div>
-    <div style="background:#0c3b37;border-radius:20px;padding:40px 44px;color:#fff">
-      <div style="font:800 24px 'Archivo';color:#6FA331;margin-bottom:22px">Com a plataforma</div>
-      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#d6e6df">
-        <div>Um cadastro só, que todos os setores enxergam.</div>
-        <div>Pedido do campo vira demanda e campanha.</div>
-        <div>Aprovação em esteira, com parecer e histórico.</div>
-        <div>CEO acompanha equipe e mercado em tempo real.</div>
+
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:40px;font-weight:800">→</div>
+
+    <!-- 2 · Fluxo de estudo (foco) -->
+    <div style="background:rgba(111,163,49,.14);border:1.5px solid rgba(111,163,49,.5);border-radius:20px;padding:30px 32px">
+      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#4d7a1f">2 · Fluxo de estudo · Inteligência conduz</div>
+      <div style="font:900 30px 'Archivo';color:#0c3b37;margin:10px 0 18px;line-height:1.05">Analisa e embasa</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:rgba(12,59,55,.05);border:1px solid rgba(12,59,55,.12);border-radius:12px;padding:16px 16px"><div style="font:800 19px 'Archivo';color:#0c3b37">Viabilidade</div><div style="font-size:16px;color:#5a6b66;margin-top:5px;line-height:1.4">Faz sentido? Custo x retorno.</div></div>
+        <div style="background:rgba(12,59,55,.05);border:1px solid rgba(12,59,55,.12);border-radius:12px;padding:16px 16px"><div style="font:800 19px 'Archivo';color:#0c3b37">Preço &amp; concorrência</div><div style="font-size:16px;color:#5a6b66;margin-top:5px;line-height:1.4">Onde estamos no mercado.</div></div>
+        <div style="background:rgba(12,59,55,.05);border:1px solid rgba(12,59,55,.12);border-radius:12px;padding:16px 16px"><div style="font:800 19px 'Archivo';color:#0c3b37">Público &amp; região</div><div style="font-size:16px;color:#5a6b66;margin-top:5px;line-height:1.4">Quem e onde ativar.</div></div>
+        <div style="background:#6FA331;border-radius:12px;padding:16px 16px"><div style="font:800 19px 'Archivo';color:#0c3b37">Parecer + recomendação</div><div style="font-size:16px;color:#123;margin-top:5px;line-height:1.4;font-weight:600">Meta, praça e verba sugeridas.</div></div>
       </div>
+    </div>
+
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:40px;font-weight:800">→</div>
+
+    <!-- 3 · Vira ação -->
+    <div style="background:rgba(12,59,55,.05);border:1px solid rgba(11,107,97,.35);border-radius:20px;padding:30px 30px;display:flex;flex-direction:column">
+      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#0B6B61">3 · Vira ação</div>
+      <div style="font:900 30px 'Archivo';color:#0c3b37;margin:10px 0 18px;line-height:1.05">Evento ou Campanha</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="background:rgba(11,107,97,.1);border:1px solid rgba(11,107,97,.3);border-radius:12px;padding:16px 18px"><div style="font:800 20px 'Archivo';color:#0B6B61">Evento</div><div style="font-size:16px;color:#46584f;margin-top:4px;line-height:1.4">Ação em praça definida, com check-in do campo.</div></div>
+        <div style="background:rgba(11,107,97,.1);border:1px solid rgba(11,107,97,.3);border-radius:12px;padding:16px 18px"><div style="font:800 20px 'Archivo';color:#0B6B61">Campanha</div><div style="font-size:16px;color:#46584f;margin-top:4px;line-height:1.4">Meta e catálogo de preço para o período.</div></div>
+      </div>
+      <div style="margin-top:auto;padding-top:14px;font-size:16px;font-weight:700;color:#4d7a1f">↳ segue para a esteira de aprovação da ação</div>
     </div>
   </div>
+
+  <p style="margin:30px 0 0;font-size:20px;font-weight:600;color:#0B6B61">Mesmo painel, histórico compartilhado — a demanda vira ação sem perder o rastro.</p>
+  <div class="num">03</div>
+</section><section data-label="Nacional × Inteligência" data-speaker-notes="Como Gerente Nacional e Inteligência de Mercado trabalham juntos, em ciclo: Nacional define a campanha e a meta; Inteligência estuda viabilidade, preço e concorrência; voltam com o parecer conjunto; Nacional decide e aciona o campo. As duas áreas acompanham as mesmas tarefas no mesmo painel, com histórico compartilhado. A demanda criada entre Nacional e Inteligência pode evoluir para um evento ou campanha e seguir para a esteira de aprovação da ação." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:92px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k" style="color:#7fd8c6">Fluxo de trabalho · Gestão</div>
+  <div class="h1" style="font-size:62px;color:#fff;margin:16px 0 10px;max-width:1400px">Nacional e Inteligência trabalham <span style="color:#7fd8c6">em ciclo</span>.</div>
+  <p style="margin:0 0 40px;font-size:24px;font-weight:500;color:#c9dcd6;max-width:1300px">Nenhuma campanha anda sozinha: estratégia e leitura de mercado se alternam sobre a mesma tarefa, com parecer e histórico compartilhados.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:30px">
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:30px 32px">
+      <div style="font:800 26px 'Archivo';color:#fff">Gerente Nacional</div>
+      <div style="font-size:19px;font-weight:600;color:#7fd8c6;margin:4px 0 16px">Define a estratégia</div>
+      <div style="font-size:20px;font-weight:500;color:#d7e7e1;line-height:1.55">Cria campanhas e metas, define o catálogo de preços e prioriza o que o campo executa.</div>
+    </div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:30px 32px">
+      <div style="font:800 26px 'Archivo';color:#fff">Inteligência de Mercado</div>
+      <div style="font-size:19px;font-weight:600;color:#7fd8c6;margin:4px 0 16px">Embasa com dados</div>
+      <div style="font-size:20px;font-weight:500;color:#d7e7e1;line-height:1.55">Estuda viabilidade, preço, concorrência e região — e devolve parecer e recomendação.</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:stretch;gap:14px">
+    <div style="flex:1;background:rgba(111,163,49,.16);border:1px solid rgba(111,163,49,.4);border-radius:14px;padding:22px 24px"><div style="font:800 18px 'Archivo';color:#a7d06a">1 · Nacional propõe</div><div style="font-size:17px;color:#d7e7e1;margin-top:8px;line-height:1.5">Abre a campanha/meta e pede leitura de mercado.</div></div>
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
+    <div style="flex:1;background:rgba(111,163,49,.16);border:1px solid rgba(111,163,49,.4);border-radius:14px;padding:22px 24px"><div style="font:800 18px 'Archivo';color:#a7d06a">2 · Inteligência analisa</div><div style="font-size:17px;color:#d7e7e1;margin-top:8px;line-height:1.5">Viabilidade, preço e concorrência com parecer.</div></div>
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
+    <div style="flex:1;background:rgba(111,163,49,.16);border:1px solid rgba(111,163,49,.4);border-radius:14px;padding:22px 24px"><div style="font:800 18px 'Archivo';color:#a7d06a">3 · Decidem juntos</div><div style="font-size:17px;color:#d7e7e1;margin-top:8px;line-height:1.5">Ajustam meta e prioridade a quatro mãos.</div></div>
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">↻</div>
+    <div style="flex:1;background:#6FA331;border-radius:14px;padding:22px 24px"><div style="font:800 18px 'Archivo';color:#0c3b37">4 · Acionam o campo</div><div style="font-size:17px;color:#0c3b37;font-weight:600;margin-top:8px;line-height:1.5">Tarefa vai ao vendedor e o resultado retorna ao ciclo.</div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;margin-top:26px;background:rgba(255,255,255,.05);border:1px solid rgba(127,216,198,.32);border-radius:16px;padding:20px 26px">
+    <div style="font-size:15px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7fd8c6;white-space:nowrap">A demanda evolui</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font:800 19px 'Archivo';color:#fff">
+      <span style="padding:8px 16px;background:rgba(111,163,49,.18);border:1px solid rgba(111,163,49,.4);border-radius:999px">Demanda Nacional + Inteligência</span>
+      <span style="color:#6FA331;font-size:22px">→</span>
+      <span style="padding:8px 16px;background:rgba(111,163,49,.18);border:1px solid rgba(111,163,49,.4);border-radius:999px">vira Evento ou Campanha</span>
+      <span style="color:#6FA331;font-size:22px">→</span>
+      <span style="padding:8px 16px;background:#6FA331;color:#0c3b37;border-radius:999px">segue para aprovação da ação</span>
+    </div>
+  </div>
+  <p style="margin:20px 0 0;font-size:20px;font-weight:600;color:#7fd8c6">Mesmo painel, mesma tarefa, histórico compartilhado — cada passo fica registrado.</p>
   <div class="num">02</div>
 </section>
 
-<section data-label="Ecossistema" data-speaker-notes="Três peças: o App SBS Brasil (campo), o Painel de Gestão (marketing/gerência/inteligência/CEO) e a Integração que liga os dois pelo mesmo banco." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
-  <div class="k">Visão geral</div>
-  <div class="h1" style="font-size:76px;color:#0c3b37;margin:22px 0 56px">Três peças, um só dado.</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:28px">
-    <div style="background:#fff;border-radius:22px;padding:44px 40px;border-top:6px solid #6FA331">
-      <div style="font:800 30px 'Archivo';color:#0c3b37;margin-bottom:14px">App SBS Brasil</div>
-      <div style="font-size:20px;font-weight:600;color:#6FA331;margin-bottom:20px">O campo</div>
-      <div style="font-size:22px;font-weight:500;color:#4a5a55;line-height:1.5">Vendedores e supervisores: leads, orçamentos, check-in em evento e localização ao vivo — do celular.</div>
-    </div>
-    <div style="background:#fff;border-radius:22px;padding:44px 40px;border-top:6px solid #0da99c">
-      <div style="font:800 30px 'Archivo';color:#0c3b37;margin-bottom:14px">Painel de Gestão</div>
-      <div style="font-size:20px;font-weight:600;color:#0da99c;margin-bottom:20px">A gestão</div>
-      <div style="font-size:22px;font-weight:500;color:#4a5a55;line-height:1.5">Marketing, Gerência Nacional, Inteligência e CEO: campanhas, aprovações, mercado e decisão.</div>
-    </div>
-    <div style="background:#fff;border-radius:22px;padding:44px 40px;border-top:6px solid #0c3b37">
-      <div style="font:800 30px 'Archivo';color:#0c3b37;margin-bottom:14px">Integração</div>
-      <div style="font-size:20px;font-weight:600;color:#5a6b66;margin-bottom:20px">A ponte</div>
-      <div style="font-size:22px;font-weight:500;color:#4a5a55;line-height:1.5">Um barramento no mesmo banco: o que nasce no campo chega à gestão — e a decisão volta ao campo.</div>
-    </div>
-  </div>
-  <div class="num">03</div>
-</section>
 
-<section data-label="Fluxo" data-speaker-notes="O caminho do dado: vendedor no campo, supervisor, gerente regional, gerente nacional, marketing, inteligência, e CEO no topo. Cada elo agrega e devolve." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 110px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
-  <div class="k">Fluxo ponta a ponta</div>
-  <div class="h1" style="font-size:70px;margin:22px 0 60px">Do campo à decisão — em um só trilho.</div>
-  <div style="display:flex;align-items:stretch;gap:14px">
-    <div style="flex:1;background:rgba(111,163,49,.16);border:1px solid rgba(111,163,49,.4);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo';color:#6FA331">Vendedor</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">lead · orçamento · check-in</div></div>
-    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
-    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Supervisor</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">acompanha equipe</div></div>
-    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
-    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Regional</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">aprova desconto</div></div>
-    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
-    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Nacional</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">campanhas · metas</div></div>
-  </div>
-  <div style="display:flex;align-items:stretch;gap:14px;margin-top:16px">
-    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Marketing</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">eventos · aprovações</div></div>
-    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
-    <div style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo'">Inteligência</div><div style="font-size:16px;color:#c9dcd6;margin-top:8px">mercado · concorrência</div></div>
-    <div style="display:flex;align-items:center;color:#6FA331;font-size:28px">→</div>
-    <div style="flex:1.6;background:#6FA331;border-radius:16px;padding:26px 20px;text-align:center"><div style="font:800 22px 'Archivo';color:#0c3b37">CEO</div><div style="font-size:16px;color:#0c3b37;font-weight:600;margin-top:8px">visão total · decisão</div></div>
-  </div>
-  <div class="numd">04</div>
-</section>
 
-<section data-label="Campo" data-speaker-notes="Os três perfis de campo. Vendedor: usa o app no celular — leads, orçamento, check-in em evento e localização consentida. Supervisor: acompanha a equipe da área, apoia leads e orçamentos, aparece no mapa ao vivo. Gerente Regional: o portão do desconto — aprova/nega bonificação, vê pipeline e metas da região." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 100px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
-  <div class="k">Perfis · Campo</div>
-  <div class="h1" style="font-size:64px;color:#0c3b37;margin:18px 0 8px">Quem opera no campo</div>
-  <p style="margin:0 0 40px;font-size:24px;font-weight:500;color:#5a6b66">No celular, onde a venda acontece — do vendedor à gerência regional.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px">
-    <div style="background:#fff;border-radius:20px;padding:34px 32px;border-top:6px solid #6FA331;display:flex;flex-direction:column">
-      <div style="font:800 28px 'Archivo';color:#0c3b37;margin-bottom:18px">Vendedor</div>
-      <div style="display:flex;flex-direction:column;gap:12px;font-size:18px;font-weight:500;color:#3a4a45">
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Cadastra e move <b>leads</b> (SWOT na perda)</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Monta <b>orçamento</b> e pede desconto</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>Check-in</b> e vendas em eventos</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>Localização</b> ao vivo (consentida)</div>
-      </div>
-      <div style="margin-top:auto;padding-top:18px;border-top:1px solid rgba(12,59,55,.1)"><span style="font:800 14px 'Plus Jakarta Sans';letter-spacing:.12em;text-transform:uppercase;color:#0da99c">Valor</span><div style="font-size:17px;font-weight:600;color:#3a4a45;margin-top:6px;line-height:1.4">Zero retrabalho: alimenta metas e ranking na hora.</div></div>
-    </div>
-    <div style="background:#fff;border-radius:20px;padding:34px 32px;border-top:6px solid #0da99c;display:flex;flex-direction:column">
-      <div style="font:800 28px 'Archivo';color:#0c3b37;margin-bottom:18px">Supervisor</div>
-      <div style="display:flex;flex-direction:column;gap:12px;font-size:18px;font-weight:500;color:#3a4a45">
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Acompanha a <b>equipe</b> e os leads da área</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Apoia <b>orçamentos</b> e prioriza</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Consolida presença em <b>eventos</b></div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Visível no <b>mapa ao vivo</b></div>
-      </div>
-      <div style="margin-top:auto;padding-top:18px;border-top:1px solid rgba(12,59,55,.1)"><span style="font:800 14px 'Plus Jakarta Sans';letter-spacing:.12em;text-transform:uppercase;color:#0da99c">Valor</span><div style="font-size:17px;font-weight:600;color:#3a4a45;margin-top:6px;line-height:1.4">Gestão de time em tempo real, sem relatório manual.</div></div>
-    </div>
-    <div style="background:#fff;border-radius:20px;padding:34px 32px;border-top:6px solid #0c3b37;display:flex;flex-direction:column">
-      <div style="font:800 28px 'Archivo';color:#0c3b37;margin-bottom:4px">Gerente Regional</div>
-      <div style="font-size:15px;font-weight:600;color:#8a9a94;margin-bottom:16px">Gestão regional</div>
-      <div style="display:flex;flex-direction:column;gap:12px;font-size:18px;font-weight:500;color:#3a4a45">
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>Aprova/nega</b> desconto e bonificação</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Enxerga o <b>pipeline</b> e as perdas</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Acompanha <b>metas</b> por campanha</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Vê a equipe da região no <b>mapa</b></div>
-      </div>
-      <div style="margin-top:auto;padding-top:18px;border-top:1px solid rgba(12,59,55,.1)"><span style="font:800 14px 'Plus Jakarta Sans';letter-spacing:.12em;text-transform:uppercase;color:#0da99c">Valor</span><div style="font-size:17px;font-weight:600;color:#3a4a45;margin-top:6px;line-height:1.4">Desconto em minutos, com rastro — margem protegida.</div></div>
-    </div>
-  </div>
-  <div class="num">05</div>
-</section>
 
-<section data-label="Gestão" data-speaker-notes="Os três perfis de gestão. Gerente Nacional: define campanhas, metas por campanha e o catálogo de preços; vê vendedores por parceiro. Marketing: orquestra eventos, recebe demandas, é o porteiro das aprovações e usa o assistente de IA. Inteligência de Mercado: robôs de monitoramento, fontes e canais, concorrência, commodities e câmbio; alimenta a IA." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 100px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
-  <div class="k">Perfis · Gestão</div>
-  <div class="h1" style="font-size:64px;color:#0c3b37;margin:18px 0 8px">Quem conduz a gestão</div>
-  <p style="margin:0 0 40px;font-size:24px;font-weight:500;color:#5a6b66">A régua comercial, as ações e a leitura de mercado — em três frentes.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px">
-    <div style="background:#fff;border-radius:20px;padding:34px 32px;border-top:6px solid #6FA331;display:flex;flex-direction:column">
-      <div style="font:800 28px 'Archivo';color:#0c3b37;margin-bottom:4px">Gerente Nacional</div>
-      <div style="font-size:15px;font-weight:600;color:#8a9a94;margin-bottom:16px">Gestão nacional</div>
-      <div style="display:flex;flex-direction:column;gap:12px;font-size:18px;font-weight:500;color:#3a4a45">
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Cria <b>campanhas</b> (data, canal, preços)</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Define <b>metas por campanha</b> no app</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Mantém o <b>catálogo</b> + importar/exportar</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Vê <b>vendedores por parceiro</b></div>
-      </div>
-      <div style="margin-top:auto;padding-top:18px;border-top:1px solid rgba(12,59,55,.1)"><span style="font:800 14px 'Plus Jakarta Sans';letter-spacing:.12em;text-transform:uppercase;color:#0da99c">Valor</span><div style="font-size:17px;font-weight:600;color:#3a4a45;margin-top:6px;line-height:1.4">Campanha publicada chega ao celular com meta e preço certos.</div></div>
-    </div>
-    <div style="background:#fff;border-radius:20px;padding:34px 32px;border-top:6px solid #0da99c;display:flex;flex-direction:column">
-      <div style="font:800 28px 'Archivo';color:#0c3b37;margin-bottom:18px">Marketing</div>
-      <div style="display:flex;flex-direction:column;gap:12px;font-size:18px;font-weight:500;color:#3a4a45">
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>Eventos</b> e agenda co-branded</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>Quadro de demandas</b> com anexos</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>Porteiro</b> das aprovações</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>IA</b>: estudo → demanda ou evento</div>
-      </div>
-      <div style="margin-top:auto;padding-top:18px;border-top:1px solid rgba(12,59,55,.1)"><span style="font:800 14px 'Plus Jakarta Sans';letter-spacing:.12em;text-transform:uppercase;color:#0da99c">Valor</span><div style="font-size:17px;font-weight:600;color:#3a4a45;margin-top:6px;line-height:1.4">Consistência de marca e priorização num só lugar.</div></div>
-    </div>
-    <div style="background:#fff;border-radius:20px;padding:34px 32px;border-top:6px solid #0c3b37;display:flex;flex-direction:column">
-      <div style="font:800 28px 'Archivo';color:#0c3b37;margin-bottom:4px">Inteligência</div>
-      <div style="font-size:15px;font-weight:600;color:#8a9a94;margin-bottom:16px">Mercado & concorrência</div>
-      <div style="display:flex;flex-direction:column;gap:12px;font-size:18px;font-weight:500;color:#3a4a45">
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>Robôs</b> com fontes referenciadas</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>Fontes & canais</b> editáveis</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> <b>Concorrentes</b>, commodities, câmbio</div>
-        <div style="display:flex;gap:10px"><span style="color:#6FA331;font-weight:800">•</span> Cadastra <b>vendedores</b> e alimenta a IA</div>
-      </div>
-      <div style="margin-top:auto;padding-top:18px;border-top:1px solid rgba(12,59,55,.1)"><span style="font:800 14px 'Plus Jakarta Sans';letter-spacing:.12em;text-transform:uppercase;color:#0da99c">Valor</span><div style="font-size:17px;font-weight:600;color:#3a4a45;margin-top:6px;line-height:1.4">O que o mercado faz vira insumo para campanhas e CEO.</div></div>
-    </div>
-  </div>
-  <div class="num">06</div>
-</section>
 
-<section data-label="CEO" data-speaker-notes="CEO — dashboard executivo, mapa da equipe ao vivo (novidade), e a decisão final na esteira de aprovações. Visão total do negócio." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
-  <div class="k">Perfil · Direção</div>
-  <div class="h1" style="font-size:82px;color:#fff;margin:20px 0 8px">CEO</div>
-  <p style="margin:0 0 48px;font-size:26px;font-weight:500;color:#c9dcd6">A visão do todo — e a palavra final.</p>
-  <div style="display:grid;grid-template-columns:1.2fr .9fr;gap:32px">
-    <div style="background:rgba(255,255,255,.06);border-radius:20px;padding:38px 42px;border:1px solid rgba(255,255,255,.14)">
-      <div style="font:800 22px 'Archivo';color:#6FA331;margin-bottom:22px">O que opera</div>
-      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#e2ede8">
-        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Dashboard executivo</b>: regiões, evolução e comparativos</div>
-        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Mapa da equipe ao vivo</b>: gerentes e vendedores no mapa</div>
-        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Decisão final</b> na esteira de aprovações</div>
-        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Mercado & decisão: commodities, ações e câmbio</div>
-      </div>
-    </div>
-    <div style="background:#6FA331;border-radius:20px;padding:38px 40px;color:#0c3b37;display:flex;flex-direction:column;justify-content:center">
-      <div style="font:800 22px 'Archivo';margin-bottom:16px">Valor</div>
-      <div style="font-size:26px;font-weight:700;line-height:1.45">Onde a equipe está, o que o mercado faz e o que decidir — numa tela só, agora.</div>
-    </div>
-  </div>
-  <div class="numd">07</div>
-</section>
-
-<section data-label="Solicitações" data-speaker-notes="Fluxo de solicitações vindas do app SBS Brasil: o campo pede (campanha, evento, material, custo), Marketing é o porteiro, depois Nacional, Inteligência e CEO. A decisão volta e notifica o solicitante." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+<section data-label="Solicitações" data-speaker-notes="Fluxo de solicitações vindas do Painel Vendedor: o campo pede (campanha, evento, material, custo), Marketing é o porteiro, depois Nacional, Inteligência e CEO. A decisão volta e notifica o solicitante." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k">Colaboração</div>
-  <div class="h1" style="font-size:72px;color:#0c3b37;margin:22px 0 20px;max-width:1400px">O campo pede, a gestão decide — com rastro.</div>
-  <p style="margin:0 0 46px;font-size:24px;font-weight:500;color:#5a6b66;max-width:1300px">Solicitações criadas no app SBS Brasil (campanha, evento, material, item com custo) entram numa esteira de aprovação sequencial.</p>
+  <div class="h1" style="font-size:64px;color:#0c3b37;margin:18px 0 16px;max-width:1400px">O campo pede, a gestão decide — com rastro.</div>
+  <p style="margin:0 0 34px;font-size:24px;font-weight:500;color:#5a6b66;max-width:1300px">Solicitações criadas no Painel Vendedor (campanha, evento, material, item com custo) entram numa esteira de aprovação sequencial.</p>
   <div style="display:flex;align-items:center;gap:16px">
     <div style="flex:1;background:#fff;border-radius:16px;padding:28px 22px;text-align:center;border:1px solid rgba(12,59,55,.08)"><div style="font:800 20px 'Archivo';color:#0c3b37">Solicitação</div><div style="font-size:16px;color:#7d8b86;margin-top:6px">criada no campo</div></div>
     <div style="color:#6FA331;font-size:30px">→</div>
@@ -221,35 +170,60 @@
     <div style="color:#6FA331;font-size:30px">+</div>
     <div style="flex:1;background:#fff;border-radius:16px;padding:28px 22px;text-align:center;border:1px solid rgba(12,59,55,.08)"><div style="font:800 20px 'Archivo';color:#0c3b37">Inteligência</div></div>
     <div style="color:#6FA331;font-size:30px">+</div>
-    <div style="flex:1;background:#6FA331;border-radius:16px;padding:28px 22px;text-align:center"><div style="font:800 20px 'Archivo';color:#0c3b37">CEO</div></div>
+    <div style="flex:1;background:#6FA331;border-radius:16px;padding:28px 22px;text-align:center"><div style="font:800 20px 'Archivo';color:#0c3b37">CEO / Diretoria</div></div>
   </div>
-  <p style="margin:38px 0 0;font-size:22px;font-weight:600;color:#0da99c">Cada área aprova ou reprova com parecer. A decisão volta ao app e notifica quem pediu.</p>
-  <div class="num">08</div>
+  <p style="margin:30px 0 0;font-size:22px;font-weight:600;color:#0da99c">Cada área aprova ou reprova com parecer. A decisão volta ao painel do vendedor e notifica quem pediu.</p>
+  <div style="display:flex;align-items:center;gap:18px;margin-top:22px;background:#fff;border:1px solid rgba(12,59,55,.1);border-left:6px solid #0da99c;border-radius:14px;padding:22px 26px">
+    <div style="font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#0da99c;white-space:nowrap">Nacional&nbsp;+&nbsp;Inteligência</div>
+    <div style="font-size:21px;font-weight:600;color:#2f403b">Acompanham as tarefas em conjunto no mesmo painel — estudo de viabilidade, metas e parecer construídos a quatro mãos, com ações coordenadas e histórico compartilhado.</div>
+  </div>
+  <div class="num">07</div>
+</section><section data-label="CEO" data-speaker-notes="CEO — dashboard executivo, mapa da equipe ao vivo (novidade), e a decisão final na esteira de aprovações. Visão total do negócio." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#0B6B61;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Perfil · Direção</div>
+  <div class="h1" style="font-size:82px;color:#fff;margin:20px 0 8px">CEO / Diretoria</div>
+  <p style="margin:0 0 48px;font-size:26px;font-weight:500;color:#c9dcd6">A visão do todo — e a palavra final.</p>
+  <div style="display:grid;grid-template-columns:1.2fr .9fr;gap:32px">
+    <div style="background:rgba(255,255,255,.06);border-radius:20px;padding:38px 42px;border:1px solid rgba(255,255,255,.14)">
+      <div style="font:800 22px 'Archivo';color:#6FA331;margin-bottom:22px">O que opera</div>
+      <div style="display:flex;flex-direction:column;gap:16px;font-size:23px;font-weight:500;color:#e2ede8">
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Dashboard executivo</b>: regiões, evolução e comparativos</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Mapa da equipe ao vivo</b>: gerentes e vendedores no mapa</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> <b>Decisão final</b> na esteira de aprovações</div>
+        <div style="display:flex;gap:14px"><span style="color:#6FA331;font-weight:800">•</span> Mercado &amp; decisão: commodities, ações e câmbio</div>
+      </div>
+    </div>
+    <div style="background:#6FA331;border-radius:20px;padding:38px 40px;color:#0c3b37;display:flex;flex-direction:column;justify-content:center">
+      <div style="font:800 22px 'Archivo';margin-bottom:16px">Valor</div>
+      <div style="font-size:26px;font-weight:700;line-height:1.45">Onde a equipe está, o que o mercado faz e o que decidir — numa tela só, agora.</div>
+    </div>
+  </div>
+  <div class="numd">06</div>
 </section>
 
-<section data-label="Integração" data-speaker-notes="Os dois sistemas (App SBS Brasil e Painel) compartilham o MESMO banco Supabase, ligados por um barramento com payload livre. Novas features trocam dados sem mudar o schema." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+
+
+<section data-label="Integração" data-speaker-notes="Os dois sistemas (Painel Vendedor e Painel) compartilham o MESMO banco Supabase, ligados por um barramento com payload livre. Novas features trocam dados sem mudar o schema." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#ffffff;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k">Arquitetura</div>
   <div class="h1" style="font-size:74px;color:#0c3b37;margin:22px 0 54px;max-width:1400px">Dois sistemas, um só banco.</div>
   <div style="display:flex;align-items:center;gap:28px">
-    <div style="flex:1;background:#fff;border-radius:20px;padding:40px;text-align:center;border-top:6px solid #6FA331"><div style="font:800 28px 'Archivo';color:#0c3b37">App SBS Brasil</div><div style="font-size:19px;color:#5a6b66;margin-top:10px">vendas · vendedores · pedidos · localização</div></div>
+    <div style="flex:1;background:#fff;border-radius:20px;padding:40px;text-align:center;border-top:6px solid #6FA331"><div style="font:800 28px 'Archivo';color:#0c3b37">Painel Vendedor</div><div style="font-size:19px;color:#5a6b66;margin-top:10px">vendas · vendedores · pedidos · localização</div></div>
     <div style="flex:.9;background:#0c3b37;border-radius:20px;padding:34px;text-align:center;color:#fff"><div style="font:800 22px 'Archivo';color:#6FA331">Barramento</div><div style="font-size:18px;color:#c9dcd6;margin-top:10px">Supabase · payload JSON livre</div><div style="font-size:16px;color:#8fb0a7;margin-top:8px">campos sobrando p/ o futuro</div></div>
     <div style="flex:1;background:#fff;border-radius:20px;padding:40px;text-align:center;border-top:6px solid #0da99c"><div style="font:800 28px 'Archivo';color:#0c3b37">Painel de Gestão</div><div style="font-size:19px;color:#5a6b66;margin-top:10px">campanhas · aprovações · mercado</div></div>
   </div>
-  <p style="margin:46px 0 0;font-size:23px;font-weight:600;color:#0da99c;max-width:1300px">Nova funcionalidade? Basta um novo “tipo” no payload — sem migração, sem quebrar nada.</p>
-  <div class="num">09</div>
+  <div class="num">08</div>
 </section>
 
-<section data-label="Segurança & LGPD" data-speaker-notes="Segurança e LGPD numa visão só. Privacidade: login por perfil (cada setor vê só o que opera), auditoria de acesso a dados de clientes/vendedores, e localização sempre consentida, sem rastreio oculto. Infraestrutura: banco com RLS (ninguém acessa direto), token+perfil em cada requisição, isolamento por parceiro, HTTPS ponta a ponta com chaves só no servidor, ambientes de teste e produção separados, e backup automático." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:80px 100px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
-  <div class="k">Segurança & LGPD</div>
+<section data-label="Segurança &amp; LGPD" data-speaker-notes="Segurança e LGPD numa visão só. Privacidade: login por perfil (cada setor vê só o que opera), auditoria de acesso a dados de clientes/vendedores, e localização sempre consentida, sem rastreio oculto. Infraestrutura: banco com RLS (ninguém acessa direto), token+perfil em cada requisição, isolamento por parceiro, HTTPS ponta a ponta com chaves só no servidor, ambientes de teste e produção separados, e backup automático." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:80px 100px;background:#0B6B61;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k">Segurança &amp; LGPD</div>
   <div class="h1" style="font-size:62px;margin:16px 0 10px">Protegido por padrão. Cada um vê o que é seu.</div>
   <p style="margin:0 0 34px;font-size:22px;font-weight:500;color:#c9dcd6;max-width:1340px">Privacidade por perfil e infraestrutura gerenciada de nível bancário — sem servidor próprio para invadir ou vazar.</p>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px">
     <div>
-      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#6FA331;margin-bottom:16px">Acesso & privacidade</div>
+      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#6FA331;margin-bottom:16px">Acesso &amp; privacidade</div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:20px 24px"><b style="font:800 20px 'Archivo';color:#fff">Acesso por perfil</b><div style="font-size:18px;color:#d6e6df;font-weight:500;margin-top:4px">Login segmentado: cada setor vê só os módulos que opera.</div></div>
         <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:20px 24px"><b style="font:800 20px 'Archivo';color:#fff">Auditoria</b><div style="font-size:18px;color:#d6e6df;font-weight:500;margin-top:4px">Dados de clientes e vendedores com log de quem acessou.</div></div>
-        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:20px 24px"><b style="font:800 20px 'Archivo';color:#fff">Localização consentida</b><div style="font-size:18px;color:#d6e6df;font-weight:500;margin-top:4px">Só com o app aberto e aviso visível. Sem rastreio oculto.</div></div>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:20px 24px"><b style="font:800 20px 'Archivo';color:#fff">Localização consentida</b><div style="font-size:18px;color:#d6e6df;font-weight:500;margin-top:4px">Só com o painel do vendedor aberto e aviso visível. Sem rastreio oculto.</div></div>
       </div>
     </div>
     <div>
@@ -260,60 +234,53 @@
         <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:18px 20px"><b style="font:800 18px 'Archivo';color:#fff">Isolamento por parceiro</b><div style="font-size:16px;color:#c9dcd6;font-weight:500;margin-top:4px">Cada tenant vê só o seu; a SBS, o consolidado.</div></div>
         <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:18px 20px"><b style="font:800 18px 'Archivo';color:#fff">Criptografia + chaves</b><div style="font-size:16px;color:#c9dcd6;font-weight:500;margin-top:4px">HTTPS ponta a ponta; segredos só no servidor.</div></div>
         <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:18px 20px"><b style="font:800 18px 'Archivo';color:#fff">Ambientes separados</b><div style="font-size:16px;color:#c9dcd6;font-weight:500;margin-top:4px">Teste antes da produção — nada quebra no ar.</div></div>
-        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:18px 20px"><b style="font:800 18px 'Archivo';color:#fff">Backup & recuperação</b><div style="font-size:16px;color:#c9dcd6;font-weight:500;margin-top:4px">Banco gerenciado, backups automáticos.</div></div>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:18px 20px"><b style="font:800 18px 'Archivo';color:#fff">Backup &amp; recuperação</b><div style="font-size:16px;color:#c9dcd6;font-weight:500;margin-top:4px">Banco gerenciado, backups automáticos.</div></div>
       </div>
     </div>
   </div>
-  <div class="numd">10</div>
+  <div class="numd">09</div>
 </section>
 
-<section data-label="Custo" data-speaker-notes="Custo ao longo do tempo. O sistema roda em infraestrutura de baixo custo que escala por uso. Começa praticamente de graça no piloto; conforme cresce o número de usuários e dados, sobe em degraus previsíveis. Sem licença por usuário, sem servidor dedicado. Valores aproximados em reais, dependem do câmbio e do uso real — confirmar na contratação." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
+<section data-label="Custo" data-speaker-notes="Custo ao longo do tempo. O sistema roda em infraestrutura de baixo custo que escala por uso. Começa praticamente de graça no piloto; conforme cresce o número de usuários e dados, sobe em degraus previsíveis. Sem licença por usuário, sem servidor dedicado. Valores aproximados em reais, dependem do câmbio e do uso real — confirmar na contratação." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#0c3b37;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k">Custo ao longo do uso</div>
   <div class="h1" style="font-size:70px;margin:22px 0 16px;max-width:1400px">Escala por uso — sem licença por pessoa.</div>
-  <p style="margin:0 0 42px;font-size:23px;font-weight:500;color:#c9dcd6;max-width:1340px">Infraestrutura sob demanda (Cloudflare + Supabase). Cresce em degraus previsíveis conforme usuários e volume de dados — não por assento.</p>
+  <p style="margin:0 0 42px;font-size:23px;font-weight:500;color:#5a6b66;max-width:1340px">Infraestrutura sob demanda (Cloudflare + Supabase). Cresce em degraus previsíveis conforme usuários e volume de dados — não por assento.</p>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px">
-    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:34px 34px">
+    <div style="background:rgba(12,59,55,.05);border:1px solid rgba(12,59,55,.12);border-radius:18px;padding:34px 34px">
       <div style="font:800 20px 'Archivo';color:#6FA331;margin-bottom:6px">Início / piloto</div>
-      <div style="font:900 42px 'Archivo';color:#fff;margin-bottom:6px">~R$ 0<span style="font-size:20px;font-weight:600;color:#8fb0a7">/mês</span></div>
-      <div style="font-size:18px;color:#c9dcd6;font-weight:500;line-height:1.45">Dezenas de usuários. Camadas gratuitas de Cloudflare e Supabase cobrem tudo.</div>
+      <div style="font:900 42px 'Archivo';color:#0c3b37;margin-bottom:6px">~R$ 0<span style="font-size:20px;font-weight:600;color:#5a6b66">/mês</span></div>
+      <div style="font-size:18px;color:#5a6b66;font-weight:500;line-height:1.45">Dezenas de usuários. Camadas gratuitas de Cloudflare e Supabase cobrem tudo.</div>
     </div>
     <div style="background:rgba(111,163,49,.16);border:1px solid rgba(111,163,49,.45);border-radius:18px;padding:34px 34px">
-      <div style="font:800 20px 'Archivo';color:#bfe3a6;margin-bottom:6px">Crescimento · ~1.000 usuários</div>
-      <div style="font:900 42px 'Archivo';color:#fff;margin-bottom:6px">~R$ 150<span style="font-size:20px;font-weight:600;color:#bfe3a6">/mês</span></div>
-      <div style="font-size:18px;color:#e2ede8;font-weight:500;line-height:1.45">Banco no plano Pro (backup diário, sem pausa). Hospedagem segue gratuita na maioria dos casos.</div>
+      <div style="font:800 20px 'Archivo';color:#4d7a1f;margin-bottom:6px">Crescimento · ~1.000 usuários</div>
+      <div style="font:900 42px 'Archivo';color:#0c3b37;margin-bottom:6px">~R$ 150<span style="font-size:20px;font-weight:600;color:#4d7a1f">/mês</span></div>
+      <div style="font-size:18px;color:#2f403b;font-weight:500;line-height:1.45">Banco no plano Pro (backup diário, sem pausa). Hospedagem segue gratuita na maioria dos casos.</div>
     </div>
-    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:34px 34px">
+    <div style="background:rgba(12,59,55,.05);border:1px solid rgba(12,59,55,.12);border-radius:18px;padding:34px 34px">
       <div style="font:800 20px 'Archivo';color:#6FA331;margin-bottom:6px">Escala · milhares + mídia</div>
-      <div style="font:900 42px 'Archivo';color:#fff;margin-bottom:6px">R$ 150–500<span style="font-size:20px;font-weight:600;color:#8fb0a7">/mês</span></div>
-      <div style="font-size:18px;color:#c9dcd6;font-weight:500;line-height:1.45">Cresce só se subir muito volume de dados, arquivos/vídeos ou tráfego. Add-ons conforme o uso.</div>
+      <div style="font:900 42px 'Archivo';color:#0c3b37;margin-bottom:6px">R$ 150–500<span style="font-size:20px;font-weight:600;color:#5a6b66">/mês</span></div>
+      <div style="font-size:18px;color:#5a6b66;font-weight:500;line-height:1.45">Cresce só se subir muito volume de dados, arquivos/vídeos ou tráfego. Add-ons conforme o uso.</div>
     </div>
   </div>
   <div style="display:flex;gap:14px;margin-top:30px;flex-wrap:wrap">
-    <span style="padding:11px 20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:999px;font-size:18px;font-weight:600;color:#d6e6df">+ IA (Groq): centavos por consulta, pago por uso</span>
-    <span style="padding:11px 20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:999px;font-size:18px;font-weight:600;color:#d6e6df">Sem servidor dedicado · sem custo de manutenção</span>
-    <span style="padding:11px 20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:999px;font-size:18px;font-weight:600;color:#d6e6df">Valores aproximados — variam com câmbio e uso</span>
+    <span style="padding:11px 20px;background:rgba(12,59,55,.05);border:1px solid rgba(12,59,55,.14);border-radius:999px;font-size:18px;font-weight:600;color:#46584f">Sem servidor dedicado · sem custo de manutenção</span>
+    <span style="padding:11px 20px;background:rgba(12,59,55,.05);border:1px solid rgba(12,59,55,.14);border-radius:999px;font-size:18px;font-weight:600;color:#46584f">Valores aproximados — variam com câmbio e uso</span>
   </div>
-  <div class="numd">11</div>
+  <div class="num">10</div>
 </section>
+  
 
-<section data-label="Roadmap" data-speaker-notes="Próximos passos: mapa da equipe ao vivo em produção, aprofundar integração bidirecional, e evoluir o assistente de IA com os dados reais." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
-  <div class="k">Próximos passos</div>
-  <div class="h1" style="font-size:74px;color:#0c3b37;margin:22px 0 52px">O que vem a seguir.</div>
-  <div style="display:flex;flex-direction:column;gap:20px">
-    <div style="display:flex;align-items:center;gap:24px;background:#fff;border-radius:16px;padding:28px 36px;border:1px solid rgba(12,59,55,.08)"><div style="width:44px;height:44px;border-radius:12px;background:#6FA331;color:#0c3b37;font:800 22px 'Archivo';display:flex;align-items:center;justify-content:center">1</div><div style="font-size:25px;font-weight:600;color:#3a4a45"><b>Mapa da equipe ao vivo</b> — em produção, com as chaves de integração.</div></div>
-    <div style="display:flex;align-items:center;gap:24px;background:#fff;border-radius:16px;padding:28px 36px;border:1px solid rgba(12,59,55,.08)"><div style="width:44px;height:44px;border-radius:12px;background:#0da99c;color:#fff;font:800 22px 'Archivo';display:flex;align-items:center;justify-content:center">2</div><div style="font-size:25px;font-weight:600;color:#3a4a45"><b>Integração bidirecional</b> — mais tipos de dados entre campo e gestão.</div></div>
-    <div style="display:flex;align-items:center;gap:24px;background:#fff;border-radius:16px;padding:28px 36px;border:1px solid rgba(12,59,55,.08)"><div style="width:44px;height:44px;border-radius:12px;background:#0c3b37;color:#fff;font:800 22px 'Archivo';display:flex;align-items:center;justify-content:center">3</div><div style="font-size:25px;font-weight:600;color:#3a4a45"><b>Assistente de IA</b> — decisões cada vez mais embasadas nos dados reais.</div></div>
-  </div>
-  <div class="num">12</div>
-</section>
 
-<section data-label="Encerramento" data-speaker-notes="Fechamento: a plataforma conecta todos os setores num fluxo só. Abrir para perguntas e definir próximos passos de treinamento por equipe." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:120px;background:radial-gradient(120% 120% at 85% 100%,#0f4a44 0%,#0c3b37 55%,#082b28 100%);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
-  <div style="position:absolute;bottom:-160px;left:-120px;width:620px;height:620px;border-radius:50%;background:radial-gradient(circle,rgba(111,163,49,.24),transparent 62%)"></div>
-  <div class="k">Vamos operar juntos</div>
-  <div class="h1" style="font-size:104px;margin:26px 0 0;max-width:1400px">Um sistema<br>para <span style="color:#6FA331">todos nós</span>.</div>
-  <p style="margin:44px 0 0;font-size:28px;font-weight:500;color:#c9dcd6;max-width:1120px">Do campo à direção, o mesmo dado, na hora certa. Próximo passo: treinamento por equipe.</p>
-  <div style="align-self:flex-start;display:inline-flex;align-items:center;background:#fff;border-radius:16px;padding:16px 26px;margin-top:60px;box-shadow:0 16px 36px rgba(0,0,0,.25)">
-    <img src="logo-sbs.png" alt="SBS Green Seeds" style="height:48px;display:block">
+<section data-label="Encerramento" data-speaker-notes="Fechamento: a plataforma conecta todos os setores num fluxo só. Abrir para perguntas e definir próximos passos de treinamento por equipe." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:120px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <img src="assets/capa-sbs.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:.28">
+  <div style="position:absolute;inset:0;background:radial-gradient(120% 120% at 85% 100%,rgba(15,74,68,.75) 0%,rgba(12,59,55,.9) 55%,#082b28 100%)"></div>
+  <div style="position:relative">
+    <div class="k">Vamos operar juntos</div>
+    <div class="h1" style="font-size:104px;margin:26px 0 0;max-width:1400px">Um sistema<br>para <span style="color:#7fd8c6">todos nós</span>.</div>
+    <p style="margin:44px 0 0;font-size:28px;font-weight:500;color:#d7e7e1;max-width:1120px">Do campo à direção, o mesmo dado, na hora certa. Próximo passo: treinamento por equipe.</p>
+    <div style="align-self:flex-start;display:inline-flex;align-items:center;background:#fff;border-radius:16px;padding:16px 26px;margin-top:60px;box-shadow:0 16px 36px rgba(0,0,0,.25)">
+      <img src="logo-sbs.png" alt="SBS Green Seeds" style="height:48px;display:block">
+    </div>
   </div>
 </section>
 
