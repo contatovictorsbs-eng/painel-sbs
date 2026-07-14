@@ -475,6 +475,7 @@ class Component extends DCLogic {
     this.apiGet('eventos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({eventos:rows}); }).catch(()=>{});
     this.carregarResultados();
     this.carregarIndParceiro();
+    this.carregarUsuarios();
     this.apiGet('tenants').then(rows=>{ if(Array.isArray(rows)&&rows.length){ const parts=rows.map(t=>({id:t.slug,slug:t.slug,nome:t.nome,cor:t.cor,logo:t.logo,sigla:(t.nome||'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(),produtos:t.produtos||[],politica:t.politica||'',status:t.status,evento:'—',local:'—',vendedores:0,fat:0,eventos:0,leads:0,roi:0})); this.setState({partners:parts, backend:'online'}); } }).catch(()=>{});
     // Vendas (alimenta receita real do CEO e dashboards)
     this.apiGet('vendas',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({vendas:rows}); }).catch(()=>{});
@@ -775,6 +776,7 @@ class Component extends DCLogic {
       if(p==='agenda') return this.mktAgenda();
       if(p==='comparativo') return this.mktComparativo();
       if(p==='historico') return this.mktHistorico();
+      if(p==='usuarios') return this.pgUsuarios();
     }
     if(r==='gerente'){
       if(p==='dash') return this.gerDash();
@@ -992,7 +994,7 @@ class Component extends DCLogic {
             node('n-dem',I.inbox,'Demanda','portal de solicitações','demandas',active==='demanda'),
             node('n-ev',I.calendar,'Criar evento','pelo calendário','agenda',active==='evento'))),
         arrow('a1'),
-        node('n-ap',I.target,'Estudo & aprovação','Mkt → Gerência → Intel → CEO','aprovacoes',active==='aprovacao'),
+        node('n-ap',I.target,'Estudo & aprovação','Mkt → Intel → Gerência','aprovacoes',active==='aprovacao'),
         arrow('a2'),
         node('n-at',I.check,'Evento ativo','na agenda + app','agenda',false)));
   }
@@ -1310,7 +1312,40 @@ class Component extends DCLogic {
   removePrize(i){ this.setState({campPrizes:this.state.campPrizes.filter((_,j)=>j!==i)}); }
   effStatus(c){ return (this.state.encerradas||[]).includes(c.id)?'Encerrada':c.status; }
   showToast(msg){ this.setState({toast:msg}); clearTimeout(this._tt); this._tt=setTimeout(()=>{ try{this.setState({toast:null});}catch(e){} },2600); }
-  encerrarCamp(id){ this.setState({encerradas:[...(this.state.encerradas||[]),id]}); this.showToast('Campanha encerrada'); }
+  encerrarCamp(id){
+    this.setState({encerradas:[...(this.state.encerradas||[]),id]});
+    const c=(this.allCampaigns()||[]).find(x=>x.id===id);
+    // Persiste no backend
+    try{ this.apiSend('campanhas','PATCH',{id,status:'Encerrada'}).catch(()=>{}); }catch(e){}
+    // Reflete no painel do vendedor/parceiro: re-publica o envelope da campanha com status Encerrada
+    if(c){ const payload={...c,status:'Encerrada'};
+      try{ this.apiSend('integracao','POST',{sistema:'sbs-painel',tipo:'campanha',ref:String(id),publico:c.publico||'todos',titulo:c.nome,resumo:'Campanha encerrada',payload}).catch(()=>{}); }catch(e){} }
+    this.showToast('Campanha encerrada — atualizada no painel do vendedor');
+  }
+  excluirCamp(c){
+    const id=c&&c.id; if(!id) return;
+    if(typeof confirm!=='undefined' && !confirm('Excluir a campanha "'+(c.nome||'')+'"? Esta ação não pode ser desfeita.')) return;
+    this.setState(s=>({campaigns:(s.campaigns||[]).filter(x=>x.id!==id)}));
+    // Remove do backend
+    try{ this.apiSend('campanhas?id='+encodeURIComponent(id),'DELETE',{}).catch(()=>{}); }catch(e){}
+    // Remove os ENVELOPES da campanha no barramento — é deles que o painel do vendedor lista as campanhas
+    try{ this.apiGet('integracao',{tipo:'campanha',limite:500}).then(rows=>{
+      (rows||[]).filter(r=>String(r.ref)===String(id)).forEach(r=>{ if(r.id){ try{ this.apiSend('integracao?id='+encodeURIComponent(r.id),'DELETE',{}).catch(()=>{}); }catch(e){} } });
+    }).catch(()=>{}); }catch(e){}
+    // Marcador de exclusão (para consumidores que leem por "última versão")
+    try{ this.apiSend('integracao','POST',{sistema:'sbs-painel',tipo:'campanha-excluida',ref:String(id),titulo:c.nome||'',resumo:'Campanha excluída',payload:{id,excluida:true}}).catch(()=>{}); }catch(e){}
+    this.showToast('Campanha excluída — removida também do painel do vendedor');
+  }
+  sincronizarCampanhasVendedor(){
+    const idsLocais=new Set((this.allCampaigns()||[]).map(c=>String(c.id)));
+    this.showToast('Sincronizando com o painel do vendedor…');
+    this.apiGet('integracao',{tipo:'campanha',limite:500}).then(rows=>{
+      const orfaos=(rows||[]).filter(r=>r.ref && !idsLocais.has(String(r.ref)));
+      if(!orfaos.length){ this.showToast('Nada a remover — o painel do vendedor já está sincronizado'); return; }
+      orfaos.forEach(r=>{ if(r.id){ try{ this.apiSend('integracao?id='+encodeURIComponent(r.id),'DELETE',{}).catch(()=>{}); }catch(e){} } });
+      this.showToast(orfaos.length+' campanha(s) órfã(s) removida(s) do painel do vendedor');
+    }).catch(()=>{ this.showToast('Não foi possível sincronizar agora — tente novamente'); });
+  }
   abrirEditarCampanha(c){
     const prizes=(c.premios||[]).map(p=>{
       const pos=p[0]||''; const raw=p[1]||''; const m=raw.split(' + R$ ');
@@ -1443,6 +1478,7 @@ class Component extends DCLogic {
       React.createElement('div',{style:{display:'flex',alignItems:'center',gap:12}},
         React.createElement('div',{style:{font:'700 15px Archivo',color:'#0c3b37',flex:1}},camps.length+' campanhas'),
         camps.length>this.shownCount('campanhas')?React.createElement('button',{onClick:()=>this.carregarMais('campanhas'),style:{background:'#e7efe9',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer'}},'+ '+(camps.length-this.shownCount('campanhas'))+' — carregar mais'):null,
+        React.createElement('button',{onClick:()=>this.sincronizarCampanhasVendedor(),title:'Remove do painel do vendedor as campanhas que não existem mais aqui',style:{background:'#eef1ee',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().history),'Sincronizar vendedor'),
         React.createElement('button',{onClick:()=>this.set({campNew:true,campEdit:null,campDraftProds:[],campEvento:'',campDestino:'evento',campPublico:'todos',campPrizes:[{pos:'1º lugar',premio:'',bonus:''}]}),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().plus),'Criar campanha')),
       this.grid(2,18,camps.slice(0,this.shownCount('campanhas')).map(c=>this.card([
         React.createElement('div',{style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}},
@@ -1465,7 +1501,8 @@ class Component extends DCLogic {
         React.createElement('div',{style:{display:'flex',gap:8,marginTop:14}},
           React.createElement('button',{onClick:()=>this.abrirEditarCampanha(c),style:{flex:1,background:'#eef1ee',border:'none',borderRadius:9,padding:'9px',font:'700 12px Manrope',color:'#0c3b37',cursor:'pointer'}},'Editar'),
           React.createElement('button',{onClick:()=>this.showToast('Campanha “'+c.nome+'” compartilhada com Marketing e CEO'),style:{flex:1,background:'#eef1ee',border:'none',borderRadius:9,padding:'9px',font:'700 12px Manrope',color:'#0c3b37',cursor:'pointer'}},'Compartilhar'),
-          this.effStatus(c)==='Ativa'&&React.createElement('button',{onClick:()=>this.encerrarCamp(c.id),style:{flex:1,background:'#fbeeea',border:'none',borderRadius:9,padding:'9px',font:'700 12px Manrope',color:'#c2564b',cursor:'pointer'}},'Encerrar'))]))),
+          this.effStatus(c)==='Ativa'&&React.createElement('button',{onClick:()=>this.encerrarCamp(c.id),style:{flex:1,background:'#fbeeea',border:'none',borderRadius:9,padding:'9px',font:'700 12px Manrope',color:'#c2564b',cursor:'pointer'}},'Encerrar'),
+          React.createElement('button',{onClick:()=>this.excluirCamp(c),title:'Excluir campanha',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'9px 11px',font:'700 12px Manrope',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(this.icons().trash)))]))),
       modal,
       this.produtoModal(),
     ]);
@@ -1827,6 +1864,22 @@ class Component extends DCLogic {
   }
   perfilBadge(role){ const m={marketing:['Marketing','#12b39a'],gerente:['Gerência','#2b7bce'],ceo:['CEO','#c98a1e'],mercado:['Inteligência','#6ba53a'],admin:['Admin','#0c3b37']}; return m[role]||[role||'—','#5c6b67']; }
   criarEventoNovo(){ this.setState({evNovo:true, evMsg:''}); }
+  excluirEvento(e){
+    const id=e&&e.id; if(!id) return;
+    if(typeof confirm!=='undefined' && !confirm('Excluir o evento "'+(e.nome||'')+'"? Esta ação não pode ser desfeita.')) return;
+    this.setState(s=>({eventos:(this.evAll()||[]).filter(x=>x.id!==id), projetos:(s.projetos||[]).filter(p=>p.origemEvento!==id)}));
+    try{ this.apiSend('eventos?id='+encodeURIComponent(id),'DELETE',{}).catch(()=>{}); }catch(er){}
+    this.showToast('Evento excluído');
+  }
+  excluirTodosEventos(lista){
+    const evs=Array.isArray(lista)?lista:(this.evAll()||[]);
+    if(!evs.length) return;
+    if(typeof confirm!=='undefined' && !confirm('Excluir os '+evs.length+' evento(s) listados? Esta ação não pode ser desfeita.')) return;
+    const ids=new Set(evs.map(e=>String(e.id)));
+    this.setState(s=>({eventos:(this.evAll()||[]).filter(x=>!ids.has(String(x.id))), projetos:(s.projetos||[]).filter(p=>!ids.has(String(p.origemEvento)))}));
+    evs.forEach(e=>{ if(e.id){ try{ this.apiSend('eventos?id='+encodeURIComponent(e.id),'DELETE',{}).catch(()=>{}); }catch(er){} } });
+    this.showToast(evs.length+' evento(s) excluído(s)');
+  }
   // ===== Mural de anexos/anotações do evento (compartilhado entre painéis) =====
   openEvMural(e){ this.setState({evMuralId:e.id, evMuralAnexos:[], evMuralTxt:''}); }
   closeEvMural(){ this.setState({evMuralId:null, evMuralAnexos:[]}); }
@@ -1934,7 +1987,7 @@ class Component extends DCLogic {
     const eventos=this.evAll().map(x=>x.id===ev.id?{...x,aprovacao:true}:x);
     this.setState({projetos, eventos, page:'aprovacoes'});
     try{ this.apiSend('eventos','POST',{acaoEvento:'aprovacao',id:ev.id}).catch(()=>{}); }catch(e){}
-    this.showToast('Evento enviado para a esteira de aprovação (Marketing → Gerência → Inteligência → CEO)');
+    this.showToast('Evento enviado para a esteira de aprovação (Marketing → Inteligência → Gerente Nacional)');
   }
   eventoModalView(){
     if(!this.state.evNovo) return null;
@@ -2025,7 +2078,8 @@ class Component extends DCLogic {
         (ae.key==='nao_consta'||ae.key==='a_criar')?React.createElement('button',{onClick:()=>this.criarAppParaEvento(e),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:'#eaf2fc',color:'#2b6cb0',border:'1px solid #bcd6f5',borderRadius:9,padding:'8px 12px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(this.icons().plus),'Criar app agora'):null,
         e.aprovacao
           ?React.createElement('span',{style:{flex:'none',display:'flex',alignItems:'center',gap:6,font:'700 11.5px Manrope',color:'#00867f',background:'#e4f5ec',borderRadius:9,padding:'8px 11px'}},this.ic(this.icons().check),'Em aprovação')
-          :React.createElement('button',{onClick:()=>this.enviarEventoAprovacao(e),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'9px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(this.icons().target),'Enviar p/ aprovação')); };
+          :React.createElement('button',{onClick:()=>this.enviarEventoAprovacao(e),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'9px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(this.icons().target),'Enviar p/ aprovação'),
+        React.createElement('button',{onClick:()=>this.excluirEvento(e),title:'Excluir evento',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 10px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(this.icons().trash))); };
     return this.wrap([
       this.fluxoStepper('evento'),
       React.createElement('div',{key:'nt',style:{display:'flex',alignItems:'center',gap:12,background:'#0c3b37',borderRadius:14,padding:'15px 18px'}},
@@ -2042,7 +2096,9 @@ class Component extends DCLogic {
       ]),
       this.card([
         React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:14}},
-          this.h('Eventos ('+evs.length+')','Criados por qualquer perfil'), filtros),
+          this.h('Eventos ('+evs.length+')','Criados por qualquer perfil'),
+          React.createElement('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}, filtros,
+            evs.length?React.createElement('button',{onClick:()=>this.excluirTodosEventos(evs),style:{display:'flex',alignItems:'center',gap:6,background:'#fbeeea',color:'#c2564b',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 12px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(this.icons().trash),'Excluir todos'):null)),
         evs.length?React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:10}},[
           ...evs.slice(0,this.shownCount('agenda')).map(evCard),
           evs.length>this.shownCount('agenda')?React.createElement('button',{key:'mais',onClick:()=>this.carregarMais('agenda'),style:{background:'#e7efe9',border:'none',borderRadius:9,padding:'11px',font:'700 12px Manrope',color:'#0c3b37',cursor:'pointer'}},'+ '+(evs.length-this.shownCount('agenda'))+' evento(s) — carregar mais'):null
@@ -2199,34 +2255,34 @@ class Component extends DCLogic {
   }
   pgAprovacoes(){
     const r=this.state.role;
-    const fases=[['marketing','Marketing','dash'],['gerente','Gerente Nacional','campaign'],['mercado','Inteligência','gauge'],['ceo','CEO','trophy']];
+    const fases=[['marketing','Marketing','dash'],['mercado','Inteligência','gauge'],['gerente','Gerente Nacional','campaign']];
     const projs=this.state.projetos;
     const emFluxo=projs.filter(p=>p.status==='Em análise');
-    const aguardCeo=projs.filter(p=>p.status==='Em análise'&&p.fase===4).length;
+    const aguardCeo=projs.filter(p=>p.status==='Em análise'&&p.fase===3).length;
     const aprovados=projs.filter(p=>p.status==='Aprovado').length;
     const invAnalise=emFluxo.reduce((s,p)=>s+p.mkt.orcamento,0);
     const stepper=(p)=>React.createElement('div',{style:{display:'flex',alignItems:'center',gap:0,margin:'4px 0 16px'}},
       fases.map((f,i)=>{ const step=i+1; const done=p.fase>step||p.status==='Aprovado'; const cur=p.fase===step&&p.status==='Em análise';
-        const cor=p.status==='Reprovado'&&step===4?'#c2564b':(done?'#00867f':(cur?'#12b39a':'#cdd8d3'));
-        return React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',flex:i<3?1:'none'}},
+        const cor=p.status==='Reprovado'&&step===3?'#c2564b':(done?'#00867f':(cur?'#12b39a':'#cdd8d3'));
+        return React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',flex:i<2?1:'none'}},
           React.createElement('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',gap:5,flex:'none'}},
             React.createElement('div',{style:{width:34,height:34,borderRadius:10,background:done?'#00867f':(cur?'#eafff9':'#eef1ee'),border:cur?'2px solid #12b39a':'none',color:done?'#fff':cor,display:'flex',alignItems:'center',justifyContent:'center'}},this.ic(done?this.icons().check:this.icons()[f[2]])),
             React.createElement('div',{style:{font:(cur?'700':'600')+' 10px Manrope',color:cur?'#0c3b37':'#5c6b67',whiteSpace:'nowrap'}},f[1])),
-          i<3?React.createElement('div',{style:{flex:1,height:2,background:p.fase>step||p.status==='Aprovado'?'#00867f':'#dde5e1',margin:'0 6px',marginBottom:18}}):null);
+          i<2?React.createElement('div',{style:{flex:1,height:2,background:p.fase>step||p.status==='Aprovado'?'#00867f':'#dde5e1',margin:'0 6px',marginBottom:18}}):null);
       }));
     const info=(label,val,sub)=>React.createElement('div',{style:{background:'#eef1ee',borderRadius:11,padding:'11px 13px'}},React.createElement('div',{style:{font:'600 11px Manrope',color:'#5c6b67'}},label),React.createElement('div',{className:'tab-num',style:{font:'800 16px Archivo',color:'#0c3b37',marginTop:2}},val),sub?React.createElement('div',{style:{font:'500 11px Manrope',color:'#5c6b67'}},sub):null);
     const actionArea=(p)=>{
-      if(p.status==='Aprovado') return React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,background:'#e4f5ec',borderRadius:11,padding:'12px 14px',font:'700 13px Manrope',color:'#00867f'}},this.ic(this.icons().check),'Investimento aprovado pelo CEO');
-      if(p.status==='Reprovado') return React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,background:'#fbeeea',borderRadius:11,padding:'12px 14px',font:'700 13px Manrope',color:'#c2564b'}},this.ic(this.icons().trash),'Investimento reprovado pelo CEO');
+      if(p.status==='Aprovado') return React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,background:'#e4f5ec',borderRadius:11,padding:'12px 14px',font:'700 13px Manrope',color:'#00867f'}},this.ic(this.icons().check),'Investimento aprovado pelo Gerente Nacional');
+      if(p.status==='Reprovado') return React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,background:'#fbeeea',borderRadius:11,padding:'12px 14px',font:'700 13px Manrope',color:'#c2564b'}},this.ic(this.icons().trash),'Investimento reprovado pelo Gerente Nacional');
       const owner=fases[p.fase-1];
       if(r===owner[0]){
-        if(p.fase===4) return React.createElement('div',null,
+        if(p.fase===3) return React.createElement('div',null,
           this.analiseConsolidada(p),
           React.createElement('div',{style:{display:'flex',gap:10}},
           React.createElement('button',{onClick:()=>this.decideProj(p.id,true),style:{flex:1,background:'#00867f',color:'#fff',border:'none',borderRadius:11,padding:'12px',font:'800 14px Archivo',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7}},this.ic(this.icons().check),'Aprovar investimento'),
           React.createElement('button',{onClick:()=>this.decideProj(p.id,false),style:{flex:'none',background:'#fbeeea',color:'#c2564b',border:'none',borderRadius:11,padding:'12px 18px',font:'800 14px Archivo',cursor:'pointer'}},'Reprovar')));
-        const secKey={1:'mkt',2:'ger',3:'mi'}[p.fase];
-        const flds={1:[['orcamento','Orçamento do evento (R$)','num'],['escopo','Escopo e ativações','text']],2:[['metaReceita','Meta de receita (R$)','num'],['pedidos','Pedidos previstos','num']],3:[['roiPrev','ROI previsto (x)','num'],['prob','Probabilidade de sucesso (%)','num'],['rec','Parecer técnico do estudo','text']]}[p.fase];
+        const secKey={1:'mkt',2:'mi'}[p.fase];
+        const flds={1:[['orcamento','Orçamento do evento (R$)','num'],['escopo','Escopo e ativações','text']],2:[['roiPrev','ROI previsto (x)','num'],['prob','Probabilidade de sucesso (%)','num'],['rec','Parecer técnico do estudo','text']]}[p.fase];
         const fInp=(f,label,type)=>React.createElement('label',{key:f,style:{display:'flex',flexDirection:'column',gap:5,gridColumn:type==='text'?'1 / -1':'auto'}},
           React.createElement('span',{style:{font:'700 11px Manrope',color:'#12211e'}},label),
           React.createElement(type==='text'?'textarea':'input',{value:(p[secKey]&&p[secKey][f])??'',rows:type==='text'?2:undefined,onChange:e=>this.setProjField(p.id,secKey,f,type==='num'?(+String(e.target.value).replace(/[^\d.]/g,'')||0):e.target.value),style:{padding:'10px 12px',border:'1px solid rgba(12,59,55,.15)',borderRadius:9,font:'600 13px Manrope',color:'#0c3b37',outline:'none',resize:'vertical'}}));
@@ -2241,13 +2297,13 @@ class Component extends DCLogic {
       this.fluxoStepper('aprovacao'),
       React.createElement('div',{key:'flow',style:{background:'linear-gradient(120deg,#0e433d,#0a322e)',borderRadius:16,padding:'18px 20px'}},
         React.createElement('div',{style:{font:'800 16px Archivo',color:'#fff',marginBottom:3}},'Fluxo de aprovação de investimento'),
-        React.createElement('div',{style:{font:'500 13px Manrope',color:'#a9c6b6',marginBottom:14}},'Cada frente contribui com a sua parte antes do CEO aprovar o investimento.'),
+        React.createElement('div',{style:{font:'500 13px Manrope',color:'#a9c6b6',marginBottom:14}},'Marketing e Inteligência instruem o estudo; a palavra final é do Gerente Nacional.'),
         React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}},fases.map((f,i)=>React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',gap:8}},
           React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,background:'rgba(255,255,255,.1)',borderRadius:10,padding:'8px 13px'}},React.createElement('span',{style:{color:'#4fd1be'}},this.ic(this.icons()[f[2]])),React.createElement('span',{style:{font:'700 12px Manrope',color:'#fff'}},f[1])),
-          i<3?React.createElement('span',{style:{color:'#4fd1be'}},this.ic(['M5 12h14','M13 6l6 6-6 6'])):null)))),
+          i<2?React.createElement('span',{style:{color:'#4fd1be'}},this.ic(['M5 12h14','M13 6l6 6-6 6'])):null)))),
       this.grid(4,16,this.kpiCards([
         {label:'Projetos em fluxo',value:emFluxo.length+''},
-        {label:'Aguardando o CEO',value:aguardCeo+'',tag:'aprovar',tagColor:'#c98a1e'},
+        {label:'Aguardando Gerente Nacional',value:aguardCeo+'',tag:'decidir',tagColor:'#c98a1e'},
         {label:'Aprovados',value:aprovados+'',tag:'2026',tagColor:'#00867f'},
         {label:'Investimento em análise',value:this.brl(invAnalise)},
       ])),
@@ -2258,7 +2314,7 @@ class Component extends DCLogic {
         stepper(p),
         this.grid(4,12,[
           info('Orçamento (Mkt)',this.brl(p.mkt.orcamento)),
-          info('Meta receita (Ger)',p.ger.metaReceita?this.brl(p.ger.metaReceita):'—'),
+          info('Parecer (Intel)',p.mi.rec?'registrado':'—'),
           info('ROI previsto (Intel)',p.mi.roiPrev?p.mi.roiPrev.toFixed(1)+'x':'—'),
           info('Probabilidade',p.mi.prob?p.mi.prob+'%':'—',p.mi.classe!=='—'?'prioridade '+p.mi.classe:''),
         ]),
@@ -3589,6 +3645,60 @@ class Component extends DCLogic {
         online&&quando?h('span',{key:'q'},'Atualizado em '+quando):null,
         !online?h('span',{key:'d'},'Valores de exemplo — aguardando conexão com o SBS Green.'):null));
   }
+  // Campanhas ATIVAS com indicadores de gestão (faturamento, vendas, leads, ticket, ROI)
+  campanhasGestao(){
+    const camps=this.allCampaigns()||[]; const evs=this.evAll()||[];
+    const vendas=this.state.vendas||[];
+    const leadsAll=(this.state.leads&&this.state.leads.length?this.state.leads:(this.data().leadsDemo||[]))||[];
+    return camps.filter(c=>this.effStatus(c)==='Ativa').map(c=>{
+      const ev=c.evento?evs.find(e=>e.nome===c.evento):null;
+      const vend=ev?vendas.filter(v=>String(v.eventoId)===String(ev.id)):[];
+      const fat=vend.reduce((s,v)=>s+(Number(v.valor)||0),0)||Number(c.fat||0);
+      const pedidos=vend.length||Number(c.pedidos||0);
+      const meta=Number(c.meta||0);
+      const pct=meta>0?Math.round(fat/meta*100):0;
+      const ticket=pedidos>0?fat/pedidos:0;
+      const leads=ev?leadsAll.filter(l=>String(l.evento||'')===String(ev.nome)).length:0;
+      const custo=Number((ev&&ev.custo)||0)||(meta*0.14);
+      const roi=(fat>0&&custo>0)?fat/custo:Number(c.roi||0);
+      const conv=leads>0?Math.round(pedidos/leads*100):(ev?Number(ev.conv||0):0);
+      return {id:c.id,nome:c.nome,evento:c.evento||(c.destino==='comercial'?'Campanha comercial':'—'),canal:c.canal||'',periodo:c.periodo||'',destino:c.destino||'evento',
+        meta,fat,pct,pedidos,ticket,leads,roi,conv,produtos:(c.produtos||[]).length};
+    });
+  }
+  campanhasGestaoBloco(){
+    const h=React.createElement; const I=this.icons();
+    const camps=this.campanhasGestao();
+    const isMobile=(this.state.vw||1200)<760;
+    const headline=h('div',{key:'ch',style:{display:'flex',gap:12,alignItems:'flex-start',marginTop:6}},
+      h('span',{style:{width:5,alignSelf:'stretch',minHeight:38,borderRadius:20,background:'#6FA331',flex:'none'}}),
+      h('div',{style:{flex:1,minWidth:0}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:9,flexWrap:'wrap'}},
+          h('div',{style:{font:'800 16px Archivo',color:'#12211e',letterSpacing:'-.01em'}},'Gestão de campanhas ativas'),
+          h('span',{style:{font:'700 9.5px Manrope',letterSpacing:'.06em',color:'#4d7a1f',background:'#6FA3311a',border:'1px solid #6FA33140',borderRadius:20,padding:'3px 9px'}},camps.length+' ativa'+(camps.length===1?'':'s'))),
+        h('div',{style:{font:'500 12.5px Manrope',color:'#5c6b67',marginTop:3,lineHeight:1.5,maxWidth:720}},'Cada campanha ativa e o que ela está gerando — faturamento × meta, vendas, leads, ticket médio e ROI. Ao encerrar, sai daqui e vira histórico.')));
+    const m=(label,val,cor)=>h('div',{style:{background:'#f4f7f2',borderRadius:11,padding:'10px 12px'}},
+      h('div',{style:{font:'800 17px/1 Archivo',color:cor||'#0c3b37'}},val),
+      h('div',{style:{font:'600 10.5px Manrope',color:'#5c6b67',marginTop:3}},label));
+    const card=c=>{ const frac=c.meta>0?Math.max(.02,Math.min(1,c.fat/c.meta)):(c.fat>0?1:0); const bater=c.meta>0&&c.fat>=c.meta; const cor=bater?'#00867f':(c.fat>0?'#6FA331':'#c9a94b');
+      return h('div',{key:c.id,style:{border:'1px solid rgba(12,59,55,.1)',borderRadius:14,padding:'16px 18px',background:'#fff'}},
+        h('div',{style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10,marginBottom:12}},
+          h('div',{style:{minWidth:0}},
+            h('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}, h('span',{style:{font:'800 15px Archivo',color:'#0c3b37'}},c.nome), this.chip('Ativa','#2b7bce')),
+            h('div',{style:{font:'500 11.5px Manrope',color:'#8a9a94',marginTop:3}}, [c.evento,c.canal,c.periodo].filter(x=>x&&x!=='—').join(' · ')||'—')),
+          h('div',{style:{font:'800 13px Archivo',color:c.roi>0?'#0c3b37':'#b9c4bf',textAlign:'right',flex:'none'}}, c.roi>0?(c.roi.toFixed(1)+'x'):'—', h('div',{style:{font:'600 9.5px Manrope',color:'#9aa8a2'}},'ROI'))),
+        h('div',{style:{marginBottom:12}},
+          h('div',{style:{display:'flex',justifyContent:'space-between',gap:8,font:'700 11.5px Manrope',color:'#0c3b37',marginBottom:5}}, h('span',null,this.brl(c.fat)), h('span',{style:{color:'#8a9a94'}}, c.meta>0?('meta '+this.brl(c.meta)+' · '+c.pct+'%'):'sem meta')),
+          h('div',{style:{height:8,borderRadius:20,background:'#eef1ee',overflow:'hidden'}}, h('div',{style:{height:'100%',width:(frac*100)+'%',background:cor,borderRadius:20}}))),
+        h('div',{style:{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(4,1fr)',gap:8}},
+          m('Vendas',String(c.pedidos)),
+          m('Ticket médio',c.ticket>0?this.brl(c.ticket):'—'),
+          m('Leads',String(c.leads)),
+          m('Conversão',c.conv>0?(c.conv+'%'):'—')));
+    };
+    const vazio=h('div',{style:{padding:'34px 16px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94',border:'1px dashed rgba(12,59,55,.15)',borderRadius:14}},'Nenhuma campanha ativa no momento. Ao criar e ativar uma campanha, ela aparece aqui com faturamento, vendas e ROI em tempo real.');
+    return h('div',{key:'campgestao',style:{display:'flex',flexDirection:'column',gap:12}}, headline, camps.length?h('div',{style:{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12}},camps.map(card)):vazio);
+  }
   resStatusColor(s){ return {'Concluída':'#00867f','Ativa':'#2b7bce','Em aprovação':'#c98a1e','Solicitado':'#5c6b67','Em análise':'#c98a1e','Em desenvolvimento':'#2b7bce','Aguardando aprovação':'#c98a1e','Finalizado':'#00867f'}[s]||'#5c6b67'; }
   pgResultados(){
     const h=React.createElement; const I=this.icons();
@@ -3645,11 +3755,13 @@ class Component extends DCLogic {
         {label:'ROI médio',value:roiMed?roiMed.toFixed(1)+'x':'—'}
       ])),
       h('div',{key:'tabs',style:{display:'flex',gap:9,flexWrap:'wrap'}}, tab('todas','Todas',acoes.length), tab('andamento','Em andamento',andamento), tab('concluidas','Concluídas',concl)),
-      this.card([ head, vis.length?vis.map(linha):vazio ])
+      this.card([ head, vis.length?vis.map(linha):vazio ]),
+      this.campanhasGestaoBloco()
     ];
     const blocoBrasil=[
       secHead('#2b6cb0','SBS GREEN','#2b6cb0','Prospecção dos estados','Resultado do trabalho comercial da equipe de campo — carteira, prospects, rotas e visitas. Vem do Painel Nacional do vendedor (outro sistema), não das nossas ações de evento.'),
-      this.indParceiroBloco()
+      this.indParceiroBloco(),
+      this.campanhasGestaoBloco()
     ];
     return this.wrap([
       h('div',{key:'note',style:{display:'flex',gap:12,alignItems:'flex-start',background:'linear-gradient(120deg,#0e433d,#0a322e)',borderRadius:16,padding:'16px 18px'}},
@@ -4417,7 +4529,7 @@ class Component extends DCLogic {
     const sid=this.solicSid(sol); const map={};
     // 1) pareceres que já venham no payload (sync do SBS Green)
     const p=sol.payload||{};
-    ['marketing','nacional','inteligencia','ceo'].forEach(a=>{ const v=p[a]; if(v==='aprovada'||v==='reprovada') map[a]=v; });
+    ['marketing','nacional','inteligencia'].forEach(a=>{ const v=p[a]; if(v==='aprovada'||v==='reprovada') map[a]=v; });
     // 2) decisões que este painel já publicou (mais recente vence)
     (this.state.solicDecisoes||[]).slice().sort((a,b)=>String(a.criadoEm||'').localeCompare(String(b.criadoEm||''))).forEach(d=>{
       const dp=d.payload||{}; if((dp.sugestaoId||d.ref)===sid && dp.area && dp.decisao){ map[dp.area]=dp.decisao; if(dp.parecer){ map['_p_'+dp.area]=dp.parecer; } }
@@ -4427,8 +4539,8 @@ class Component extends DCLogic {
   solicStatus(dec){
     if(dec.marketing==='reprovada') return 'reprovada';
     if(dec.marketing!=='aprovada') return 'aguardando_marketing';
-    if(dec.nacional==='reprovada'||dec.inteligencia==='reprovada'||dec.ceo==='reprovada') return 'reprovada';
-    if(dec.marketing==='aprovada'&&dec.nacional==='aprovada'&&dec.inteligencia==='aprovada'&&dec.ceo==='aprovada') return 'aprovada';
+    if(dec.nacional==='reprovada'||dec.inteligencia==='reprovada') return 'reprovada';
+    if(dec.marketing==='aprovada'&&dec.inteligencia==='aprovada'&&dec.nacional==='aprovada') return 'aprovada';
     return 'em_aprovacao';
   }
   solicStatusMeta(st){ return ({
@@ -4501,7 +4613,7 @@ class Component extends DCLogic {
             React.createElement('div',{style:{flex:1,minWidth:0}},
               React.createElement('div',{style:{font:'700 13.5px Manrope',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},s.titulo||p.titulo||('#'+this.solicSid(s))),
               React.createElement('div',{style:{font:'500 11.5px Manrope',color:'#8a9a94'}},(p.categoria||'—')+' · '+(p.criado_por||'—')+(p.estado?(' · '+p.estado):'')+(p.custo?(' · '+p.custo):''))),
-            ['marketing','nacional','inteligencia','ceo'].map(a=>React.createElement('span',{key:a,title:this.areaLabel(a)+(dec[a]?(': '+dec[a]):': pendente'),style:{width:8,height:8,borderRadius:8,flex:'none',background:dec[a]==='aprovada'?'#0c8a4e':dec[a]==='reprovada'?'#c0392b':'#d7ddda'}})),
+            ['marketing','inteligencia','nacional'].map(a=>React.createElement('span',{key:a,title:this.areaLabel(a)+(dec[a]?(': '+dec[a]):': pendente'),style:{width:8,height:8,borderRadius:8,flex:'none',background:dec[a]==='aprovada'?'#0c8a4e':dec[a]==='reprovada'?'#c0392b':'#d7ddda'}})),
             React.createElement('span',{style:{font:'700 10.5px Manrope',color:sm[1],background:sm[2],padding:'4px 10px',borderRadius:20,flex:'none'}},sm[0]));
         })):React.createElement('div',{style:{padding:'40px',textAlign:'center',color:'#8a9a94',font:'500 14px Manrope'}},'Nenhuma solicitação neste filtro.')]),
       this.solicViewModal(),
@@ -5313,6 +5425,91 @@ class Component extends DCLogic {
         rows.map(r=>[React.createElement('span',{style:{font:'700 13px Manrope',color:'#0c3b37'}},r[0]),React.createElement('span',{style:{font:'500 12px Manrope',color:'#5c6b67'}},r[1]),this.chip(r[2],r[2].indexOf('TI')>=0?'#3b6ef5':(r[2].indexOf('Todos')>=0?'#8b5cf6':'#12b39a'))]))]),
     ]);
   }
+  // ---------- GESTÃO DE USUÁRIOS / ACESSOS (Marketing + Admin) ----------
+  usuariosDemo(){ return [
+    {email:'franz@sbsgreen.com.br',nome:'Franz',perfil:'marketing',precisaTrocar:false},
+    {email:'medina@sbsgreen.com.br',nome:'Medina',perfil:'gerente',precisaTrocar:false},
+    {email:'tiago.mascheto@sbsgreen.com.br',nome:'Tiago Mascheto',perfil:'ceo',precisaTrocar:false},
+    {email:'victorhugo@sbsgreen.com.br',nome:'Victor Hugo',perfil:'mercado',precisaTrocar:false},
+    {email:'ti@sbsgreen.com.br',nome:'TI',perfil:'ti',precisaTrocar:false},
+    {email:'admin@sbsgreen.com.br',nome:'Admin master',perfil:'admin',precisaTrocar:false}
+  ]; }
+  usuariosData(){ const r=this.state.usuariosReal; return (Array.isArray(r)&&r.length)?r:this.usuariosDemo(); }
+  carregarUsuarios(){ this.apiGet('usuarios').then(rows=>{ if(Array.isArray(rows)) this.setState({usuariosReal:rows,usuOnline:true,backend:'online'}); }).catch(()=>{}); }
+  perfilLabel(p){ return {marketing:'Marketing',gerente:'Gerente Nacional',ceo:'CEO',mercado:'Inteligência de Mercado',ti:'Tecnologia (TI)',admin:'Admin master'}[p]||p; }
+  perfilCor(p){ return {marketing:'#12b39a',gerente:'#2b7bce',ceo:'#c98a1e',mercado:'#6FA331',ti:'#3b6ef5',admin:'#8b5cf6'}[p]||'#5c6b67'; }
+  salvarUsuario(){
+    const f=this._uf||{};
+    const nome=(f.nome||'').trim(); const email=(f.email||'').trim().toLowerCase(); const perfil=f.perfil||'marketing';
+    if(!nome){ this.showToast('Informe o nome'); return; }
+    if(!email||email.indexOf('@')<0){ this.showToast('Informe um e-mail válido'); return; }
+    if((this.usuariosData()||[]).some(u=>(u.email||'').toLowerCase()===email)){ this.showToast('Já existe um usuário com este e-mail'); return; }
+    const novo={email,nome,perfil,precisaTrocar:true,criadoEm:new Date().toISOString()};
+    const base=(this.state.usuariosReal&&this.state.usuariosReal.length)?this.state.usuariosReal:this.usuariosDemo();
+    this.setState({usuariosReal:[novo,...base],usuNew:false}); this._uf={};
+    this.apiSend('usuarios','POST',{email,nome,perfil})
+      .then(()=>{ this.setState({backend:'online'}); this.showToast('Acesso criado ✓ — senha inicial 12345678 (troca obrigatória no 1º login)'); })
+      .catch((e)=>this.showToast('Criado localmente — NÃO salvou no servidor: '+((e&&e.message)||'sem conexão')));
+  }
+  resetUsuario(email){
+    this.apiSend('usuarios','PATCH',{id:email,acao:'reset'})
+      .then(()=>{ this.setState(s=>({usuariosReal:(s.usuariosReal||[]).map(u=>u.email===email?{...u,precisaTrocar:true}:u)})); this.showToast('Senha redefinida para 12345678 ✓'); })
+      .catch((e)=>this.showToast('Não foi possível redefinir: '+((e&&e.message)||'sem conexão')));
+  }
+  removerUsuario(email){
+    const base=(this.state.usuariosReal&&this.state.usuariosReal.length)?this.state.usuariosReal:this.usuariosDemo();
+    this.setState({usuariosReal:base.filter(u=>u.email!==email),usuDel:null});
+    this.api('usuarios?id='+encodeURIComponent(email),{method:'DELETE'})
+      .then(()=>{ this.setState({backend:'online'}); this.showToast('Acesso removido'); })
+      .catch((e)=>this.showToast('Removido localmente — servidor: '+((e&&e.message)||'sem conexão')));
+  }
+  pgUsuarios(){
+    const h=React.createElement; const I=this.icons();
+    const list=this.usuariosData(); const online=!!this.state.usuOnline;
+    const f=this._uf||(this._uf={});
+    const fs={padding:'12px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 14px Manrope',color:'#12211e',background:'#fff',outline:'none',width:'100%',boxSizing:'border-box'};
+    const lbl=(t,el)=>h('label',{style:{display:'flex',flexDirection:'column',gap:6,flex:1,minWidth:180}},h('span',{style:{font:'700 12px Manrope',color:'#12211e'}},t),el);
+    const perfilOpts=[['marketing','Marketing'],['gerente','Gerente Nacional'],['ceo','CEO'],['mercado','Inteligência de Mercado'],['ti','Tecnologia (TI)'],['admin','Admin master']];
+    const form=this.state.usuNew?h('div',{key:'form',style:{background:'#fff',border:'1px solid rgba(12,59,55,.1)',borderRadius:16,padding:'18px 20px',marginBottom:16}},
+      h('div',{style:{font:'800 15px Archivo',color:'#0c3b37',marginBottom:14}},'Novo acesso'),
+      h('div',{style:{display:'flex',gap:14,flexWrap:'wrap'}},
+        lbl('Nome completo',h('input',{defaultValue:f.nome||'',placeholder:'Ex.: Maria Souza',onChange:e=>f.nome=e.target.value,style:fs})),
+        lbl('E-mail',h('input',{defaultValue:f.email||'',placeholder:'nome@sbsgreen.com.br',autoCapitalize:'none',onChange:e=>f.email=e.target.value,style:fs})),
+        lbl('Perfil de acesso',h('select',{defaultValue:f.perfil||'marketing',onChange:e=>f.perfil=e.target.value,style:fs},perfilOpts.map(o=>h('option',{key:o[0],value:o[0]},o[1]))))),
+      h('div',{style:{display:'flex',gap:10,marginTop:16,flexWrap:'wrap'}},
+        h('button',{onClick:()=>this.salvarUsuario(),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:11,padding:'12px 20px',font:'800 14px Archivo',cursor:'pointer'}},'Criar acesso'),
+        h('button',{onClick:()=>this.setState({usuNew:false}),style:{background:'#eef1ee',color:'#3a4a44',border:'none',borderRadius:11,padding:'12px 20px',font:'700 14px Manrope',cursor:'pointer'}},'Cancelar')),
+      h('div',{style:{marginTop:12,font:'500 12px Manrope',color:'#8a9a94'}},'A pessoa recebe a senha inicial 12345678 e será obrigada a trocá-la no primeiro acesso.')):null;
+    const acoes=(u)=>h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',flexWrap:'wrap'}},
+      h('button',{onClick:()=>this.resetUsuario(u.email),style:{border:'1px solid rgba(12,59,55,.15)',background:'#fff',color:'#0c3b37',borderRadius:8,padding:'7px 12px',font:'700 11.5px Manrope',cursor:'pointer'}},'Redefinir senha'),
+      h('button',{onClick:()=>this.setState({usuDel:u}),style:{border:'1px solid #f0cfc9',background:'#fff',color:'#c2564b',borderRadius:8,padding:'7px 12px',font:'700 11.5px Manrope',cursor:'pointer'}},'Remover'));
+    const rows=list.map(u=>[
+      h('span',{style:{font:'700 13px Manrope',color:'#0c3b37'}},u.nome||'—'),
+      h('span',{style:{font:'500 12px Manrope',color:'#5c6b67'}},u.email),
+      this.chip(this.perfilLabel(u.perfil),this.perfilCor(u.perfil)),
+      u.precisaTrocar?this.chip('senha inicial pendente','#c98a1e'):this.chip('ativo','#00867f'),
+      acoes(u)]);
+    const del=this.state.usuDel;
+    const modal=del?h('div',{key:'del',style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:80,display:'flex',alignItems:'center',justifyContent:'center',padding:20},onClick:()=>this.setState({usuDel:null})},
+      h('div',{style:{background:'#fff',borderRadius:18,padding:'24px',width:'100%',maxWidth:400},onClick:e=>e.stopPropagation()},
+        h('div',{style:{font:'800 17px Archivo',color:'#0c3b37',marginBottom:8}},'Remover acesso?'),
+        h('div',{style:{font:'500 13.5px Manrope',color:'#5c6b67',lineHeight:1.5,marginBottom:18}},h('b',null,del.nome||del.email),' perderá o acesso ao sistema. Esta ação não pode ser desfeita.'),
+        h('div',{style:{display:'flex',gap:10,justifyContent:'flex-end'}},
+          h('button',{onClick:()=>this.setState({usuDel:null}),style:{background:'#eef1ee',color:'#3a4a44',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',cursor:'pointer'}},'Cancelar'),
+          h('button',{onClick:()=>this.removerUsuario(del.email),style:{background:'#c2564b',color:'#fff',border:'none',borderRadius:10,padding:'11px 18px',font:'800 13px Archivo',cursor:'pointer'}},'Remover')))):null;
+    return this.wrap([
+      h('div',{key:'n',style:{display:'flex',gap:12,alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',background:'linear-gradient(120deg,#0e433d,#0a322e)',borderRadius:16,padding:'16px 18px'}},
+        h('div',{style:{display:'flex',gap:12,alignItems:'flex-start',flex:1,minWidth:240}},
+          h('span',{style:{width:38,height:38,borderRadius:11,background:'#4fd1be',color:'#0c3b37',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},this.ic(I.users)),
+          h('div',null,h('div',{style:{font:'800 15px Archivo',color:'#fff'}},'Acessos & usuários'),
+            h('div',{style:{font:'500 12.5px Manrope',color:'#a9c6b6',marginTop:2,lineHeight:1.5,maxWidth:560}},'Conceda ou remova acesso ao sistema e escolha o perfil de cada pessoa. Novos usuários entram com a senha 12345678 e trocam no primeiro login.'))),
+        h('button',{onClick:()=>{ this._uf={perfil:'marketing'}; this.setState({usuNew:true}); },style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:11,padding:'11px 18px',font:'800 13.5px Archivo',cursor:'pointer',flex:'none'}},'+ Adicionar pessoa')),
+      form,
+      this.card([this.h('Pessoas com acesso',(online?'Dados do servidor':'Exemplo — entre no sistema para gerenciar de verdade')+' · '+list.length+' usuário(s)'),
+        this.table([{t:'Nome'},{t:'E-mail'},{t:'Perfil'},{t:'Situação'},{t:'',a:'right'}],rows)]),
+      modal
+    ]);
+  }
   panelManutencao(){
     return this.wrap([React.createElement('div',{key:'m',style:{background:'#fff',borderRadius:18,padding:'60px 30px',textAlign:'center',border:'1px solid rgba(12,59,55,.08)'}},
       React.createElement('div',{style:{width:64,height:64,borderRadius:16,background:'#fbeeea',color:'#c2564b',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px'}},this.ic(this.icons().gauge)),
@@ -5324,9 +5521,9 @@ class Component extends DCLogic {
   navDefs(){
     const I=this.icons();
     return {
-      marketing:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['campanhas','Campanhas',I.campaign],['catalogo','Catálogo & materiais',I.cube],['__sec','Apps & parceiros'],['compartilhar','Compartilhar app',I.share],['parceiros','Apps de parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Inteligência & apoio'],['inteligencia','Inteligência',I.bulb],['assistente','Assistente IA',I.activity],['ranking','Ranking',I.trophy],['notificacoes','Notificações',I.bell],['historico','Histórico',I.history],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
+      marketing:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['campanhas','Campanhas',I.campaign],['catalogo','Catálogo & materiais',I.cube],['__sec','Apps & parceiros'],['compartilhar','Compartilhar app',I.share],['parceiros','Apps de parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Inteligência & apoio'],['inteligencia','Inteligência',I.bulb],['assistente','Assistente IA',I.activity],['ranking','Ranking',I.trophy],['notificacoes','Notificações',I.bell],['historico','Histórico',I.history],['__sec','Administração'],['usuarios','Acessos & usuários',I.users],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
       _mkt_old:[['dash','Dashboard',I.dash],['agenda','Agenda',I.calendar],['eventos','Eventos',I.event],['cadastro','Cadastrar evento',I.plus],['ranking','Ranking',I.trophy],['comparativo','Comparativo',I.compare],['historico','Histórico',I.history]],
-      gerente:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['campanhas','Campanhas',I.campaign],['pipeline','Pipeline',I.funnel],['__sec','Metas & desempenho'],['resultados','Resultados das ações',I.gauge],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['evolucao','Evolução',I.chart],['__sec','Produtos & parceiros'],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['notificacoes','Notificações',I.bell],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
+      gerente:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['resultados','Resultados das ações',I.gauge],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['campanhas','Campanhas',I.campaign],['pipeline','Pipeline',I.funnel],['__sec','Metas & desempenho'],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['evolucao','Evolução',I.chart],['__sec','Produtos & parceiros'],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['notificacoes','Notificações',I.bell],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
       ceo:[['__sec','Principal'],['dash','Dashboard',I.dash],['mapaequipe','Mapa da equipe',I.map],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Estratégia'],['mercado','Mercado & decisão',I.activity],['indicadores','Indicadores',I.gauge],['evolucao','Evolução',I.chart],['comparativos','Comparativos',I.compare],['geo','Estados & regiões',I.map],['__sec','Estrutura'],['parceiros','Parceiros',I.share],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
       mercado:[['__sec','Principal'],['dash','Visão geral',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Mercado'],['cotacoes','Cotações',I.chart],['financeiro','Ações & bolsa',I.activity],['concorrentes','Concorrentes',I.gauge],['regioes','Regiões & mercado',I.map],['tendencias','Tendências',I.bulb],['panorama','Panorama setorial',I.cube],['__sec','Análise & fontes'],['resultados','Resultados das ações',I.gauge],['fontes','Fontes & canais',I.radar],['mensuracao','Mensuração & ROI',I.activity],['assistente','Assistente IA',I.bulb],['insights','Insights de vendas',I.target],['__sec','Apps & apoio'],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['clima','Clima & tempo',I.cloud],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
       ti:[['governanca','Governança dos painéis',I.gauge],['status','Status & saúde',I.activity],['acessos','Acessos & perfis',I.users],['auditoria','Auditoria (LGPD)',I.target]],
