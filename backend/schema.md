@@ -65,7 +65,11 @@ Função **`demandas.js`**: `GET /api/demandas?destino=&status=` · `POST /api/d
 · `POST /api/demandas?acao=status {id,status}` (mover) · `POST /api/demandas?acao=excluir {id}` (remover).
 Menções `@Marketing/@CEO/@Inteligência/@Gerente Nacional` no campo `envolvidos` são
 extraídas para `mencoes[]` e geram um registro em **alertas** (tipo `mencao`) para a área marcada.
-| id, tipo, destino, solic, origem, regiao, area, prio(Alta/Média/Baixa), status(Solicitado→Em análise→Em desenvolvimento→Aguardando aprovação→Finalizado), resp, prazo, desc, envolvidos[], mencoes[], eventoId, convertidoEvento, ts |
+**Subdemandas:** `paiId` (opcional) aponta para o `id` da demanda-pai — uma demanda-pai
+(ex.: um estudo) desdobra em subdemandas, cada uma um card normal do quadro. Tanto a pai
+quanto cada subdemanda podem virar um **evento** ou um **dia de campo** (abre o cadastro de
+evento com `segmento` pré-preenchido "Evento" ou "Dia de campo").
+| id, tipo, destino, solic, origem, regiao, area, prio(Alta/Média/Baixa), status(Solicitado→Em análise→Em desenvolvimento→Aguardando aprovação→Finalizado), resp, prazo, desc, paiId(opcional), envolvidos[], mencoes[], eventoId, convertidoEvento, ts |
 
 Uma demanda pode **virar evento** (botão "Virar evento" no modal de edição): abre a criação
 de evento pré-preenchida; ao criar, a demanda é marcada `status:Finalizado` com `eventoId` e
@@ -194,6 +198,13 @@ Rotas: `POST /auth {email,senha}` → token + precisaTrocar. `POST /senha`:
 `{acao:'trocar',senhaAtual,novaSenha}` (autenticado), `{acao:'solicitar',email}`
 (gera código), `{acao:'redefinir',email,codigo,novaSenha}`. Sem bloqueio por
 tentativas — recuperação é via "esqueci a senha".
+
+Gestão de acessos (Marketing/Admin): `GET /usuarios` (lista sem hash),
+`POST /usuarios {email,nome,perfil}` (cria; senha inicial 12345678, precisaTrocar=true;
+mesmo hash do auth.js → o novo usuário loga por /auth), `PATCH /usuarios {id,acao:'reset'}`
+(redefine senha) ou `{id,nome?,perfil?}` (edita), `DELETE /usuarios?id=<email>` (remove;
+bloqueia remover a si mesmo e o último admin). `requireAuth(['marketing','admin'])`.
+Roteado inline em `functions/api/[[path]].js` (cópia embutida `hUsuarios`) + `server/usuarios.js`.
 
 ### tenants (multi-parceiro)
 Cadastro das parceiras (white-label). Provisionar uma parceira = criar 1 registro
