@@ -1491,7 +1491,7 @@ class Component extends DCLogic {
               this.appEstadoBadge((this.evAll()||[]).find(e=>e.nome===c.evento)||{},{sm:true,curto:true})):null)),
           this.chip(this.effStatus(c),this.statusColor(this.effStatus(c)))),
         React.createElement('div',{style:{display:'flex',gap:20,margin:'16px 0 12px'}},
-          [['Faturamento',this.mi(c.fat/1e6)],['Meta',this.mi(c.meta/1e6)],['Pedidos',c.pedidos.toLocaleString('pt-BR')],['ROI',c.roi.toFixed(1)+'x']].map((m,i)=>
+          [['Faturamento',this.mi((c.fat||0)/1e6)],['Meta',this.mi((c.meta||0)/1e6)],['Pedidos',(c.pedidos||0).toLocaleString('pt-BR')],['ROI',(c.roi||0).toFixed(1)+'x']].map((m,i)=>
             React.createElement('div',{key:i},React.createElement('div',{style:{font:'600 11px Manrope',color:'#5c6b67'}},m[0]),React.createElement('div',{className:'tab-num',style:{font:'800 16px Archivo',color:'#0c3b37'}},m[1])))),
         React.createElement('div',{style:{height:8,background:'#eef1ee',borderRadius:5,overflow:'hidden'}},React.createElement('div',{style:{width:Math.min(100,c.fat/c.meta*100)+'%',height:'100%',background:'linear-gradient(90deg,#12b39a,#4fd1be)'}})),
         c.premios?React.createElement('div',{style:{marginTop:14,background:'#fbf7ee',border:'1px solid rgba(201,138,30,.2)',borderRadius:11,padding:'11px 13px'}},
