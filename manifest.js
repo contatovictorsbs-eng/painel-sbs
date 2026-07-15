@@ -8,8 +8,8 @@
    a documentação se atualiza sozinha a partir deste ponto único.
    =========================================================== */
 window.SBS_MANIFEST = {
-  versao: '1.71.0',
-  atualizadoEm: '2026-07-14',
+  versao: '1.72.0',
+  atualizadoEm: '2026-07-15',
 
   // ---- Perfis de acesso ----
   perfis: [
@@ -130,6 +130,7 @@ window.SBS_MANIFEST = {
 
   // ---- Changelog (mais recente no topo) ----
   changelog: [
+    { versao:'1.72.0', data:'2026-07-15', itens:['RESULTADOS MANUAIS DE EVENTO — eventos sem app do vendedor ganharam botão "Imputar resultados" na Agenda de eventos (Gerente Nacional/Marketing). Modal permite baixar uma planilha-modelo CSV (participantes, leads, vendas, faturamento, investimento, clientes novos + observações) para o parceiro preencher, importar a planilha preenchida ou digitar manualmente. Calcula ticket, ROI e conversão e grava em eventos.resultados via PATCH /api/eventos (merge), alimentando custo/conv e o ROI do evento. CAMPANHAS — releitura do backend: campanhas criadas são recarregadas de /api/campanhas no load (não somem mais ao atualizar a página).'] },
     { versao:'1.71.0', data:'2026-07-14', itens:['CAMPANHAS — EXCLUIR: cada card de campanha (Gerente Nacional) ganhou botão de excluir (ícone lixeira) com confirmação; remove do estado, do backend (DELETE /api/campanhas?id=) e publica um envelope no barramento (tipo:campanha, status:Excluida) para o painel do vendedor deixar de listá-la. Backend: campanhas.js passou a aceitar DELETE. GESTÃO DE CAMPANHAS ATIVAS — em Resultados das ações (fonte PLATAFORMA SBS) nova seção que lista cada campanha ATIVA com faturamento × meta (%), vendas, ticket médio, leads, conversão e ROI; sai ao encerrar. APROVAÇÃO SEM CEO — a esteira passou a Marketing → Inteligência → Gerente Nacional (palavra final); CEO não aprova mais (fluxo de investimento e de solicitações do parceiro).'] },
     { versao:'1.70.0', data:'2026-07-14', itens:['ACESSOS & USUÁRIOS (painel de Marketing) — nova tela na seção Administração para CONCEDER e REMOVER acesso ao sistema: adicionar pessoa (nome, e-mail, perfil), redefinir senha e remover acesso. Novo usuário entra com senha inicial 12345678 e troca obrigatória no 1º login. Front chama /api/usuarios com fallback de demonstração; ações otimistas + toast.','BACKEND /api/usuarios (GET/POST/PATCH/DELETE) — coleção usuarios, MESMA fórmula de hash do auth.js (sha256(senha+AUTH_SECRET)) para que o usuário criado logue por /api/auth. requireAuth([marketing,admin]). Regras: bloqueia remover o próprio acesso e o último admin; e-mail único. Handler embutido no roteador (hUsuarios) para deploy garantido + server/usuarios.js espelho.','MENU — “Resultados das ações” movido para logo abaixo de Aprovações no perfil Gerente Nacional (seção Entrada & aprovação).','Docs: schema.md (rotas /usuarios) + manifest (função usuarios) atualizados.'] },
     { versao:'1.69.0', data:'2026-07-13', itens:['QUADRO DE DEMANDAS — SUBDEMANDAS: uma demanda-pai (ex.: “Estudo de pecuária do Brasil”) agora desdobra em subdemandas dentro do próprio modal de edição (botão “Adicionar subdemanda”). Cada subdemanda é um card normal do quadro (paiId aponta para a pai), com badges “N subdemandas” na pai e “↳ subdemanda” na filha. NOVA AÇÃO “Virar dia de campo” ao lado de “Virar evento” (na pai e em cada subdemanda), que abre o cadastro de evento com segmento “Dia de campo” pré-preenchido. Campo novo: demandas.paiId (opcional).'] },

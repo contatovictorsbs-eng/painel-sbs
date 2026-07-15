@@ -50,6 +50,8 @@ evento e ele entra na esteira de aprovação (vira projeto). Isolado por `tenant
 **appStatus** — situação do app do evento no fluxo de trabalho (desacopla evento × app × campanha; nada trava):
 `nao_consta` (sem app definido) · `a_criar` (haverá app, ainda não construído) · `em_criacao` (app do parceiro em configuração) · `publicado` (app disponível, vendedores já veem). Vazio/ausente = inferido: SBS padrão → `publicado`; parceira sem cadastro → `em_criacao`. PATCH `{id, appStatus}` avança o estado e grava auditoria `app_estado:<key>`. Atalho "Criar app agora" (eventos em nao_consta/a_criar) abre o cadastro de app de parceiro já vinculado; ao criar → `em_criacao`, ao provisionar o tenant → `publicado`.Status, aprovacaoFase, tenant, criadoEm |
 
+**resultados** (evento sem app do vendedor) — objeto gravado em `eventos.resultados` via PATCH `{id, resultados}` (merge). Campos: `participantes, leads, vendas, faturamento, investimento, clientesNovos, obs, origem:'manual', atualizadoEm` + calculados `ticket, roi, conv`. Lançados pelo botão "Imputar resultados" (Agenda de eventos) quando `appStatus !== 'publicado'`: baixa planilha-modelo CSV, o parceiro preenche, importa-se aqui (ou digita manual). Alimenta `custo`/`conv` do evento e o ROI.
+
 ### eventos-legado
 | id, nome, cidade, uf, data, status(Confirmado/Planejado/Realizado), parceira |
 
@@ -198,6 +200,13 @@ Rotas: `POST /auth {email,senha}` → token + precisaTrocar. `POST /senha`:
 `{acao:'trocar',senhaAtual,novaSenha}` (autenticado), `{acao:'solicitar',email}`
 (gera código), `{acao:'redefinir',email,codigo,novaSenha}`. Sem bloqueio por
 tentativas — recuperação é via "esqueci a senha".
+
+Gestão de acessos (Marketing/Admin): `GET /usuarios` (lista sem hash),
+`POST /usuarios {email,nome,perfil}` (cria; senha inicial 12345678, precisaTrocar=true;
+mesmo hash do auth.js → o novo usuário loga por /auth), `PATCH /usuarios {id,acao:'reset'}`
+(redefine senha) ou `{id,nome?,perfil?}` (edita), `DELETE /usuarios?id=<email>` (remove;
+bloqueia remover a si mesmo e o último admin). `requireAuth(['marketing','admin'])`.
+Roteado inline em `functions/api/[[path]].js` (cópia embutida `hUsuarios`) + `server/usuarios.js`.
 
 ### tenants (multi-parceiro)
 Cadastro das parceiras (white-label). Provisionar uma parceira = criar 1 registro
