@@ -473,6 +473,8 @@ class Component extends DCLogic {
     this.apiGet('produtos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({catalogo:rows}); }).catch(()=>{});
     // Campanhas criadas (persistidas no backend) — para não sumirem ao recarregar
     this.apiGet('campanhas',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({campaigns:rows, campaignsReal:true}); }).catch(()=>{});
+    // Demandas criadas (persistidas no backend) — para não sumirem ao recarregar
+    this.apiGet('demandas',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({demandasReal:rows, demandasRealOn:true}); }).catch(()=>{});
     if(!this.state.eventos) this.setState({eventos:(this.data().events||[]).slice()});
     this.apiGet('eventos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({eventos:rows}); }).catch(()=>{});
     this.carregarResultados();
@@ -3318,7 +3320,17 @@ class Component extends DCLogic {
     ];
     const ov=this.state.demOverrides||{};
     const del=this.state.demDeleted||{};
-    return [...(this.state.demandasExtra||[]), ...this._demSeed, ...this.data().demandas]
+    let base;
+    if(this.state.demandasRealOn){
+      // Backend é a fonte: mescla com o que foi criado na sessão (dedup por id), sem os exemplos demo
+      const byId={};
+      (this.state.demandasReal||[]).forEach(d=>{ if(d&&d.id!=null) byId[d.id]=d; });
+      (this.state.demandasExtra||[]).forEach(d=>{ if(d&&d.id!=null&&!byId[d.id]) byId[d.id]=d; });
+      base=Object.keys(byId).map(k=>byId[k]);
+    } else {
+      base=[...(this.state.demandasExtra||[]), ...this._demSeed, ...this.data().demandas];
+    }
+    return base
       .filter(d=>!del[d.id])
       .map(d=>ov[d.id]?Object.assign({},d,ov[d.id]):d);
   }
