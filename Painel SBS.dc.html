@@ -471,10 +471,10 @@ class Component extends DCLogic {
     this.apiGet('vendedores',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({vendedoresReal:rows}); })
       .catch(()=> this.setState({backend: this.state.backend==='online'?'online':'demo'}));
     this.apiGet('produtos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({catalogo:rows}); }).catch(()=>{});
-    // Campanhas criadas (persistidas no backend) — para não sumirem ao recarregar
-    this.apiGet('campanhas',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({campaigns:rows, campaignsReal:true}); }).catch(()=>{});
-    // Demandas criadas (persistidas no backend) — para não sumirem ao recarregar
-    this.apiGet('demandas',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({demandasReal:rows, demandasRealOn:true}); }).catch(()=>{});
+    // Campanhas criadas (persistidas no backend) — fonte única quando o backend responde (não mostra demo)
+    this.apiGet('campanhas',PG).then(rows=>{ on(); this.setState({campaigns:Array.isArray(rows)?rows:[], campaignsReal:true}); }).catch(()=>{});
+    // Demandas criadas (persistidas no backend) — fonte única quando o backend responde
+    this.apiGet('demandas',PG).then(rows=>{ on(); this.setState({demandasReal:Array.isArray(rows)?rows:[], demandasRealOn:true}); }).catch(()=>{});
     if(!this.state.eventos) this.setState({eventos:(this.data().events||[]).slice()});
     this.apiGet('eventos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({eventos:rows}); }).catch(()=>{});
     this.carregarResultados();
@@ -3315,9 +3315,7 @@ class Component extends DCLogic {
           this.chip(e.status,this.statusColor(e.status)))));
   }
   allDemandas(){
-    if(!this._demSeed) this._demSeed=[
-      {id:101,tipo:'TESTE — Demanda entre setores',destino:'Inteligência',solic:'Usuário Teste',origem:'Usuário Teste (Gerente Nacional)',regiao:'PR',area:'Gerência',prio:'Alta',status:'Em análise',resp:'Responsável Teste',prazo:'01/08',desc:'Exemplo de teste de demanda encaminhada entre setores.'},
-    ];
+    if(!this._demSeed) this._demSeed=[];
     const ov=this.state.demOverrides||{};
     const del=this.state.demDeleted||{};
     let base;
@@ -3705,7 +3703,7 @@ class Component extends DCLogic {
   resultadosData(){ const r=this.state.resultadosReal; return (Array.isArray(r)&&r.length)?r:this.acoesResultado(); }
   carregarResultados(){ this.apiGet('resultados').then(d=>{ if(d&&Array.isArray(d.itens)) this.setState({resultadosReal:d.itens,backend:'online'}); }).catch(()=>{}); }
   // Indicadores do Painel do Vendedor (SBS Green) — carteira/prospecção da equipe de campo.
-  indParceiroDemo(){ return { estados:4, clientes:561, prospects:645, rotas:3, agendadas:3, validadas:1, cotacoes:7, vendasRS:0 }; }
+  indParceiroDemo(){ return { estados:0, clientes:0, prospects:0, rotas:0, agendadas:0, validadas:0, cotacoes:0, vendasRS:0 }; }
   indParceiroData(){ const d=this.state.indParceiro; return (d&&typeof d==='object')?d:this.indParceiroDemo(); }
   carregarIndParceiro(){ this.apiGet('parceiro-indicadores').then(d=>{ if(d&&d.indicadores){ this.setState({indParceiro:d.indicadores, indParceiroOnline:!!d.online, indParceiroPeriodo:d.periodo||null, indParceiroAtualizado:d.atualizadoEm||null}); } }).catch(()=>{}); }
   indParceiroBloco(){
