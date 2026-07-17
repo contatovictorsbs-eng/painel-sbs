@@ -50,7 +50,79 @@ import * as _auth from '../../server/_lib/auth.js';
 const _storeM = _store.default || _store;
 const _authM = _auth.default || _auth;
 const { ok, fail, audit, clientIp, tenantStore, pageOpts } = _storeM;
-const { fromEvent, tenantFromEvent } = _authM;
+const { fromEvent, tenantFromEvent, requireAuth } = _authM;
+import * as _nodeCrypto from 'node:crypto';
+const _crypto = _nodeCrypto.default || _nodeCrypto;
+function _authSecret(){ return process.env.AUTH_SECRET || 'sbs-dev-secret-troque-em-producao'; }
+function _hashSenha(s){ return _crypto.createHash('sha256').update(String(s) + _authSecret()).digest('hex'); }
+const _PERFIS = ['marketing','gerente','ceo','mercado','ti','admin'];
+
+/* Gestão de usuários/acessos (Marketing + Admin). Coleção `usuarios`.
+   Mesma fórmula de hash do server/auth.js para que o login funcione.
+   GET lista (sem hash) · POST cria · PATCH edita/reseta senha · DELETE remove. */
+async function hUsuarios(event){
+  try {
+    const r = requireAuth(event, ['marketing','admin']);
+    if (r.erro) return fail(r.erro, r.code);
+    const u = r.user;
+    const db = tenantStore(tenantFromEvent(event));
+    const strip = x => { if(!x) return x; const o = Object.assign({}, x); delete o.hash; return o; };
+    if (event.httpMethod === 'GET') {
+      const q = event.queryStringParameters || {};
+      const rows = await db.list('usuarios', {}, pageOpts(Object.assign({ limite: 200 }, q)));
+      return ok(rows.map(strip));
+    }
+    if (event.httpMethod === 'POST') {
+      const b = JSON.parse(event.body || '{}');
+      const email = (b.email || '').trim().toLowerCase();
+      const nome = (b.nome || '').trim();
+      const perfil = (b.perfil || '').trim();
+      if (!email || !email.includes('@')) return fail('Informe um e-mail válido');
+      if (!nome) return fail('Informe o nome');
+      if (!_PERFIS.includes(perfil)) return fail('Perfil inválido');
+      const existe = await db.get('usuarios', email);
+      if (existe) return fail('Já existe um usuário com este e-mail', 409);
+      const senhaInicial = (b.senha && String(b.senha)) || '12345678';
+      const ent = { id: email, email, nome, perfil, tenant: 'sbs', hash: _hashSenha(senhaInicial), precisaTrocar: true, criadoEm: new Date().toISOString(), criadoPor: u.sub || 'sistema' };
+      const saved = await db.put('usuarios', ent);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'criou', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
+      return ok(strip(saved));
+    }
+    if (event.httpMethod === 'PATCH') {
+      const b = JSON.parse(event.body || '{}');
+      const email = (b.id || b.email || '').trim().toLowerCase();
+      if (!email) return fail('id obrigatório');
+      const cur = await db.get('usuarios', email);
+      if (!cur) return fail('Usuário não encontrado', 404);
+      if (b.acao === 'reset') {
+        cur.hash = _hashSenha('12345678'); cur.precisaTrocar = true;
+        await db.put('usuarios', cur);
+        await audit({ usuario:u.sub, perfil:u.perfil, acao:'redefiniu-senha', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
+        return ok({ id: email, reset: true });
+      }
+      if (b.nome != null && String(b.nome).trim()) cur.nome = String(b.nome).trim();
+      if (b.perfil != null) { if (!_PERFIS.includes(b.perfil)) return fail('Perfil inválido'); cur.perfil = b.perfil; }
+      await db.put('usuarios', cur);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'editou', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
+      return ok(strip(cur));
+    }
+    if (event.httpMethod === 'DELETE') {
+      const q = event.queryStringParameters || {};
+      const email = (q.id || q.email || '').trim().toLowerCase();
+      if (!email) return fail('id obrigatório');
+      if (email === (u.sub || '').toLowerCase()) return fail('Você não pode remover o seu próprio acesso');
+      const cur = await db.get('usuarios', email);
+      if (cur && cur.perfil === 'admin') {
+        const all = await db.list('usuarios', {}, { limit: 500 });
+        if (all.filter(x => x.perfil === 'admin').length <= 1) return fail('Não é possível remover o último administrador');
+      }
+      await db.remove('usuarios', email);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'removeu', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
+      return ok({ removido: email });
+    }
+    return fail('Método não suportado', 405);
+  } catch (e) { return fail(e.message, 500); }
+}
 
 async function hCanais(event){
   try {
@@ -75,6 +147,44 @@ async function hCanais(event){
       await db.remove('canais', q.id);
       await audit({ usuario:u.sub, perfil:u.perfil, acao:'removeu', entidade:'canais', entidadeId:q.id, ip:clientIp(event) });
       return ok({ removido: q.id });
+    }
+    return fail('Método não suportado', 405);
+  } catch (e) { return fail(e.message, 500); }
+}
+
+async function hCashback(event){
+  try {
+    const db = tenantStore(tenantFromEvent(event));
+    const u = fromEvent(event) || {};
+    if (event.httpMethod === 'GET') {
+      const q = event.queryStringParameters || {};
+      return ok(await db.list('cashback', {}, pageOpts(q)));
+    }
+    if (event.httpMethod === 'POST') {
+      const b = JSON.parse(event.body || '{}');
+      if (!b.id) b.id = Date.now();
+      const now = new Date().toISOString();
+      const ent = Object.assign({ criadoEm: now }, b, { atualizadoEm: now, atualizadoPor: u.sub || 'sistema' });
+      const saved = await db.put('cashback', ent);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao: b.kind === 'lead' ? 'lead_cashback' : 'registro_cashback', entidade:'cashback', entidadeId:String(b.id), ip:clientIp(event) });
+      return ok(saved);
+    }
+    if (event.httpMethod === 'PATCH') {
+      const b = JSON.parse(event.body || '{}');
+      if (!b.id) return fail('id obrigatório');
+      const cur = await db.get('cashback', b.id);
+      if (!cur) return fail('Registro não encontrado', 404);
+      const saved = await db.put('cashback', Object.assign({}, cur, b, { atualizadoEm: new Date().toISOString() }));
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'editou', entidade:'cashback', entidadeId:String(b.id), ip:clientIp(event) });
+      return ok(saved);
+    }
+    if (event.httpMethod === 'DELETE') {
+      const q = event.queryStringParameters || {};
+      const id = q.id || (JSON.parse(event.body || '{}').id);
+      if (!id) return fail('id obrigatório');
+      await db.remove('cashback', id);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'removeu', entidade:'cashback', entidadeId:String(id), ip:clientIp(event) });
+      return ok({ removido: id });
     }
     return fail('Método não suportado', 405);
   } catch (e) { return fail(e.message, 500); }
@@ -245,6 +355,7 @@ const HANDLERS = {
   'biblioteca': pick(fBiblioteca),
   'campanhas': pick(fCampanhas),
   'canais': hCanais,
+  'cashback': hCashback,
   'clima': pick(fClima),
   'demandas': pick(fDemandas),
   'eventos': pick(fEventos),
@@ -265,6 +376,7 @@ const HANDLERS = {
   'senha': pick(fSenha),
   'storage': hStorage,
   'tenants': pick(fTenants),
+  'usuarios': hUsuarios,
   'vendas': pick(fVendas),
   'vendedores': pick(fVendedores)
 };

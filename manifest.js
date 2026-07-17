@@ -8,8 +8,8 @@
    a documentação se atualiza sozinha a partir deste ponto único.
    =========================================================== */
 window.SBS_MANIFEST = {
-  versao: '1.72.0',
-  atualizadoEm: '2026-07-15',
+  versao: '1.75.0',
+  atualizadoEm: '2026-07-16',
 
   // ---- Perfis de acesso ----
   perfis: [
@@ -91,7 +91,8 @@ window.SBS_MANIFEST = {
     { nome:'limpar-teste',  metodos:'POST',              desc:'Exclui de todas as coleções os registros marcados { teste:true }. Usar uma vez após subir para produção; só CEO/Admin', coleção:'todas', envs:['AUTH_SECRET'], status:'ligada' },
     { nome:'ranking',       metodos:'GET',               desc:'Ranking do App do Vendedor: soma faturamento de vendas por vendedor no recorte (parceira/evento/campanha), colocação, gap % e R$ para o 1º e cortes dos prêmios', coleção:'vendas+campanhas+vendedores', envs:[], status:'ligada' },
     { nome:'produtos',      metodos:'GET, POST, PATCH, DELETE', desc:'Catálogo de produtos (preço de tabela, tamanho do saco, foto)', coleção:'produtos', envs:[], status:'ligada' },
-    { nome:'campanhas',     metodos:'GET, POST, PATCH, DELETE',  desc:'Campanhas: GTN, período, meta (por campanha), canal, premiação e tabela de produtos com preço da campanha. DELETE ?id= exclui a campanha.', coleção:'campanhas', envs:[], status:'ligada' },
+    { nome:'campanhas',     metodos:'GET, POST, PATCH, DELETE',  desc:'Campanhas: GTN, período, meta (por campanha), canal, premiação, ação de cashback (%) e tabela de produtos com preço da campanha. DELETE ?id= exclui a campanha.', coleção:'campanhas', envs:[], status:'ligada' },
+    { nome:'cashback',      metodos:'GET, POST, PATCH, DELETE',  desc:'Ação de cashback: registros de resgate (estande) e leads do totem (kind: registro|lead). Handler embutido no roteador /api/cashback.', coleção:'cashback', envs:[], status:'ligada' },
     { nome:'aprovacoes',    metodos:'GET, POST',         desc:'Histórico do fluxo de aprovação (quem/fez o quê/quando) + anexos', coleção:'aprovacoes_hist', envs:[], status:'ligada' },
     { nome:'parceiros',     metodos:'GET, POST',         desc:'Apps co-branded por parceira', coleção:'parceiros', envs:[], status:'stub' },
     { nome:'alertas',       metodos:'GET (agendada)',    desc:'Regras automáticas de alerta de mercado', coleção:'mi_tendencias', envs:[], status:'stub' },
@@ -115,7 +116,8 @@ window.SBS_MANIFEST = {
     { nome:'monitoramentos', desc:'Robôs de concorrentes; fontes[{tipo,ref}] com link/@ exato de origem.' },
     { nome:'orcamentos',   desc:'Pedidos de desconto/bonificação por lead; alçada do gerente regional.' },
     { nome:'produtos',     desc:'Catálogo único: preço de tabela, tamanho do saco, foto opcional.' },
-    { nome:'campanhas',    desc:'Campanhas com meta por campanha, premiação e tabela de produtos c/ preço específico. Vinculada a evento → herda o app do evento.' },
+    { nome:'campanhas',    desc:'Campanhas com meta por campanha, premiação, ação de cashback (%) e tabela de produtos c/ preço específico. Vinculada a evento → herda o app do evento.' },
+    { nome:'cashback',     desc:'Ação de cashback: registros de resgate (kind:registro — cliente, cupom, valor da compra, % , valorCashback, safra/safraResgate, status) e leads captados no totem do evento (kind:lead — produtor, produto comprado, telefone, endereço). Rota /api/cashback GET/POST/PATCH/DELETE.' },
     { nome:'aprovacoes_hist', desc:'Histórico do fluxo de aprovação + anexos por projeto.' },
     { nome:'governanca',   desc:'TI: painéis em manutenção e módulos ocultos por perfil.' },
     { nome:'parceiras',    desc:'Cooperativas co-branded (logo, paleta, link do app).' },
@@ -130,6 +132,9 @@ window.SBS_MANIFEST = {
 
   // ---- Changelog (mais recente no topo) ----
   changelog: [
+    { versao:'1.75.0', data:'2026-07-16', itens:['DOC — guia de STAGING (homologação) + PRODUÇÃO com bancos Supabase separados (backend/staging-e-producao.md): branch homologacao → Preview → sbs-staging; main → Production → sbs-producao. Garantias de não-perda de dados: deploy troca só arquivos, banco intacto; sem DROP/DELETE em massa; limpeza de exemplos é só localStorage; bancos isolados por ambiente.'] },
+    { versao:'1.74.0', data:'2026-07-16', itens:['CASHBACK — link do totem por campanha: no módulo Cashback cada campanha com cashback ativo tem seu link próprio do totem (Copiar / WhatsApp / Abrir), mais a opção “Todas as campanhas”. Rota pública #totem / #totem-<campId> abre só a tela de cadastro do produtor (sem login, sem painel) — pronta para o tablet/totem de 24” no evento. As campanhas de cashback também aparecem no módulo Resultados das ações (bloco “Campanhas de cashback”: cadastros, valor a resgatar, compras e leads do totem). Banco: adicionada a coleção `cashback` ao supabase-schema.sql.'] },
+    { versao:'1.73.0', data:'2026-07-15', itens:['AÇÃO DE CASHBACK — nova funcionalidade. Na campanha (Gerente Nacional/Marketing) há a opção “Ação de cashback” com % definido. Novo módulo CASHBACK (menu Gerente Nacional e Marketing): (1) Registrar cashback — no estande da SBS, com cliente, CNPJ, cupom do pedido, campanha e valor da compra; calcula o valor do cashback pelo % e define a safra de resgate (próxima safra), status A resgatar/Resgatado. (2) Totem de cadastro — tela cheia para 24” no evento onde o produtor se cadastra (nome, produto comprado, telefone, endereço); gera leads (kind:lead). (3) Aba “Leads captados (totem)” com exportação CSV para prospecção. Backend: handler embutido em functions/api/[[path]].js (rota /api/cashback, GET/POST/PATCH/DELETE) sobre a coleção `cashback` (kind: registro|lead). REQUER a tabela `cashback` no Supabase.'] },
     { versao:'1.72.0', data:'2026-07-15', itens:['RESULTADOS MANUAIS DE EVENTO — eventos sem app do vendedor ganharam botão "Imputar resultados" na Agenda de eventos (Gerente Nacional/Marketing). Modal permite baixar uma planilha-modelo CSV (participantes, leads, vendas, faturamento, investimento, clientes novos + observações) para o parceiro preencher, importar a planilha preenchida ou digitar manualmente. Calcula ticket, ROI e conversão e grava em eventos.resultados via PATCH /api/eventos (merge), alimentando custo/conv e o ROI do evento. CAMPANHAS — releitura do backend: campanhas criadas são recarregadas de /api/campanhas no load (não somem mais ao atualizar a página).'] },
     { versao:'1.71.0', data:'2026-07-14', itens:['CAMPANHAS — EXCLUIR: cada card de campanha (Gerente Nacional) ganhou botão de excluir (ícone lixeira) com confirmação; remove do estado, do backend (DELETE /api/campanhas?id=) e publica um envelope no barramento (tipo:campanha, status:Excluida) para o painel do vendedor deixar de listá-la. Backend: campanhas.js passou a aceitar DELETE. GESTÃO DE CAMPANHAS ATIVAS — em Resultados das ações (fonte PLATAFORMA SBS) nova seção que lista cada campanha ATIVA com faturamento × meta (%), vendas, ticket médio, leads, conversão e ROI; sai ao encerrar. APROVAÇÃO SEM CEO — a esteira passou a Marketing → Inteligência → Gerente Nacional (palavra final); CEO não aprova mais (fluxo de investimento e de solicitações do parceiro).'] },
     { versao:'1.70.0', data:'2026-07-14', itens:['ACESSOS & USUÁRIOS (painel de Marketing) — nova tela na seção Administração para CONCEDER e REMOVER acesso ao sistema: adicionar pessoa (nome, e-mail, perfil), redefinir senha e remover acesso. Novo usuário entra com senha inicial 12345678 e troca obrigatória no 1º login. Front chama /api/usuarios com fallback de demonstração; ações otimistas + toast.','BACKEND /api/usuarios (GET/POST/PATCH/DELETE) — coleção usuarios, MESMA fórmula de hash do auth.js (sha256(senha+AUTH_SECRET)) para que o usuário criado logue por /api/auth. requireAuth([marketing,admin]). Regras: bloqueia remover o próprio acesso e o último admin; e-mail único. Handler embutido no roteador (hUsuarios) para deploy garantido + server/usuarios.js espelho.','MENU — “Resultados das ações” movido para logo abaixo de Aprovações no perfil Gerente Nacional (seção Entrada & aprovação).','Docs: schema.md (rotas /usuarios) + manifest (função usuarios) atualizados.'] },
