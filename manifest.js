@@ -8,7 +8,7 @@
    a documentação se atualiza sozinha a partir deste ponto único.
    =========================================================== */
 window.SBS_MANIFEST = {
-  versao: '1.77.0',
+  versao: '1.79.0',
   atualizadoEm: '2026-07-20',
 
   // ---- Perfis de acesso ----
@@ -132,6 +132,7 @@ window.SBS_MANIFEST = {
 
   // ---- Changelog (mais recente no topo) ----
   changelog: [
+    { versao:'1.79.0', data:'2026-07-20', itens:['SEGURANÇA — Autenticação em 2 passos (2FA/TOTP) obrigatória em TODO login do painel. Fluxo: e-mail+senha → código de 6 dígitos do app autenticador (Google Authenticator/Authy). 1º acesso mostra QR + chave manual + códigos de recuperação (uso único). server/_lib/totp.js (RFC 6238, sem dependências). server/auth.js: ações ativar-2fa e verificar-2fa (pretoken assinado, TTL curto). Gestão de Acessos ganhou botão “Resetar 2FA”. Variável FORCAR_2FA=off desliga se necessário. Campos novos na coleção usuarios: twofaOn, twofaSeg, twofaRec[].'] },
     { versao:'1.77.0', data:'2026-07-20', itens:['LIXEIRA com restauração — toda exclusão (campanhas, eventos, produtos, cashback, leads do totem) vai para a coleção `lixeira` (handler embutido /api/lixeira GET/POST/DELETE) e pode ser RESTAURADA ou excluída definitivamente. Novo menu Lixeira (Marketing e Gerente Nacional). Card da campanha de cashback ganhou botões Finalizar e Excluir. TOTEM: novos campos Cultura, Nº do pedido e Valor (opcionais) — incluídos no CSV. Export de leads de cashback também no card do evento (por evento). Todos os campos de data do sistema passam a usar o seletor de calendário nativo (type=date). REQUER tabela sbs_lixeira no Supabase.'] },
     { versao:'1.75.0', data:'2026-07-16', itens:['DOC — guia de STAGING (homologação) + PRODUÇÃO com bancos Supabase separados (backend/staging-e-producao.md): branch homologacao → Preview → sbs-staging; main → Production → sbs-producao. Garantias de não-perda de dados: deploy troca só arquivos, banco intacto; sem DROP/DELETE em massa; limpeza de exemplos é só localStorage; bancos isolados por ambiente.'] },
     { versao:'1.74.0', data:'2026-07-16', itens:['CASHBACK — link do totem por campanha: no módulo Cashback cada campanha com cashback ativo tem seu link próprio do totem (Copiar / WhatsApp / Abrir), mais a opção “Todas as campanhas”. Rota pública #totem / #totem-<campId> abre só a tela de cadastro do produtor (sem login, sem painel) — pronta para o tablet/totem de 24” no evento. As campanhas de cashback também aparecem no módulo Resultados das ações (bloco “Campanhas de cashback”: cadastros, valor a resgatar, compras e leads do totem). Banco: adicionada a coleção `cashback` ao supabase-schema.sql.'] },

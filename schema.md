@@ -206,6 +206,11 @@ Usuário de parceira leva `tenant:<slug>` (isola os dados dela).
 | reset | obj \| null | `{cod:hash, exp:epoch}` código de redefinição (30 min) |
 | senhaAlteradaEm | ISO date | última troca |
 | tenant | string | `sbs` (interno) ou slug da parceira |
+| twofaOn | boolean | 2FA (TOTP) ativado |
+| twofaSeg | string | segredo Base32 do TOTP (server-side) |
+| twofaRec | string[] | hashes dos códigos de recuperação (uso único) |
+
+**2FA (verificação em 2 passos):** obrigatória por padrão em todo login (desligar com `FORCAR_2FA=off`). `POST /auth {email,senha}` → `{etapa:'2fa'|'2fa-setup', pretoken}`. `POST /auth?acao=ativar-2fa {pretoken,codigo}` → grava segredo + retorna token e códigos de recuperação. `POST /auth?acao=verificar-2fa {pretoken,codigo}` → token de sessão. `PATCH /usuarios {id,acao:'reset-2fa'}` desativa o 2FA do usuário (reconfigura no próximo login). Segredo TOTP nunca vai ao cliente após a ativação.
 
 Rotas: `POST /auth {email,senha}` → token + precisaTrocar. `POST /senha`:
 `{acao:'trocar',senhaAtual,novaSenha}` (autenticado), `{acao:'solicitar',email}`

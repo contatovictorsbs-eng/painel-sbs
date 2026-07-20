@@ -100,6 +100,12 @@ async function hUsuarios(event){
         await audit({ usuario:u.sub, perfil:u.perfil, acao:'redefiniu-senha', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
         return ok({ id: email, reset: true });
       }
+      if (b.acao === 'reset-2fa') {
+        cur.twofaOn = false; delete cur.twofaSeg; delete cur.twofaRec;
+        await db.put('usuarios', cur);
+        await audit({ usuario:u.sub, perfil:u.perfil, acao:'resetou-2fa', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
+        return ok({ id: email, reset2fa: true });
+      }
       if (b.nome != null && String(b.nome).trim()) cur.nome = String(b.nome).trim();
       if (b.perfil != null) { if (!_PERFIS.includes(b.perfil)) return fail('Perfil inválido'); cur.perfil = b.perfil; }
       await db.put('usuarios', cur);

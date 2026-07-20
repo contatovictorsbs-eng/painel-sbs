@@ -77,6 +77,7 @@
     {{ loginView }}
   </sc-if>
   {{ totemPublicOverlay }}
+  {{ twofaOverlay }}
   {{ pwOverlay }}
   {{ evOverlay }}
   {{ demandaOverlay }}
@@ -5359,9 +5360,9 @@ class Component extends DCLogic {
   }
 
   // ================= COMPARTILHAR APP + NOTIFICAÇÕES =================
-  appShareLink(){
+  appShareLink(selArg){
     const base=(typeof location!=='undefined')?(location.origin+location.pathname):'https://seu-site.com/painel-sbs.html';
-    const sel=this.state.shareSel;
+    const sel=(selArg!==undefined)?selArg:this.state.shareSel;
     return base+'#app'+(sel?('-'+sel):'');
   }
   copyLink(){
@@ -5371,23 +5372,32 @@ class Component extends DCLogic {
     setTimeout(()=>{ try{ this.setState({copied:false}); }catch(e){} },1800);
   }
   mktCompartilhar(){
-    const sel=this.state.shareSel;
+    const sbsHasApp=(this.evAll()||[]).some(e=>{ try{ return this.appEstado(e).key==='publicado'; }catch(_){ return false; } });
+    const partOpts=this.state.partners.map(p=>({id:p.id,nome:p.nome,cor:p.cor,sigla:p.sigla}));
+    const opts=(sbsHasApp?[{id:null,nome:'SBS Green Seeds',cor:'#0c3b37',sigla:'SBS'}]:[]).concat(partOpts);
+    let sel=this.state.shareSel;
+    if(!sbsHasApp && !sel && partOpts.length) sel=partOpts[0].id;
+    if(sbsHasApp===false && sel==null && !partOpts.length) sel=undefined;
     const ptSel=sel?this.state.partners.find(p=>p.id===sel):null;
     const appName=ptSel?('App de Eventos · '+ptSel.nome):'App de Eventos SBS';
-    const link=this.appShareLink();
+    const link=this.appShareLink(sel);
     const qr='https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&color='+(ptSel?ptSel.cor.replace('#',''):'0c3b37')+'&data='+encodeURIComponent(link);
     const wa='https://wa.me/?text='+encodeURIComponent('Acesse o '+appName+' para registrar vendas e leads: '+link);
     const mail='mailto:?subject='+encodeURIComponent(appName)+'&body='+encodeURIComponent('Acesse o '+appName+': '+link);
-    const opts=[{id:null,nome:'SBS Green Seeds',cor:'#0c3b37',sigla:'SBS'},...this.state.partners.map(p=>({id:p.id,nome:p.nome,cor:p.cor,sigla:p.sigla}))];
     const capta=[['Vendas','Cliente, CNPJ, produto, quantidade, valor e consultor'],['Leads','Produtores e cooperativas interessados, com potencial'],['Check-in','Presença da equipe no evento em tempo real'],['Origem','Tudo vinculado ao evento e à campanha ativa']];
     return this.wrap([
       React.createElement('div',{key:'note',style:{display:'flex',gap:10,alignItems:'flex-start',background:'#eafff9',borderRadius:13,padding:'14px 16px',font:'500 13px Manrope',color:'#0c3b37',lineHeight:1.5}},
         React.createElement('span',{style:{color:'#12b39a',flex:'none',marginTop:1}},this.ic(this.icons().link)),
         'Escolha qual app compartilhar — o da SBS ou o de cada parceira. Cada app tem o seu próprio link e QR Code; ao criar uma nova parceira em “Apps de parceiros”, um novo link é gerado automaticamente aqui.'),
+      (!sbsHasApp && !partOpts.length)?React.createElement('div',{key:'vazio',style:{padding:'46px 24px',textAlign:'center',background:'#fff',borderRadius:16,border:'1px dashed rgba(12,59,55,.18)'}},
+        React.createElement('div',{style:{display:'inline-flex',width:52,height:52,borderRadius:14,background:'#eef1ee',color:'#8a9a94',alignItems:'center',justifyContent:'center',marginBottom:14}},this.ic(this.icons().share||this.icons().link)),
+        React.createElement('div',{style:{font:'800 16px Archivo',color:'#0c3b37',marginBottom:6}},'Nenhum app para compartilhar ainda'),
+        React.createElement('div',{style:{font:'500 13px Manrope',color:'#5c6b67',maxWidth:460,margin:'0 auto 16px',lineHeight:1.5}},'Crie um evento e publique o app dele na Agenda de eventos, ou cadastre uma parceira em “Apps de parceiros”. Assim que houver um app publicado, o link e o QR Code aparecem aqui.'),
+        React.createElement('button',{onClick:()=>this.go('agenda'),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:10,padding:'11px 18px',font:'700 13px Manrope',cursor:'pointer'}},'Ir para a Agenda de eventos')):null,
       opts.length>1?React.createElement('div',{key:'sel',style:{display:'flex',gap:10,flexWrap:'wrap'}},opts.map(o=>React.createElement('button',{key:o.id||'sbs',onClick:()=>this.set({shareSel:o.id}),style:{display:'flex',alignItems:'center',gap:9,background:(sel===o.id||(!sel&&!o.id))?'#0c3b37':'#fff',border:'1px solid '+((sel===o.id||(!sel&&!o.id))?'#0c3b37':'rgba(12,59,55,.12)'),borderRadius:11,padding:'9px 14px',cursor:'pointer'}},
         React.createElement('span',{style:{width:24,height:24,borderRadius:7,background:o.cor,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',font:'800 9px Archivo'}},o.sigla),
         React.createElement('span',{style:{font:'700 12px Manrope',color:(sel===o.id||(!sel&&!o.id))?'#fff':'#0c3b37'}},o.nome)))):null,
-      this.grid('1.2fr 1fr',20,[
+      (!sbsHasApp && !partOpts.length)?null:this.grid('1.2fr 1fr',20,[
         this.card([this.h('Link do '+appName,'Envie para a equipe comercial'),
           React.createElement('div',{style:{display:'flex',gap:10,alignItems:'center',background:'#eef1ee',borderRadius:12,padding:'12px 14px',marginTop:4}},
             React.createElement('span',{style:{flex:1,minWidth:0,font:'600 13px "SF Mono",ui-monospace,monospace',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},link),
@@ -5919,6 +5929,12 @@ class Component extends DCLogic {
       .then(()=>{ this.setState({backend:'online'}); this.showToast('Acesso criado ✓ — senha inicial 12345678 (troca obrigatória no 1º login)'); })
       .catch((e)=>this.showToast('Criado localmente — NÃO salvou no servidor: '+((e&&e.message)||'sem conexão')));
   }
+  reset2faUsuario(email){
+    if(typeof confirm!=='undefined' && !confirm('Resetar a verificação em 2 passos de '+email+'? A pessoa vai configurar de novo no próximo login.')) return;
+    this.apiSend('usuarios','PATCH',{id:email,acao:'reset-2fa'})
+      .then(()=>this.showToast('2FA resetado ✓ — o usuário reconfigura no próximo login'))
+      .catch((e)=>this.showToast('Não foi possível resetar: '+((e&&e.message)||'sem conexão')));
+  }
   resetUsuario(email){
     this.apiSend('usuarios','PATCH',{id:email,acao:'reset'})
       .then(()=>{ this.setState(s=>({usuariosReal:(s.usuariosReal||[]).map(u=>u.email===email?{...u,precisaTrocar:true}:u)})); this.showToast('Senha redefinida para 12345678 ✓'); })
@@ -5950,6 +5966,7 @@ class Component extends DCLogic {
       h('div',{style:{marginTop:12,font:'500 12px Manrope',color:'#8a9a94'}},'A pessoa recebe a senha inicial 12345678 e será obrigada a trocá-la no primeiro acesso.')):null;
     const acoes=(u)=>h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',flexWrap:'wrap'}},
       h('button',{onClick:()=>this.resetUsuario(u.email),style:{border:'1px solid rgba(12,59,55,.15)',background:'#fff',color:'#0c3b37',borderRadius:8,padding:'7px 12px',font:'700 11.5px Manrope',cursor:'pointer'}},'Redefinir senha'),
+      h('button',{onClick:()=>this.reset2faUsuario(u.email),style:{border:'1px solid rgba(12,59,55,.15)',background:'#fff',color:'#0c3b37',borderRadius:8,padding:'7px 12px',font:'700 11.5px Manrope',cursor:'pointer'}},'Resetar 2FA'),
       h('button',{onClick:()=>this.setState({usuDel:u}),style:{border:'1px solid #f0cfc9',background:'#fff',color:'#c2564b',borderRadius:8,padding:'7px 12px',font:'700 11.5px Manrope',cursor:'pointer'}},'Remover'));
     const rows=list.map(u=>[
       h('span',{style:{font:'700 13px Manrope',color:'#0c3b37'}},u.nome||'—'),
@@ -6014,10 +6031,78 @@ class Component extends DCLogic {
       fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({email:email.includes('@')?email:(key+'@sbsgreen.com.br'),senha:pass})})
         .then(r=>r.ok?r.json():Promise.reject()).then(j=>{
+          if(j&&j.ok&&j.data&&j.data.etapa==='2fa'){ this.setState({twofa:{stage:'verificar',pretoken:j.data.pretoken,email:email.includes('@')?email:(key+'@sbsgreen.com.br'),msg:'',pendingFinish:finish}}); return; }
+          if(j&&j.ok&&j.data&&j.data.etapa==='2fa-setup'){ this.setState({twofa:{stage:'setup',pretoken:j.data.pretoken,segredo:j.data.segredo,otpauth:j.data.otpauth,email:email.includes('@')?email:(key+'@sbsgreen.com.br'),msg:'',pendingFinish:finish}}); return; }
           if(j&&j.ok&&j.data&&j.data.token){ try{localStorage.setItem('sbs_token',j.data.token);}catch(e){} finish(j.data.perfil); if(j.data.precisaTrocar){ setTimeout(()=>{ this.setState({precisaTrocar:true}); this.pwOpen('trocar'); },400); } }
           else this.loginDemo(key,pass,map,finish);
         }).catch(()=> this.loginDemo(key,pass,map,finish));
     }catch(e){ this.loginDemo(key,pass,map,finish); }
+  }
+  // ---- 2FA (app autenticador) ----
+  qrUrl(data){ return 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=6&data='+encodeURIComponent(data); }
+  async twofaConfirmarSetup(){
+    const tf=this.state.twofa||{}; const codigo=((document.getElementById('tf-cod')||{}).value||'').replace(/\D/g,'');
+    if(codigo.length<6){ this.setState({twofa:Object.assign({},tf,{msg:'Digite os 6 dígitos do app.'})}); return; }
+    this.setState({twofa:Object.assign({},tf,{msg:'Ativando…'})});
+    try{
+      const r=await fetch('/api/auth?acao=ativar-2fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pretoken:tf.pretoken,codigo})});
+      const j=await r.json();
+      if(j&&j.ok&&j.data&&j.data.token){ try{localStorage.setItem('sbs_token',j.data.token);}catch(e){}
+        this.setState({twofa:Object.assign({},tf,{stage:'recuperacao',rec:j.data.recuperacao||[],msg:'',_perfil:j.data.perfil,_precisaTrocar:!!j.data.precisaTrocar})}); }
+      else this.setState({twofa:Object.assign({},tf,{msg:(j&&j.erro)||'Código inválido.'})});
+    }catch(e){ this.setState({twofa:Object.assign({},tf,{msg:'Falha de conexão. Tente de novo.'})}); }
+  }
+  twofaConcluirSetup(){
+    const tf=this.state.twofa||{}; const finish=tf.pendingFinish; const perfil=tf._perfil; const pt=tf._precisaTrocar;
+    this.setState({twofa:null});
+    if(finish) finish(perfil);
+    if(pt){ setTimeout(()=>{ this.setState({precisaTrocar:true}); this.pwOpen('trocar'); },400); }
+  }
+  async twofaVerificar(){
+    const tf=this.state.twofa||{}; const codigo=((document.getElementById('tf-cod')||{}).value||'').trim();
+    if(!codigo){ this.setState({twofa:Object.assign({},tf,{msg:'Digite o código do app.'})}); return; }
+    this.setState({twofa:Object.assign({},tf,{msg:'Verificando…'})});
+    try{
+      const r=await fetch('/api/auth?acao=verificar-2fa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pretoken:tf.pretoken,codigo})});
+      const j=await r.json();
+      if(j&&j.ok&&j.data&&j.data.token){ try{localStorage.setItem('sbs_token',j.data.token);}catch(e){}
+        const finish=tf.pendingFinish; this.setState({twofa:null}); if(finish) finish(j.data.perfil);
+        if(j.data.precisaTrocar){ setTimeout(()=>{ this.setState({precisaTrocar:true}); this.pwOpen('trocar'); },400); } }
+      else this.setState({twofa:Object.assign({},tf,{msg:(j&&j.erro)||'Código inválido.'})});
+    }catch(e){ this.setState({twofa:Object.assign({},tf,{msg:'Falha de conexão. Tente de novo.'})}); }
+  }
+  twofaCancelar(){ this.setState({twofa:null}); }
+  twofaOverlay(){
+    const tf=this.state.twofa; if(!tf) return null; const h=React.createElement;
+    const fs={width:'100%',boxSizing:'border-box',background:'#f4f7f5',border:'1px solid #d7e2dc',borderRadius:12,padding:'14px 15px',font:'700 20px Manrope',letterSpacing:'.18em',textAlign:'center',color:'#0c3b37',outline:'none'};
+    let corpo;
+    if(tf.stage==='setup'){
+      corpo=[
+        h('div',{key:'t',style:{font:'800 20px Archivo',color:'#0c3b37',marginBottom:6}},'Ative a verificação em 2 passos'),
+        h('div',{key:'d',style:{font:'500 13px Manrope',color:'#5c6b67',marginBottom:16,lineHeight:1.5}},'Para a segurança da conta, escaneie o QR abaixo no app Google Authenticator ou Authy e digite o código gerado.'),
+        h('div',{key:'qr',style:{display:'flex',justifyContent:'center',marginBottom:14}},h('img',{src:this.qrUrl(tf.otpauth),alt:'QR 2FA',style:{width:190,height:190,borderRadius:12,border:'1px solid #e2ece7'}})),
+        h('div',{key:'sk',style:{font:'500 11.5px Manrope',color:'#8a9a94',textAlign:'center',marginBottom:14}},'Ou digite a chave manual: ',h('span',{style:{font:'700 12px ui-monospace,monospace',color:'#0c3b37',wordBreak:'break-all'}},tf.segredo)),
+        h('input',{key:'c',id:'tf-cod',inputMode:'numeric',maxLength:6,placeholder:'000000',style:fs,onKeyDown:e=>{if(e.key==='Enter')this.twofaConfirmarSetup();}})];
+    } else if(tf.stage==='recuperacao'){
+      corpo=[
+        h('div',{key:'t',style:{font:'800 20px Archivo',color:'#0c3b37',marginBottom:6}},'Guarde seus códigos de recuperação'),
+        h('div',{key:'d',style:{font:'500 13px Manrope',color:'#5c6b67',marginBottom:16,lineHeight:1.5}},'Use um destes códigos (uso único) caso perca o celular. Guarde em local seguro — eles não serão mostrados de novo.'),
+        h('div',{key:'g',style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:16}},(tf.rec||[]).map((c,i)=>h('div',{key:i,style:{font:'700 13px ui-monospace,monospace',color:'#0c3b37',background:'#f4f7f5',border:'1px solid #e2ece7',borderRadius:8,padding:'9px',textAlign:'center'}},c)))];
+    } else {
+      corpo=[
+        h('div',{key:'t',style:{font:'800 20px Archivo',color:'#0c3b37',marginBottom:6}},'Verificação em 2 passos'),
+        h('div',{key:'d',style:{font:'500 13px Manrope',color:'#5c6b67',marginBottom:16,lineHeight:1.5}},'Digite o código de 6 dígitos do seu app autenticador. Sem o app? Use um código de recuperação.'),
+        h('input',{key:'c',id:'tf-cod',inputMode:'text',placeholder:'000000',style:fs,onKeyDown:e=>{if(e.key==='Enter')this.twofaVerificar();}})];
+    }
+    const botoes = tf.stage==='recuperacao'
+      ? [h('button',{key:'ok',onClick:()=>this.twofaConcluirSetup(),style:{flex:1,background:'#12b39a',color:'#fff',border:'none',borderRadius:11,padding:'13px',font:'800 14px Archivo',cursor:'pointer'}},'Já guardei — entrar')]
+      : [h('button',{key:'x',onClick:()=>this.twofaCancelar(),style:{flex:'none',background:'#eef2f0',color:'#0c3b37',border:'none',borderRadius:11,padding:'13px 16px',font:'700 13px Manrope',cursor:'pointer'}},'Cancelar'),
+         h('button',{key:'go',onClick:()=>tf.stage==='setup'?this.twofaConfirmarSetup():this.twofaVerificar(),style:{flex:1,background:'#12b39a',color:'#fff',border:'none',borderRadius:11,padding:'13px',font:'800 14px Archivo',cursor:'pointer'}},tf.stage==='setup'?'Ativar e entrar':'Verificar')];
+    return h('div',{style:{position:'fixed',inset:0,background:'rgba(6,32,29,.55)',zIndex:9500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}},
+      h('div',{style:{width:'100%',maxWidth:420,maxHeight:'92vh',overflowY:'auto',background:'#fff',borderRadius:20,padding:'26px 24px',boxShadow:'0 30px 80px rgba(0,0,0,.35)'}},
+        corpo,
+        tf.msg?h('div',{style:{font:'600 12.5px Manrope',color:'#0c3b37',background:'#eef7f2',border:'1px solid #cfe6da',borderRadius:9,padding:'9px 11px',margin:'14px 0 0'}},tf.msg):null,
+        h('div',{style:{display:'flex',gap:10,marginTop:16}},botoes)));
   }
   loginDemo(key,pass,map,finish){
     const role=map[key];
@@ -6497,7 +6582,7 @@ class Component extends DCLogic {
       isMobile, sidebarStyle, sidebarOpen:menuOpen, showSearch:!isMobile,
       openMenu:()=>this.setState({sidebarOpen:true}), closeMenu:()=>this.setState({sidebarOpen:false}),
       icMenu:this.ic(['M4 6h16','M4 12h16','M4 18h16']),
-      isApp, isDesktop:!isApp&&!this.state.totemPublic, showLogin:!isApp&&!this.state.totemPublic&&!this.state.auth, showPanel:!isApp&&!this.state.totemPublic&&!!this.state.auth, totemPublicOverlay:this.state.totemPublic?this.cashTotemOverlay():null, loginView:this.panelLoginView(), pwOverlay:this.pwModalView(), evOverlay:this.eventoModalView(), demandaOverlay:React.createElement(React.Fragment,{},this.demandaModal(),this.demandaEditModal()), evMuralOverlay:this.eventoMuralView(), goTrocarSenha:()=>this.pwOpen('trocar'), icKey:this.ic(['M12.5 10.5a4 4 0 1 0-3 3','M14 12l7 7','M18 15l2 2','M17 16l2 2']),
+      isApp, isDesktop:!isApp&&!this.state.totemPublic, showLogin:!isApp&&!this.state.totemPublic&&!this.state.auth, showPanel:!isApp&&!this.state.totemPublic&&!!this.state.auth, totemPublicOverlay:this.state.totemPublic?this.cashTotemOverlay():null, twofaOverlay:this.twofaOverlay(), loginView:this.panelLoginView(), pwOverlay:this.pwModalView(), evOverlay:this.eventoModalView(), demandaOverlay:React.createElement(React.Fragment,{},this.demandaModal(),this.demandaEditModal()), evMuralOverlay:this.eventoMuralView(), goTrocarSenha:()=>this.pwOpen('trocar'), icKey:this.ic(['M12.5 10.5a4 4 0 1 0-3 3','M14 12l7 7','M18 15l2 2','M17 16l2 2']),
       doLogout:()=>{ try{ localStorage.removeItem('sbs_sessao'); localStorage.removeItem('sbs_token'); localStorage.removeItem('sbs_estado'); }catch(e){} this.setState({auth:null,isAdmin:false}); }, icLogout:this.ic(['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4','M16 17l5-5-5-5','M21 12H9']),
       roleName:meta.name, roleColor:meta.color,
       userName:this.state.isAdmin?'Admin master':meta.user, userRole:this.state.isAdmin?('Acesso total \u00b7 '+meta.name):meta.cargo, userInitials:this.state.isAdmin?'AD':meta.user.split(' ').map(w=>w[0]).slice(0,2).join(''),
