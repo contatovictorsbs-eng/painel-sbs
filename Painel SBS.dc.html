@@ -6026,16 +6026,20 @@ class Component extends DCLogic {
     const pass=((ep&&ep.value)||'');
     const map={franz:'marketing',franca:'marketing',medina:'gerente',tiago:'ceo','tiago.mascheto':'ceo',victor:'mercado',victorhugo:'mercado',admin:'admin',ti:'ti',tecnologia:'ti'};
     const finish=(role)=>{ if(role==='admin') this.doLoginAdmin(); else this.doLogin(role); };
-    // 1) tenta auth real no servidor; 2) se offline, cai no modo demo local
+    const emailFull=email.includes('@')?email:(key+'@sbsgreen.com.br');
+    this.setState({loginMsg:'Entrando…'});
+    // 1) auth real no servidor; só cai no modo demo se NÃO houver conexão (fetch falhar)
     try{
       fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({email:email.includes('@')?email:(key+'@sbsgreen.com.br'),senha:pass})})
-        .then(r=>r.ok?r.json():Promise.reject()).then(j=>{
-          if(j&&j.ok&&j.data&&j.data.etapa==='2fa'){ this.setState({twofa:{stage:'verificar',pretoken:j.data.pretoken,email:email.includes('@')?email:(key+'@sbsgreen.com.br'),msg:'',pendingFinish:finish}}); return; }
-          if(j&&j.ok&&j.data&&j.data.etapa==='2fa-setup'){ this.setState({twofa:{stage:'setup',pretoken:j.data.pretoken,segredo:j.data.segredo,otpauth:j.data.otpauth,email:email.includes('@')?email:(key+'@sbsgreen.com.br'),msg:'',pendingFinish:finish}}); return; }
-          if(j&&j.ok&&j.data&&j.data.token){ try{localStorage.setItem('sbs_token',j.data.token);}catch(e){} finish(j.data.perfil); if(j.data.precisaTrocar){ setTimeout(()=>{ this.setState({precisaTrocar:true}); this.pwOpen('trocar'); },400); } }
-          else this.loginDemo(key,pass,map,finish);
-        }).catch(()=> this.loginDemo(key,pass,map,finish));
+        body:JSON.stringify({email:emailFull,senha:pass})})
+        .then(r=>r.json().then(j=>({status:r.status,j})).catch(()=>({status:r.status,j:null})))
+        .then(({status,j})=>{
+          if(j&&j.ok&&j.data&&j.data.etapa==='2fa'){ this.setState({loginMsg:'',twofa:{stage:'verificar',pretoken:j.data.pretoken,email:emailFull,msg:'',pendingFinish:finish}}); return; }
+          if(j&&j.ok&&j.data&&j.data.etapa==='2fa-setup'){ this.setState({loginMsg:'',twofa:{stage:'setup',pretoken:j.data.pretoken,segredo:j.data.segredo,otpauth:j.data.otpauth,email:emailFull,msg:'',pendingFinish:finish}}); return; }
+          if(j&&j.ok&&j.data&&j.data.token){ try{localStorage.setItem('sbs_token',j.data.token);}catch(e){} this.setState({loginMsg:''}); finish(j.data.perfil); if(j.data.precisaTrocar){ setTimeout(()=>{ this.setState({precisaTrocar:true}); this.pwOpen('trocar'); },400); } return; }
+          // servidor respondeu com erro (ex.: senha inválida) — NÃO entra no demo
+          this.setState({loginMsg:(j&&j.erro)?j.erro:'E-mail ou senha inválidos'});
+        }).catch(()=>{ this.setState({loginMsg:''}); this.loginDemo(key,pass,map,finish); });
     }catch(e){ this.loginDemo(key,pass,map,finish); }
   }
   // ---- 2FA (app autenticador) ----
@@ -6197,6 +6201,7 @@ class Component extends DCLogic {
           React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:7}},React.createElement('span',{style:{font:'700 13px Manrope',color:'#eafff9'}},'Usuário'),React.createElement('input',{id:'pnl-user',placeholder:'franz@sbsgreen.com.br',autoCapitalize:'none',spellCheck:false,style:fs})),
           React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:7}},React.createElement('span',{style:{font:'700 13px Manrope',color:'#eafff9'}},'Senha'),React.createElement('input',{id:'pnl-pass',type:'password',placeholder:'••••••',style:fs}))),
         React.createElement('button',{onClick:()=>this.doLoginForm(),style:{width:'100%',background:'#12b39a',color:'#fff',border:'none',borderRadius:13,padding:'15px',font:'800 15px Archivo',cursor:'pointer',marginBottom:14,boxShadow:'0 10px 26px rgba(18,179,154,.3)'}},'Entrar'),
+        this.state.loginMsg?React.createElement('div',{style:{background:'rgba(255,255,255,.12)',border:'1px solid rgba(255,255,255,.25)',borderRadius:10,padding:'10px 13px',font:'600 12.5px Manrope',color:'#fff',marginBottom:14,textAlign:'center'}},this.state.loginMsg):null,
         React.createElement('button',{onClick:()=>this.pwOpen('esqueci'),style:{width:'100%',background:'none',border:'none',color:'rgba(255,255,255,.72)',font:'700 13px Manrope',cursor:'pointer',marginBottom:20}},'Esqueci minha senha'),
         React.createElement('div',{style:{marginTop:0,display:'flex',alignItems:'center',gap:8,font:'600 12px Manrope',color:'rgba(255,255,255,.6)'}},this.ic(['M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6z','M9 12l2 2 4-4']),'Acesso restrito · Governança SBS Green Seeds')));
   }
