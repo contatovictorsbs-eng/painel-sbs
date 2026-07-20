@@ -10,8 +10,19 @@
    (functions/senha.js). */
 const crypto = require('crypto');
 const { sign, verify } = require('./_lib/auth');
-const totp = require('./_lib/totp');
 const { list, get, put, audit, clientIp, ok, fail } = require('./_lib/store');
+
+/* ---- TOTP (RFC 6238) embutido — sem arquivo externo, para não quebrar o build ---- */
+const _B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function _b32enc(buf){ let bits='',out=''; for(const b of buf) bits+=b.toString(2).padStart(8,'0'); for(let i=0;i+5<=bits.length;i+=5) out+=_B32[parseInt(bits.substr(i,5),2)]; return out; }
+function _b32dec(s){ const c=String(s).toUpperCase().replace(/=+$/,'').replace(/\s/g,''); let bits=''; for(const ch of c){ const v=_B32.indexOf(ch); if(v<0)continue; bits+=v.toString(2).padStart(5,'0'); } const by=[]; for(let i=0;i+8<=bits.length;i+=8) by.push(parseInt(bits.substr(i,8),2)); return Buffer.from(by); }
+const totp = {
+  gerarSegredo(){ return _b32enc(crypto.randomBytes(20)); },
+  gerarCodigo(seg, step){ const key=_b32dec(seg); const ctr=(step!=null)?step:Math.floor(Date.now()/1000/30); const buf=Buffer.alloc(8); buf.writeUInt32BE(Math.floor(ctr/0x100000000),0); buf.writeUInt32BE(ctr>>>0,4); const hm=crypto.createHmac('sha1',key).update(buf).digest(); const o=hm[hm.length-1]&0xf; const bin=((hm[o]&0x7f)<<24)|((hm[o+1]&0xff)<<16)|((hm[o+2]&0xff)<<8)|(hm[o+3]&0xff); return String(bin%1000000).padStart(6,'0'); },
+  verificarCodigo(seg, codigo, janela){ if(!seg||!codigo) return false; const alvo=String(codigo).replace(/\D/g,'').padStart(6,'0'); const now=Math.floor(Date.now()/1000/30); const w=janela==null?1:janela; for(let i=-w;i<=w;i++){ try{ if(crypto.timingSafeEqual(Buffer.from(this.gerarCodigo(seg,now+i)),Buffer.from(alvo))) return true; }catch(e){} } return false; },
+  otpauthURL(seg, conta, emissor){ const em=emissor||'SBS Green'; return 'otpauth://totp/'+encodeURIComponent(em+':'+conta)+'?secret='+seg+'&issuer='+encodeURIComponent(em)+'&algorithm=SHA1&digits=6&period=30'; },
+  gerarRecuperacao(qtd){ const out=[]; for(let i=0;i<(qtd||8);i++) out.push(crypto.randomBytes(5).toString('hex').toUpperCase().replace(/(.{5})(.{5})/,'$1-$2')); return out; }
+};
 
 function SECRET(){ return process.env.AUTH_SECRET || 'sbs-dev-secret-troque-em-producao'; }
 function hash(senha){ return crypto.createHash('sha256').update(String(senha) + SECRET()).digest('hex'); }
