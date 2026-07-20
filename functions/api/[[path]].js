@@ -190,6 +190,35 @@ async function hCashback(event){
   } catch (e) { return fail(e.message, 500); }
 }
 
+async function hLixeira(event){
+  try {
+    const db = tenantStore(tenantFromEvent(event));
+    const u = fromEvent(event) || {};
+    if (event.httpMethod === 'GET') {
+      const q = event.queryStringParameters || {};
+      return ok(await db.list('lixeira', {}, pageOpts(q)));
+    }
+    if (event.httpMethod === 'POST') {
+      const b = JSON.parse(event.body || '{}');
+      if (!b.id) b.id = Date.now();
+      const now = new Date().toISOString();
+      const ent = Object.assign({ tipo:'item', origem:'', item:{} }, b, { excluidoEm: b.excluidoEm || now, excluidoPor: b.excluidoPor || u.sub || 'sistema' });
+      const saved = await db.put('lixeira', ent);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'moveu_lixeira', entidade:ent.origem||'lixeira', entidadeId:String(b.refId||b.id), ip:clientIp(event) });
+      return ok(saved);
+    }
+    if (event.httpMethod === 'DELETE') {
+      const q = event.queryStringParameters || {};
+      const id = q.id || (JSON.parse(event.body || '{}').id);
+      if (!id) return fail('id obrigatório');
+      await db.remove('lixeira', id);
+      await audit({ usuario:u.sub, perfil:u.perfil, acao:'excluiu_definitivo', entidade:'lixeira', entidadeId:String(id), ip:clientIp(event) });
+      return ok({ removido: id });
+    }
+    return fail('Método não suportado', 405);
+  } catch (e) { return fail(e.message, 500); }
+}
+
 async function hIntegracao(event){
   try {
     const db = tenantStore(tenantFromEvent(event));
@@ -360,6 +389,7 @@ const HANDLERS = {
   'demandas': pick(fDemandas),
   'eventos': pick(fEventos),
   'integracao': hIntegracao,
+  'lixeira': hLixeira,
   'ia-groq': pick(fIaGroq),
   'leads': pick(fLeads),
   'limpar-teste': pick(fLimparTeste),
