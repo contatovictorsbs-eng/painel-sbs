@@ -5227,23 +5227,28 @@ class Component extends DCLogic {
           React.createElement('button',{onClick:()=>this.set({intView:null}),style:{background:'#0c3b37',color:'#fff',border:'none',borderRadius:10,padding:'11px 20px',font:'700 13px Manrope',cursor:'pointer'}},'Fechar')))); 
   }
   gerCatalogo(){
-    const cat=this.state.catalogo||[];
+    const allCat=this.state.catalogo||[];
+    const q=(this.state.catBusca||'').trim().toLowerCase();
+    const cat=q?allCat.filter(p=>((p.nome||'')+' '+(p.cultura||'')+' '+(p.saco||'')).toLowerCase().includes(q)):allCat;
     return this.wrap([
       React.createElement('div',{key:'note',style:{display:'flex',gap:10,alignItems:'flex-start',background:'#eafff9',borderRadius:13,padding:'14px 16px',font:'500 13px Manrope',color:'#0c3b37',lineHeight:1.5}},
         React.createElement('span',{style:{color:'#12b39a',flex:'none',marginTop:1}},this.ic(this.icons().cube)),
         'Catálogo único de produtos da SBS, com preço de tabela e tamanho do saco. Ao criar uma campanha você escolhe destes produtos e define o preço específico daquela campanha — é essa tabela que o vendedor vê no app.'),
+      React.createElement('div',{key:'busca',style:{display:'flex',alignItems:'center',gap:10,background:'#fff',border:'1px solid rgba(12,59,55,.12)',borderRadius:12,padding:'11px 14px'}},
+        React.createElement('span',{style:{color:'#8a9a94',flex:'none'}},this.ic(this.icons().search||['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z','M21 21l-4.3-4.3'])),
+        React.createElement('input',{value:this.state.catBusca||'',onChange:e=>this.setState({catBusca:e.target.value}),placeholder:'Buscar produto por nome, cultura ou tamanho do saco…',style:{flex:1,border:'none',outline:'none',font:'500 14px Manrope',color:'#0c3b37',background:'transparent'}}),
+        (this.state.catBusca)?React.createElement('button',{onClick:()=>this.setState({catBusca:''}),style:{flex:'none',background:'#eef1ee',border:'none',borderRadius:8,padding:'6px 12px',font:'700 12px Manrope',color:'#0c3b37',cursor:'pointer'}},'Limpar'):null,
+        q?React.createElement('span',{style:{flex:'none',font:'700 12px Manrope',color:'#12b39a'}},cat.length+' encontrado(s)'):null),
       React.createElement('div',{key:'hd',style:{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
-        React.createElement('div',{style:{font:'700 15px Archivo',color:'#0c3b37',flex:1}},cat.length+' produto(s) no catálogo'),
-        cat.length>this.shownCount('catalogo')?React.createElement('button',{onClick:()=>this.carregarMais('catalogo'),style:{background:'#e7efe9',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer'}},'+ '+(cat.length-this.shownCount('catalogo'))+' — carregar mais'):null,
-        React.createElement('button',{onClick:()=>this.exportarCatalogoCSV(),style:{background:'#eef1ee',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 14px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().download),'Exportar CSV'),
+        React.createElement('div',{style:{font:'700 15px Archivo',color:'#0c3b37',flex:1}},allCat.length+' produto(s) no catálogo'),
+        cat.length>this.shownCount('catalogo')?React.createElement('button',{onClick:()=>this.carregarMais('catalogo'),style:{background:'#e7efe9',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer'}},'+ '+(cat.length-this.shownCount('catalogo'))+' — carregar mais'):null,React.createElement('button',{onClick:()=>this.exportarCatalogoCSV(),style:{background:'#eef1ee',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 14px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().download),'Exportar CSV'),
         React.createElement('button',{onClick:()=>{const i=document.getElementById('cat-import-file');if(i)i.click();},style:{background:'#eef1ee',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 14px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().file),'Importar CSV'),
         React.createElement('input',{id:'cat-import-file',type:'file',accept:'.csv,text/csv',style:{display:'none'},onChange:e=>this.importarCatalogoCSV(e.target.files)}),
         React.createElement('button',{onClick:()=>this.novoProduto(),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().plus),'Adicionar produto')),
       React.createElement('div',{key:'imphint',style:{font:'500 12px Manrope',color:'#8a9a94',marginTop:-4}},
         'Importe uma planilha CSV com colunas: nome, cultura, saco, preco. ',
         React.createElement('a',{href:'#',onClick:e=>{e.preventDefault();this.baixarModeloCatalogo();},style:{color:'#12b39a',fontWeight:700}},'Baixar modelo de planilha')),
-      cat.length?this.grid(3,16,cat.slice(0,this.shownCount('catalogo')).map(p=>React.createElement('div',{key:p.id,style:{background:'#fff',border:'1px solid rgba(12,59,55,.08)',borderRadius:16,overflow:'hidden',boxShadow:'0 1px 2px rgba(12,59,55,.04)'}},
-        React.createElement('div',{style:{height:120,background:'#eef1ee',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}},
+      cat.length?this.grid(3,16,cat.slice(0,this.shownCount('catalogo')).map(p=>React.createElement('div',{key:p.id,style:{background:'#fff',border:'1px solid rgba(12,59,55,.08)',borderRadius:16,overflow:'hidden',boxShadow:'0 1px 2px rgba(12,59,55,.04)'}},React.createElement('div',{style:{height:120,background:'#eef1ee',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}},
           p.foto?React.createElement('img',{src:p.foto,style:{width:'100%',height:'100%',objectFit:'cover'}}):React.createElement('span',{style:{color:'#a9c6b6'}},this.ic(this.icons().cube))),
         React.createElement('div',{style:{padding:16}},
           React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:6}},
@@ -5254,7 +5259,7 @@ class Component extends DCLogic {
           React.createElement('div',{style:{display:'flex',gap:8,marginTop:14}},
             React.createElement('button',{onClick:()=>this.editarProduto(p),style:{flex:1,background:'#eef1ee',border:'none',borderRadius:9,padding:'9px',font:'700 12px Manrope',color:'#0c3b37',cursor:'pointer'}},'Editar'),
             React.createElement('button',{onClick:()=>this.removerProduto(p.id),style:{flex:'none',width:38,background:'#fbeeea',border:'none',borderRadius:9,color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}},this.ic(this.icons().trash)))))))
-        :React.createElement('div',{style:{padding:'50px',textAlign:'center',color:'#5c6b67',font:'500 14px Manrope',background:'#fff',borderRadius:16}},'Nenhum produto ainda. Clique em “Adicionar produto”.'),
+        :React.createElement('div',{style:{padding:'50px',textAlign:'center',color:'#5c6b67',font:'500 14px Manrope',background:'#fff',borderRadius:16}},q?'Nenhum produto encontrado para “'+this.state.catBusca+'”.':'Nenhum produto ainda. Clique em “Adicionar produto”.'),
       this.produtoModal(),
     ]);
   }
@@ -5379,9 +5384,9 @@ class Component extends DCLogic {
       React.createElement('div',{key:'note',style:{display:'flex',gap:10,alignItems:'flex-start',background:'#eafff9',borderRadius:13,padding:'14px 16px',font:'500 13px Manrope',color:'#0c3b37',lineHeight:1.5}},
         React.createElement('span',{style:{color:'#12b39a',flex:'none',marginTop:1}},this.ic(this.icons().link)),
         'Escolha qual app compartilhar — o da SBS ou o de cada parceira. Cada app tem o seu próprio link e QR Code; ao criar uma nova parceira em “Apps de parceiros”, um novo link é gerado automaticamente aqui.'),
-      React.createElement('div',{key:'sel',style:{display:'flex',gap:10,flexWrap:'wrap'}},opts.map(o=>React.createElement('button',{key:o.id||'sbs',onClick:()=>this.set({shareSel:o.id}),style:{display:'flex',alignItems:'center',gap:9,background:(sel===o.id||(!sel&&!o.id))?'#0c3b37':'#fff',border:'1px solid '+((sel===o.id||(!sel&&!o.id))?'#0c3b37':'rgba(12,59,55,.12)'),borderRadius:11,padding:'9px 14px',cursor:'pointer'}},
+      opts.length>1?React.createElement('div',{key:'sel',style:{display:'flex',gap:10,flexWrap:'wrap'}},opts.map(o=>React.createElement('button',{key:o.id||'sbs',onClick:()=>this.set({shareSel:o.id}),style:{display:'flex',alignItems:'center',gap:9,background:(sel===o.id||(!sel&&!o.id))?'#0c3b37':'#fff',border:'1px solid '+((sel===o.id||(!sel&&!o.id))?'#0c3b37':'rgba(12,59,55,.12)'),borderRadius:11,padding:'9px 14px',cursor:'pointer'}},
         React.createElement('span',{style:{width:24,height:24,borderRadius:7,background:o.cor,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',font:'800 9px Archivo'}},o.sigla),
-        React.createElement('span',{style:{font:'700 12px Manrope',color:(sel===o.id||(!sel&&!o.id))?'#fff':'#0c3b37'}},o.nome)))),
+        React.createElement('span',{style:{font:'700 12px Manrope',color:(sel===o.id||(!sel&&!o.id))?'#fff':'#0c3b37'}},o.nome)))):null,
       this.grid('1.2fr 1fr',20,[
         this.card([this.h('Link do '+appName,'Envie para a equipe comercial'),
           React.createElement('div',{style:{display:'flex',gap:10,alignItems:'center',background:'#eef1ee',borderRadius:12,padding:'12px 14px',marginTop:4}},
