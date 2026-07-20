@@ -1547,20 +1547,20 @@ class Component extends DCLogic {
     const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
     const nome=g('tt-nome'); if(!nome){ const e=document.getElementById('tt-nome'); if(e){e.style.borderColor='#c2564b';e.focus();} return; }
     const campId=this.state.totemCamp; const camp=this.allCampaigns().find(c=>String(c.id)===String(campId));
-    const lead={ id:Date.now(), kind:'lead', cliente:nome, produto:g('tt-produto'), contato:g('tt-fone'),
+    const lead={ id:Date.now(), kind:'lead', cliente:nome, produto:g('tt-produto'), cultura:g('tt-cultura'), pedido:g('tt-pedido'), valor:parseFloat((g('tt-valor')||'0').replace(/\./g,'').replace(',','.'))||0, contato:g('tt-fone'),
       endereco:g('tt-end'), cidade:g('tt-cidade'), uf:g('tt-uf'),
       campanhaId:camp?camp.id:null, campanha:camp?camp.nome:'', evento:camp?(camp.evento||''):'',
       safra:this.safraAtual(), status:'Novo', criadoEm:new Date().toISOString() };
     this.setState({cashback:[lead,...(this.state.cashback||[])], totemDone:true});
     try{ this.apiSend('cashback','POST',lead).catch(()=>{}); }catch(e){}
-    ['tt-nome','tt-produto','tt-fone','tt-end','tt-cidade','tt-uf'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    ['tt-nome','tt-produto','tt-cultura','tt-pedido','tt-valor','tt-fone','tt-end','tt-cidade','tt-uf'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
     setTimeout(()=>{ try{ this.setState({totemDone:false}); }catch(e){} }, 3500);
   }
   exportarCashbackLeads(){
     const leads=this.cashbackLeads();
     if(!leads.length){ this.showToast('Nenhum lead para exportar'); return; }
-    const head=['Produtor','Produto comprado','Telefone','Endereço','Cidade','UF','Campanha','Evento','Safra','Cadastro'];
-    const linhas=leads.map(l=>[l.cliente,l.produto,l.contato,l.endereco,l.cidade,l.uf,l.campanha,l.evento,l.safra,(l.criadoEm?new Date(l.criadoEm).toLocaleString('pt-BR'):'')]
+    const head=['Produtor','Produto comprado','Cultura','Nº do pedido','Valor (R$)','Telefone','Endereço','Cidade','UF','Campanha','Evento','Safra','Cadastro'];
+    const linhas=leads.map(l=>[l.cliente,l.produto,l.cultura,l.pedido,(l.valor?Number(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2}):''),l.contato,l.endereco,l.cidade,l.uf,l.campanha,l.evento,l.safra,(l.criadoEm?new Date(l.criadoEm).toLocaleString('pt-BR'):'')]
       .map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(';'));
     const csv='\ufeff'+head.join(';')+'\n'+linhas.join('\n')+'\n';
     try{ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
@@ -1600,6 +1600,9 @@ class Component extends DCLogic {
         h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'clamp(14px,1.6vw,22px)'}},
           lbl('Nome do produtor',inp('tt-nome','Seu nome completo'),'1 / 3'),
           lbl('Produto que comprou', prodOpts.length?h('select',{id:'tt-produto',style:{padding:'18px 20px',border:'2px solid #d7e2dc',borderRadius:14,font:'600 22px Manrope',background:'#fff',width:'100%'}},[h('option',{key:'_',value:''},'Selecione…')].concat(prodOpts.map((n,i)=>h('option',{key:i,value:n},n)))):inp('tt-produto','Produto comprado'),'1 / 3'),
+          lbl('Cultura',inp('tt-cultura','ex: Soja, Milho, Pastagem')),
+          lbl('Número do pedido',inp('tt-pedido','Nº do pedido SBS')),
+          lbl('Valor do pedido (R$) — se tiver',inp('tt-valor','ex: 50.000',{inputMode:'decimal'}),'1 / 3'),
           lbl('Telefone / WhatsApp',inp('tt-fone','(00) 00000-0000',{inputMode:'tel'})),
           lbl('Cidade',inp('tt-cidade','Cidade')),
           lbl('Endereço',inp('tt-end','Rua, nº, bairro / fazenda'),'1 / 2'),
@@ -1731,7 +1734,7 @@ class Component extends DCLogic {
       (this.state.cashTab==='leads')?(()=>{ const leads=this.cashbackLeads();
         const lrow=l=>h('div',{key:l.id,style:{display:'flex',alignItems:'center',gap:12,padding:'13px 14px',background:'#fff',border:'1px solid rgba(12,59,55,.08)',borderRadius:13,flexWrap:'wrap'}},
           h('div',{style:{flex:1,minWidth:180}},h('div',{style:{font:'700 14px Manrope',color:'#0c3b37'}},l.cliente),
-            h('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginTop:3}},[l.produto,l.contato,(l.cidade&&(l.cidade+(l.uf?('/'+l.uf):''))),l.campanha].filter(Boolean).join(' · '))),
+            h('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginTop:3}},[l.produto,l.cultura,(l.pedido&&('pedido '+l.pedido)),(l.valor?('R$ '+Number(l.valor).toLocaleString('pt-BR')):''),l.contato,(l.cidade&&(l.cidade+(l.uf?('/'+l.uf):''))),l.campanha].filter(Boolean).join(' · '))),
           h('div',{style:{flex:'none',font:'500 11.5px Manrope',color:'#8a9a94'}},l.criadoEm?new Date(l.criadoEm).toLocaleDateString('pt-BR'):''),
           this.chip('Novo lead','#2b6fdb'),
           h('button',{onClick:()=>this.excluirCashbackLead(l.id),title:'Excluir',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 10px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(I.trash)));
