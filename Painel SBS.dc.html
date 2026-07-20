@@ -479,6 +479,8 @@ class Component extends DCLogic {
     this.apiGet('demandas',PG).then(rows=>{ on(); this.setState({demandasReal:Array.isArray(rows)?rows:[], demandasRealOn:true}); }).catch(()=>{});
     // Cashback — cadastros feitos no estande da SBS
     this.apiGet('cashback',PG).then(rows=>{ on(); if(Array.isArray(rows)) this.setState({cashback:rows}); }).catch(()=>{});
+    // Lixeira — exclusões registradas (restauráveis)
+    this.apiGet('lixeira',PG).then(rows=>{ on(); if(Array.isArray(rows)) this.setState({lixeira:rows}); }).catch(()=>{});
     if(!this.state.eventos) this.setState({eventos:(this.data().events||[]).slice()});
     this.apiGet('eventos',PG).then(rows=>{ on(); if(Array.isArray(rows)&&rows.length) this.setState({eventos:rows}); }).catch(()=>{});
     this.carregarResultados();
@@ -782,6 +784,7 @@ class Component extends DCLogic {
       if(p==='leads') return this.esteiraLeads();
       if(p==='campanhas') return this.gerCampanhas();
       if(p==='cashback') return this.pgCashback();
+      if(p==='lixeira') return this.pgLixeira();
       if(p==='ranking') return this.mktRanking();
       if(p==='agenda') return this.mktAgenda();
       if(p==='comparativo') return this.mktComparativo();
@@ -793,6 +796,7 @@ class Component extends DCLogic {
       if(p==='demandas') return this.quadroDemandas();
       if(p==='campanhas') return this.gerCampanhas();
       if(p==='cashback') return this.pgCashback();
+      if(p==='lixeira') return this.pgLixeira();
       if(p==='resultados') return this.pgResultados();
       if(p==='metas') return this.gerMetas();
       if(p==='performance') return this.gerPerformance();
@@ -1323,6 +1327,35 @@ class Component extends DCLogic {
   removePrize(i){ this.setState({campPrizes:this.state.campPrizes.filter((_,j)=>j!==i)}); }
   effStatus(c){ return (this.state.encerradas||[]).includes(c.id)?'Encerrada':c.status; }
   showToast(msg){ this.setState({toast:msg}); clearTimeout(this._tt); this._tt=setTimeout(()=>{ try{this.setState({toast:null});}catch(e){} },2600); }
+  // ============ LIXEIRA (exclusões registradas + restauração) ============
+  rotuloLixeira(origem){ return {campanhas:'Campanha',eventos:'Evento',produtos:'Produto',cashback:'Cashback',cashlead:'Lead do totem',demandas:'Demanda'}[origem]||origem; }
+  moverLixeira(origem, item, extra){
+    if(!item) return;
+    const meta=this.roleMeta()[this.state.role]||{};
+    const reg={ id:Date.now()+Math.floor(Math.random()*1000), refId:item.id, origem,
+      titulo:(item.nome||item.titulo||item.cliente||item.tipo||('#'+item.id)),
+      resumo:(extra&&extra.resumo)||'', item, excluidoEm:new Date().toISOString(), excluidoPor:meta.user||this.perfilBadge(this.state.role)[0]||'' };
+    this.setState(s=>({lixeira:[reg,...(s.lixeira||[])]}));
+    try{ this.apiSend('lixeira','POST',reg).catch(()=>{}); }catch(e){}
+    return reg;
+  }
+  restaurarLixeira(regId){
+    const reg=(this.state.lixeira||[]).find(r=>r.id===regId); if(!reg) return;
+    const it=reg.item||{};
+    if(reg.origem==='campanhas'){ this.setState(s=>({campaigns:[it,...(s.campaigns||[]).filter(x=>x.id!==it.id)]})); try{ this.apiSend('campanhas','POST',it).catch(()=>{}); }catch(e){} }
+    else if(reg.origem==='eventos'){ this.setState(s=>({eventos:[it,...(this.evAll()||[]).filter(x=>x.id!==it.id)]})); try{ this.apiSend('eventos','POST',it).catch(()=>{}); }catch(e){} }
+    else if(reg.origem==='produtos'){ this.setState(s=>({catalogo:[it,...(s.catalogo||[]).filter(x=>x.id!==it.id)]})); try{ this.apiSend('produtos','POST',it).catch(()=>{}); }catch(e){} }
+    else if(reg.origem==='cashback'||reg.origem==='cashlead'){ this.setState(s=>({cashback:[it,...(s.cashback||[]).filter(x=>x.id!==it.id)]})); try{ this.apiSend('cashback','POST',it).catch(()=>{}); }catch(e){} }
+    this.setState(s=>({lixeira:(s.lixeira||[]).filter(r=>r.id!==regId)}));
+    try{ this.apiSend('lixeira?id='+encodeURIComponent(regId),'DELETE',{}).catch(()=>{}); }catch(e){}
+    this.showToast(this.rotuloLixeira(reg.origem)+' restaurado(a)');
+  }
+  excluirDefinitivo(regId){
+    if(typeof confirm!=='undefined' && !confirm('Excluir definitivamente? Não será possível restaurar depois.')) return;
+    this.setState(s=>({lixeira:(s.lixeira||[]).filter(r=>r.id!==regId)}));
+    try{ this.apiSend('lixeira?id='+encodeURIComponent(regId),'DELETE',{}).catch(()=>{}); }catch(e){}
+    this.showToast('Item excluído definitivamente');
+  }
   encerrarCamp(id){
     this.setState({encerradas:[...(this.state.encerradas||[]),id]});
     const c=(this.allCampaigns()||[]).find(x=>x.id===id);
@@ -1335,7 +1368,8 @@ class Component extends DCLogic {
   }
   excluirCamp(c){
     const id=c&&c.id; if(!id) return;
-    if(typeof confirm!=='undefined' && !confirm('Excluir a campanha "'+(c.nome||'')+'"? Esta ação não pode ser desfeita.')) return;
+    if(typeof confirm!=='undefined' && !confirm('Excluir a campanha "'+(c.nome||'')+'"? Ela vai para a Lixeira e pode ser restaurada.')) return;
+    this.moverLixeira('campanhas',c,{resumo:[c.evento,c.canal].filter(Boolean).join(' · ')});
     this.setState(s=>({campaigns:(s.campaigns||[]).filter(x=>x.id!==id)}));
     // Remove do backend
     try{ this.apiSend('campanhas?id='+encodeURIComponent(id),'DELETE',{}).catch(()=>{}); }catch(e){}
@@ -1558,19 +1592,33 @@ class Component extends DCLogic {
   }
   exportarCashbackLeads(){
     const leads=this.cashbackLeads();
-    if(!leads.length){ this.showToast('Nenhum lead para exportar'); return; }
+    this._exportLeadsCsv(leads,'leads-cashback-'+this.safraAtual().replace('/','-'));
+  }
+  leadsDoEvento(e){
+    if(!e) return [];
+    const nome=(e.nome||'').toLowerCase();
+    return this.cashbackLeads().filter(l=>(l.evento||'').toLowerCase()===nome || String(l.eventoId||'')===String(e.id));
+  }
+  exportarLeadsEvento(e){
+    const leads=this.leadsDoEvento(e);
+    if(!leads.length){ this.showToast('Sem leads de cashback para este evento ainda'); return; }
+    this._exportLeadsCsv(leads,'leads-cashback-'+((e.nome||'evento').replace(/[^a-z0-9]+/gi,'-').toLowerCase()));
+  }
+  _exportLeadsCsv(leads,fname){
+    if(!leads||!leads.length){ this.showToast('Nenhum lead para exportar'); return; }
     const head=['Produtor','Produto comprado','Cultura','Nº do pedido','Valor (R$)','Telefone','Endereço','Cidade','UF','Campanha','Evento','Safra','Cadastro'];
     const linhas=leads.map(l=>[l.cliente,l.produto,l.cultura,l.pedido,(l.valor?Number(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2}):''),l.contato,l.endereco,l.cidade,l.uf,l.campanha,l.evento,l.safra,(l.criadoEm?new Date(l.criadoEm).toLocaleString('pt-BR'):'')]
       .map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(';'));
     const csv='\ufeff'+head.join(';')+'\n'+linhas.join('\n')+'\n';
     try{ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
-      const a=document.createElement('a'); a.href=url; a.download='leads-cashback-'+this.safraAtual().replace('/','-')+'.csv';
+      const a=document.createElement('a'); a.href=url; a.download=fname+'.csv';
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
       this.showToast('Leads exportados ('+leads.length+') ✓');
     }catch(err){ this.showToast('Não foi possível exportar'); }
   }
   excluirCashbackLead(id){
-    if(typeof confirm!=='undefined' && !confirm('Excluir este lead captado?')) return;
+    if(typeof confirm!=='undefined' && !confirm('Excluir este lead captado? Ele vai para a Lixeira e pode ser restaurado.')) return;
+    const it=(this.state.cashback||[]).find(r=>r.id===id); if(it) this.moverLixeira('cashlead',it,{resumo:[it.produto,it.campanha].filter(Boolean).join(' · ')});
     this.setState({cashback:(this.state.cashback||[]).filter(r=>r.id!==id)});
     try{ this.apiSend('cashback?id='+encodeURIComponent(id),'DELETE',{}).catch(()=>{}); }catch(e){}
     this.showToast('Lead removido');
@@ -1639,7 +1687,8 @@ class Component extends DCLogic {
     this.showToast(reg.status==='Resgatado'?'Cashback marcado como resgatado':'Cashback voltou para “a resgatar”');
   }
   excluirCashback(id){
-    if(typeof confirm!=='undefined' && !confirm('Excluir este registro de cashback?')) return;
+    if(typeof confirm!=='undefined' && !confirm('Excluir este registro de cashback? Ele vai para a Lixeira e pode ser restaurado.')) return;
+    const it=(this.state.cashback||[]).find(r=>r.id===id); if(it) this.moverLixeira('cashback',it,{resumo:[it.cliente,it.campanha].filter(Boolean).join(' · ')});
     this.setState({cashback:(this.state.cashback||[]).filter(r=>r.id!==id)});
     try{ this.apiSend('cashback?id='+encodeURIComponent(id),'DELETE',{}).catch(()=>{}); }catch(e){}
     this.showToast('Registro de cashback excluído');
@@ -1706,12 +1755,14 @@ class Component extends DCLogic {
               h('button',{onClick:()=>linkCopy(c&&c.id),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:cop?'#00867f':'#2b6fdb',color:'#fff',border:'none',borderRadius:8,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(cop?I.check:(I.copy||['M9 9h10v10H9z','M5 15V5h10'])),cop?'Copiado':'Copiar')),
             h('div',{style:{display:'flex',gap:9,flexWrap:'wrap'}},
               h('a',{href:'https://wa.me/?text='+encodeURIComponent('Cadastro de Cashback SBS'+(c?(' — '+c.nome):'')+' — abra no tablet do evento: '+l),target:'_blank',rel:'noopener',onClick:()=>{try{if(navigator.clipboard)navigator.clipboard.writeText(l);}catch(e){}},style:{display:'flex',alignItems:'center',gap:7,background:'#25D366',color:'#fff',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',textDecoration:'none'}},this.ic(['M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.5A10 10 0 1 0 12 2z','M8.5 7.5c1 2.5 3.5 5 6 6l1.5-1.5 2 1v2c-4 .5-9-4.5-8.5-8.5h2z']),'WhatsApp'),
-              h('button',{onClick:()=>this.abrirTotem(c&&c.id),style:{display:'flex',alignItems:'center',gap:7,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.gauge||I.plus),'Abrir totem'))); };
+              h('button',{onClick:()=>this.abrirTotem(c&&c.id),style:{display:'flex',alignItems:'center',gap:7,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.gauge||I.plus),'Abrir totem'),
+              c&&this.effStatus(c)==='Ativa'?h('button',{onClick:()=>this.encerrarCamp(c.id),style:{display:'flex',alignItems:'center',gap:7,background:'#fff5e9',color:'#c98a1e',border:'1px solid #f0dcb8',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.check||['M20 6 9 17l-5-5']),'Finalizar'):(c?h('span',{style:{display:'flex',alignItems:'center',gap:6,font:'700 12px Manrope',color:'#8a9a94',background:'#eef1ee',borderRadius:9,padding:'8px 13px'}},'Encerrada'):null),
+              c?h('button',{onClick:()=>this.excluirCamp(c),title:'Excluir campanha',style:{display:'flex',alignItems:'center',gap:7,background:'#fff',color:'#c2564b',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.trash),'Excluir'):null)); };
         return h('div',{style:{background:'#eef4ff',border:'1px solid #c9dcff',borderRadius:14,padding:'16px 18px'}},
           h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:4}},h('span',{style:{color:'#2b6fdb'}},this.ic(I.share||['M4 12v8h16v-8','M12 3v13','M8 7l4-4 4 4'])),h('span',{style:{font:'800 14px Archivo',color:'#0c3b37'}},'Links do totem por campanha')),
           h('div',{style:{font:'500 12.5px Manrope',color:'#5c6b67',marginBottom:12}},'Nosso sistema não abre no tablet do evento — compartilhe apenas o link de cadastro. Cada campanha de cashback tem seu link: abre direto a tela de cadastro do produtor (sem login), pronta para o totem de 24".'),
           camps2.length
-            ? h('div',{style:{display:'flex',flexDirection:'column',gap:10}}, camps2.map(linkRow).concat([linkRow(null)]))
+            ? h('div',{style:{display:'flex',flexDirection:'column',gap:10}}, camps2.map(linkRow))
             : h('div',{style:{padding:'22px 16px',textAlign:'center',font:'500 13px Manrope',color:'#5c6b67',border:'1px dashed #c9dcff',borderRadius:12,background:'#fff'}},'Nenhuma campanha com cashback ainda. Em Campanhas, crie uma campanha e ative “Ação de cashback” para gerar o link do totem.')); })(),
       this.grid(4,16,this.kpiCards([
         {label:'Cadastros de cashback',value:String(totReg)},
@@ -1745,6 +1796,38 @@ class Component extends DCLogic {
           leads.length?h('div',{style:{display:'flex',flexDirection:'column',gap:10}},leads.map(lrow))
             :h('div',{style:{padding:'40px 16px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94',border:'1px dashed rgba(12,59,55,.15)',borderRadius:14}},'Nenhum lead captado ainda. Use “Abrir totem” no evento para os produtores se cadastrarem.')]); })():null,
       this.cashTotemOverlay(),
+    ]);
+  }
+  pgLixeira(){
+    const h=React.createElement; const I=this.icons();
+    const list=(this.state.lixeira||[]).slice().sort((a,b)=>new Date(b.excluidoEm||0)-new Date(a.excluidoEm||0));
+    const f=this.state.lixFiltro||'todos';
+    const origens=Array.from(new Set(list.map(r=>r.origem)));
+    const vis=f==='todos'?list:list.filter(r=>r.origem===f);
+    const corOrigem={campanhas:'#2b6fdb',eventos:'#00867f',produtos:'#6FA331',cashback:'#c98a1e',cashlead:'#8b5cf6',demandas:'#0B6B61'};
+    const selStyle={background:'#f4f7f5',border:'1px solid #d7e2dc',borderRadius:9,padding:'8px 11px',font:'600 12px Manrope',color:'#0c3b37',outline:'none',cursor:'pointer'};
+    const row=r=>h('div',{key:r.id,style:{display:'flex',alignItems:'center',gap:12,padding:'13px 14px',background:'#fff',border:'1px solid rgba(12,59,55,.08)',borderRadius:13,flexWrap:'wrap'}},
+      h('span',{style:{flex:'none',font:'700 10.5px Manrope',letterSpacing:'.04em',color:corOrigem[r.origem]||'#5c6b67',background:(corOrigem[r.origem]||'#5c6b67')+'1a',borderRadius:20,padding:'4px 10px'}},this.rotuloLixeira(r.origem)),
+      h('div',{style:{flex:1,minWidth:180}},
+        h('div',{style:{font:'700 14px Manrope',color:'#0c3b37'}},r.titulo||('#'+r.refId)),
+        h('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginTop:3}},[r.resumo,('excluído por '+(r.excluidoPor||'—')),(r.excluidoEm?new Date(r.excluidoEm).toLocaleString('pt-BR'):'')].filter(Boolean).join(' · '))),
+      h('button',{onClick:()=>this.restaurarLixeira(r.id),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:'#e4f5ec',color:'#00867f',border:'none',borderRadius:9,padding:'9px 14px',font:'700 12.5px Manrope',cursor:'pointer'}},this.ic(I.history||['M3 3v5h5','M3.05 13a9 9 0 1 0 2.6-6.4L3 8']),'Restaurar'),
+      h('button',{onClick:()=>this.excluirDefinitivo(r.id),title:'Excluir definitivamente',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'9px 11px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(I.trash)));
+    return this.wrap([
+      h('div',{key:'nt',style:{display:'flex',alignItems:'center',gap:12,background:'#0c3b37',borderRadius:14,padding:'15px 18px'}},
+        h('span',{style:{color:'#f0a58a',flex:'none'}},this.ic(I.trash)),
+        h('div',{style:{flex:1,font:'500 13px Manrope',color:'#dfeee9',lineHeight:1.5}},'Tudo que é excluído no sistema (campanhas, eventos, produtos, cashback e leads) fica registrado aqui e pode ser restaurado. A exclusão definitiva remove de vez.')),
+      this.grid(3,16,this.kpiCards([
+        {label:'Itens na lixeira',value:String(list.length)},
+        {label:'Restauráveis',value:String(list.length),tag:'ok',tagColor:'#00867f'},
+        {label:'Tipos',value:String(origens.length)},
+      ])),
+      this.card([
+        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:14}},
+          this.h('Itens excluídos ('+list.length+')','Restaure ou remova definitivamente'),
+          h('select',{value:f,onChange:e=>this.setState({lixFiltro:e.target.value}),style:selStyle},[h('option',{key:'t',value:'todos'},'Todos os tipos')].concat(origens.map(o=>h('option',{key:o,value:o},this.rotuloLixeira(o)))))),
+        vis.length?h('div',{style:{display:'flex',flexDirection:'column',gap:10}},vis.map(row))
+          :h('div',{style:{padding:'40px 16px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94',border:'1px dashed rgba(12,59,55,.15)',borderRadius:14}},'A lixeira está vazia.')]),
     ]);
   }
   gerMetas(){
@@ -2106,7 +2189,8 @@ class Component extends DCLogic {
   criarEventoNovo(){ this.setState({evNovo:true, evMsg:''}); }
   excluirEvento(e){
     const id=e&&e.id; if(!id) return;
-    if(typeof confirm!=='undefined' && !confirm('Excluir o evento "'+(e.nome||'')+'"? Esta ação não pode ser desfeita.')) return;
+    if(typeof confirm!=='undefined' && !confirm('Excluir o evento "'+(e.nome||'')+'"? Ele vai para a Lixeira e pode ser restaurado.')) return;
+    this.moverLixeira('eventos',e,{resumo:[e.cidade,e.uf].filter(Boolean).join('/')});
     this.setState(s=>({eventos:(this.evAll()||[]).filter(x=>x.id!==id), projetos:(s.projetos||[]).filter(p=>p.origemEvento!==id)}));
     try{ this.apiSend('eventos?id='+encodeURIComponent(id),'DELETE',{}).catch(()=>{}); }catch(er){}
     this.showToast('Evento excluído');
@@ -2320,7 +2404,8 @@ class Component extends DCLogic {
         e.aprovacao
           ?React.createElement('span',{style:{flex:'none',display:'flex',alignItems:'center',gap:6,font:'700 11.5px Manrope',color:'#00867f',background:'#e4f5ec',borderRadius:9,padding:'8px 11px'}},this.ic(this.icons().check),'Em aprovação')
           :React.createElement('button',{onClick:()=>this.enviarEventoAprovacao(e),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'9px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(this.icons().target),'Enviar p/ aprovação'),
-        React.createElement('button',{onClick:()=>this.excluirEvento(e),title:'Excluir evento',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 10px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(this.icons().trash))); };
+        React.createElement('button',{onClick:()=>this.excluirEvento(e),title:'Excluir evento',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 10px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(this.icons().trash)),
+        this.leadsDoEvento(e).length?React.createElement('button',{onClick:()=>this.exportarLeadsEvento(e),title:'Exportar os leads de cashback captados neste evento',style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:'#eef4ff',color:'#2b6fdb',border:'1px solid #c9dcff',borderRadius:9,padding:'8px 12px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(this.icons().download||['M12 3v12','M7 10l5 5 5-5','M5 21h14']),'Leads cashback ('+this.leadsDoEvento(e).length+')'):null); };
     return this.wrap([
       this.fluxoStepper('evento'),
       React.createElement('div',{key:'nt',style:{display:'flex',alignItems:'center',gap:12,background:'#0c3b37',borderRadius:14,padding:'15px 18px'}},
@@ -3755,6 +3840,7 @@ class Component extends DCLogic {
     const fs={padding:'10px 12px',border:'1px solid rgba(12,59,55,.15)',borderRadius:9,font:'500 13px Manrope',background:'#fff',color:'#12211e'};
     const lbl=(t,el)=>React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},t),el);
     const inp=(key,ph)=>React.createElement('input',{defaultValue:nd[key]||'',placeholder:ph||'',onChange:e=>nd[key]=e.target.value,style:fs});
+    const inpd=(key)=>React.createElement('input',{type:'date',defaultValue:nd[key]||'',onChange:e=>nd[key]=e.target.value,style:fs});
     const sel=(key,opts)=>React.createElement('select',{defaultValue:nd[key]||opts[0],onChange:e=>nd[key]=e.target.value,style:fs},opts.map(t=>React.createElement('option',{key:t},t)));
     return React.createElement('div',{style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:60,display:'flex',alignItems:'center',justifyContent:'center',padding:20},onClick:()=>this.set({demandaNew:false})},
       React.createElement('div',{onClick:ev=>ev.stopPropagation(),style:{background:'#fff',borderRadius:18,padding:26,width:600,maxWidth:'100%',boxShadow:'0 30px 80px rgba(0,0,0,.35)',maxHeight:'90vh',overflowY:'auto'}},
@@ -3766,7 +3852,7 @@ class Component extends DCLogic {
           lbl('Solicitante',inp('solic',meta.user||'')),
           lbl('Região',inp('regiao','Ex.: Centro-Oeste')),
           lbl('Prioridade',sel('prio',['Alta','Média','Baixa'])),
-          lbl('Data necessária',inp('prazo','Ex.: 15/07')),
+          lbl('Data necessária',inpd('prazo')),
           React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Envolvidos e menções (@área)',React.createElement('div',null,
             React.createElement('input',{id:'new-envol-input',defaultValue:nd.envolvidos||'',placeholder:'Ex.: Ana, Bruno, @Marketing',onChange:e=>nd.envolvidos=e.target.value,style:{...fs,width:'100%'}}),
             this.mencaoChips(nd,'envolvidos','new-envol-input')))),
@@ -3794,6 +3880,7 @@ class Component extends DCLogic {
     const fs={padding:'10px 12px',border:'1px solid rgba(12,59,55,.15)',borderRadius:9,font:'500 13px Manrope',background:'#fff',color:'#12211e'};
     const lbl=(t,el)=>React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:6}},React.createElement('span',{style:{font:'700 12px Manrope',color:'#12211e'}},t),el);
     const inp=(key,ph)=>React.createElement('input',{defaultValue:de[key]||'',placeholder:ph||'',onChange:e=>de[key]=e.target.value,style:fs});
+    const inpd=(key)=>React.createElement('input',{type:'date',defaultValue:de[key]||'',onChange:e=>de[key]=e.target.value,style:fs});
     const sel=(key,opts)=>React.createElement('select',{defaultValue:de[key]||opts[0],onChange:e=>de[key]=e.target.value,style:fs},opts.map(t=>React.createElement('option',{key:t},t)));
     return React.createElement('div',{style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:60,display:'flex',alignItems:'center',justifyContent:'center',padding:20},onClick:()=>this.set({demandaEdit:null})},
       React.createElement('div',{onClick:ev=>ev.stopPropagation(),style:{background:'#fff',borderRadius:18,padding:26,width:600,maxWidth:'100%',boxShadow:'0 30px 80px rgba(0,0,0,.35)',maxHeight:'90vh',overflowY:'auto'}},
@@ -3803,7 +3890,7 @@ class Component extends DCLogic {
           lbl('Área de destino',sel('destino',destinos)),
           lbl('Responsável',inp('resp','Quem executa')),
           lbl('Prioridade',sel('prio',['Alta','Média','Baixa'])),
-          lbl('Data necessária',inp('prazo')),
+          lbl('Data necessária',inpd('prazo')),
           lbl('Região',inp('regiao')),
           React.createElement('div',{style:{gridColumn:'1 / -1'}},lbl('Envolvidos e menções (@área)',React.createElement('div',null,
             React.createElement('input',{id:'edit-envol-input',defaultValue:de.envolvidos||'',placeholder:'Ex.: Ana, Bruno, @Marketing',onChange:e=>de.envolvidos=e.target.value,style:{...fs,width:'100%'}}),
@@ -4753,7 +4840,8 @@ class Component extends DCLogic {
     const r=new FileReader(); r.onload=()=>{ const tipo=/pdf/i.test(f.type)?'PDF':(/sheet|excel|csv/i.test(f.type)?'Excel':(/image/i.test(f.type)?'Foto':'Arquivo')); this.setState({produtoMats:[...(this.state.produtoMats||[]),{tipo,titulo:f.name,url:r.result,nome:f.name}]}); this.showToast('Material anexado ✓'); }; r.readAsDataURL(f);
   }
   removerProduto(id){
-    if(typeof confirm!=='undefined' && !confirm('Excluir este produto do catálogo? Esta ação não pode ser desfeita.')) return;
+    if(typeof confirm!=='undefined' && !confirm('Excluir este produto do catálogo? Ele vai para a Lixeira e pode ser restaurado.')) return;
+    const it=(this.state.catalogo||[]).find(p=>p.id===id); if(it) this.moverLixeira('produtos',it,{resumo:[it.cultura,it.saco].filter(Boolean).join(' · ')});
     this.setState({catalogo:(this.state.catalogo||[]).filter(p=>p.id!==id)});
     try{ this.apiSend('produtos?id='+encodeURIComponent(id),'DELETE',{}).catch(()=>{}); }catch(e){}
     this.showToast('Produto removido do catálogo');
@@ -5896,9 +5984,9 @@ class Component extends DCLogic {
   navDefs(){
     const I=this.icons();
     return {
-      marketing:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['campanhas','Campanhas',I.campaign],['cashback','Cashback',I.gift||I.trophy],['catalogo','Catálogo & materiais',I.cube],['__sec','Apps & parceiros'],['compartilhar','Compartilhar app',I.share],['parceiros','Apps de parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Inteligência & apoio'],['inteligencia','Inteligência',I.bulb],['assistente','Assistente IA',I.activity],['ranking','Ranking',I.trophy],['notificacoes','Notificações',I.bell],['historico','Histórico',I.history],['__sec','Administração'],['usuarios','Acessos & usuários',I.users],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
+      marketing:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['campanhas','Campanhas',I.campaign],['cashback','Cashback',I.gift||I.trophy],['catalogo','Catálogo & materiais',I.cube],['__sec','Apps & parceiros'],['compartilhar','Compartilhar app',I.share],['parceiros','Apps de parceiros',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Inteligência & apoio'],['inteligencia','Inteligência',I.bulb],['assistente','Assistente IA',I.activity],['ranking','Ranking',I.trophy],['notificacoes','Notificações',I.bell],['historico','Histórico',I.history],['__sec','Administração'],['usuarios','Acessos & usuários',I.users],['lixeira','Lixeira',I.trash],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
       _mkt_old:[['dash','Dashboard',I.dash],['agenda','Agenda',I.calendar],['eventos','Eventos',I.event],['cadastro','Cadastrar evento',I.plus],['ranking','Ranking',I.trophy],['comparativo','Comparativo',I.compare],['historico','Histórico',I.history]],
-      gerente:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['resultados','Resultados das ações',I.gauge],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['campanhas','Campanhas',I.campaign],['cashback','Cashback',I.gift||I.trophy],['pipeline','Pipeline',I.funnel],['__sec','Metas & desempenho'],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['evolucao','Evolução',I.chart],['__sec','Produtos & parceiros'],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['notificacoes','Notificações',I.bell],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
+      gerente:[['__sec','Principal'],['dash','Dashboard',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['resultados','Resultados das ações',I.gauge],['__sec','Operação comercial'],['leads','Esteira de leads',I.funnel],['orcamentos','Orçamentos & descontos',I.target],['campanhas','Campanhas',I.campaign],['cashback','Cashback',I.gift||I.trophy],['pipeline','Pipeline',I.funnel],['__sec','Metas & desempenho'],['metas','Metas',I.target],['performance','Performance',I.chart],['rankings','Rankings',I.trophy],['evolucao','Evolução',I.chart],['__sec','Produtos & parceiros'],['produtos','Produtos',I.cube],['catalogo','Catálogo & preços',I.cube],['prodparceiro','Produtos por parceiro',I.share],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['notificacoes','Notificações',I.bell],['lixeira','Lixeira',I.trash],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
       ceo:[['__sec','Principal'],['dash','Dashboard',I.dash],['mapaequipe','Mapa da equipe',I.map],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Estratégia'],['mercado','Mercado & decisão',I.activity],['indicadores','Indicadores',I.gauge],['evolucao','Evolução',I.chart],['comparativos','Comparativos',I.compare],['geo','Estados & regiões',I.map],['__sec','Estrutura'],['parceiros','Parceiros',I.share],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['__sec','Apoio'],['clima','Clima & tempo',I.cloud],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
       mercado:[['__sec','Principal'],['dash','Visão geral',I.dash],['__sec','Entrada & aprovação'],['demandas','Quadro de demandas',I.inbox],['agenda','Agenda de eventos',I.calendar],['aprovacoes','Aprovações',I.target],['__sec','Mercado'],['cotacoes','Cotações',I.chart],['financeiro','Ações & bolsa',I.activity],['concorrentes','Concorrentes',I.gauge],['regioes','Regiões & mercado',I.map],['tendencias','Tendências',I.bulb],['panorama','Panorama setorial',I.cube],['__sec','Análise & fontes'],['resultados','Resultados das ações',I.gauge],['fontes','Fontes & canais',I.radar],['mensuracao','Mensuração & ROI',I.activity],['assistente','Assistente IA',I.bulb],['insights','Insights de vendas',I.target],['__sec','Apps & apoio'],['compartilhar','Compartilhar app',I.share],['biblioteca','Arquivos & mídia',I.file],['vendedores','Vendedores',I.users],['vendparceiro','Vendedores por parceiro',I.users],['clima','Clima & tempo',I.cloud],['__sec','Integração'],['solicitacoes-sbs','Solicitações SBS Green',I.inbox],['integracao','Integração SBS Green',I.share]],
       ti:[['governanca','Governança dos painéis',I.gauge],['status','Status & saúde',I.activity],['acessos','Acessos & perfis',I.users],['auditoria','Auditoria (LGPD)',I.target]],

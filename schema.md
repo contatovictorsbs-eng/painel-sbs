@@ -161,7 +161,18 @@ premiação por colocação e a tabela de produtos com preço específico da cam
 Toda campanha é **direcionada** (`destino`): ou a um **evento de parceira** (`destino:'evento'`,
 com `evento`/`app` — vendedores daquele evento) ou à **força de vendas comercial** do SBS Brasil
 (`destino:'comercial'`, com `publico` = todos|regionais|supervisores — sincroniza via `integracao`).
-| id, nome, gtn, inicio(date), fim(date), meta(R$), canal, status(Ativa/Encerrada), destino('evento'/'comercial'), evento, app, publico('todos'/'regionais'/'supervisores'\|null), premios[{pos,premio,bonus}], produtos[{produtoId,preco}] |
+| id, nome, gtn, inicio(date), fim(date), meta(R$), canal, status(Ativa/Encerrada), destino('evento'/'comercial'), evento, app, publico('todos'/'regionais'/'supervisores'\|null), premios[{pos,premio,bonus}], produtos[{produtoId,preco}], cashback{ativo(bool),pct(number)} |
+
+### cashback
+Ação de cashback da campanha (cliente compra no evento com cupom, cadastra no estande e recebe % de volta como desconto na próxima safra). Um registro por linha, distinguido por `kind`:
+- `kind:'registro'` (estande): | id, kind, cliente, cnpj, cidade, uf, contato, cupom, campanhaId, campanha, evento, pct, valorCompra(R$), valorCashback(R$), safra, safraResgate, status('A resgatar'/'Resgatado'), resgatadoEm, criadoEm |
+- `kind:'lead'` (totem 24" no evento): | id, kind, cliente(produtor), produto(comprado), cultura, pedido(nº), valor(R$ opcional), contato(telefone), endereco, cidade, uf, campanhaId, campanha, evento, safra, status('Novo'), criadoEm |
+Rota `/api/cashback` (handler embutido no roteador): GET lista · POST cria · PATCH edita status · DELETE ?id=. Leads exportáveis em CSV pelo painel (no módulo Cashback e no card do evento). **Requer tabela `sbs_cashback` no Supabase** (colunas id, data jsonb — padrão das demais).
+
+### lixeira
+Registro de tudo que é excluído no sistema, com restauração. Um registro por exclusão.
+| id, refId(id do item original), origem('campanhas'/'eventos'/'produtos'/'cashback'/'cashlead'), titulo, resumo, item(objeto original completo p/ restaurar), excluidoEm, excluidoPor |
+Rota `/api/lixeira` (handler embutido): GET lista · POST registra exclusão · DELETE ?id= (exclusão definitiva). Restaurar = re-POST na coleção de origem + DELETE na lixeira. **Requer tabela `sbs_lixeira` no Supabase**.
 
 ### governanca (TI)
 Controle da área de Tecnologia sobre os painéis (persistido no cliente e/ou coleção).
