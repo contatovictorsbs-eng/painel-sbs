@@ -25,7 +25,7 @@ const PADRAO_USERS = [
   { email:'franz@sbsgreen.com.br', perfil:'marketing', nome:'Franz' },
   { email:'medina@sbsgreen.com.br', perfil:'gerente', nome:'Medina' },
   { email:'tiago.mascheto@sbsgreen.com.br', perfil:'ceo', nome:'Tiago Mascheto' },
-  { email:'victorhugo@sbsgreen.com.br', perfil:'mercado', nome:'Victor Hugo' },
+  { email:'victor.hugo@sbsgreen.com.br', perfil:'mercado', nome:'Victor Hugo' },
   { email:'ti@sbsgreen.com.br', perfil:'ti', nome:'TI' },
   { email:'admin@sbsgreen.com.br', perfil:'admin', nome:'Admin master' }
 ];

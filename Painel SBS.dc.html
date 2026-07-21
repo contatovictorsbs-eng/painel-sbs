@@ -323,10 +323,10 @@ class Component extends DCLogic {
         let appPg='login', appNome=null;
         try{ const as=JSON.parse(localStorage.getItem('sbs_app_sessao')||'null'); if(as&&as.usuario){ appPg='home'; appNome=as.nome||null; } }catch(e){}
         this.setState({role:'app',prevRole:'marketing',prevPage:'dash',appPage:appPg,activePartner:pt,appVendedorNome:appNome||this.state.appVendedorNome}); }
-      else { try{ const s=JSON.parse(localStorage.getItem('sbs_sessao')||'null'); if(s&&s.role){ if(s.isAdmin){ this.setState({auth:'admin',isAdmin:true,role:'marketing',page:'dash'}); } else { this.setState({auth:s.role,isAdmin:false,role:s.role,page:(this.roleMeta()[s.role]||{}).first||'dash'}); } } }catch(e){} }
+      else { try{ const tk=localStorage.getItem('sbs_token'); const s=JSON.parse(localStorage.getItem('sbs_sessao')||'null'); if(tk&&s&&s.role){ if(s.isAdmin){ this.setState({auth:'admin',isAdmin:true,role:'marketing',page:'dash'}); } else { this.setState({auth:s.role,isAdmin:false,role:s.role,page:(this.roleMeta()[s.role]||{}).first||'dash'}); } } }catch(e){} }
     }catch(e){}
     try{ const isAppHash=/^(app(?:-\d+)?|totem(?:-\d+)?|cadastro(?:-\d+)?)$/.test((location.hash||'').replace('#','').toLowerCase());
-      if(!isAppHash){ const st=JSON.parse(localStorage.getItem('sbs_estado')||'null'); if(st&&typeof st==='object'&&st.auth){ this.setState(st); } }
+      if(!isAppHash){ const tk2=localStorage.getItem('sbs_token'); const st=JSON.parse(localStorage.getItem('sbs_estado')||'null'); if(tk2&&st&&typeof st==='object'&&st.auth){ this.setState(st); } }
     }catch(e){}
     try{ this.setState({appLink: location.origin+location.pathname+'#app'}); }catch(e){}
     try{ this._onResize=()=>this.setState({vw:window.innerWidth}); window.addEventListener('resize',this._onResize); this.setState({vw:window.innerWidth}); }catch(e){}
@@ -5894,7 +5894,7 @@ class Component extends DCLogic {
     ]);
   }
   tiAcessos(){
-    const rows=[['Franz','franz@sbsgreen.com.br','Marketing'],['Medina','medina@sbsgreen.com.br','Gerente Nacional'],['Tiago Mascheto','tiago.mascheto@sbsgreen.com.br','CEO'],['Victor Hugo','victorhugo@sbsgreen.com.br','Inteligência de Mercado'],['Admin TI','ti@sbsgreen.com.br','Tecnologia (TI)'],['Admin master','admin@sbsgreen.com.br','Todos os painéis']];
+    const rows=[['Franz','franz@sbsgreen.com.br','Marketing'],['Medina','medina@sbsgreen.com.br','Gerente Nacional'],['Tiago Mascheto','tiago.mascheto@sbsgreen.com.br','CEO'],['Victor Hugo','victor.hugo@sbsgreen.com.br','Inteligência de Mercado'],['Admin TI','ti@sbsgreen.com.br','Tecnologia (TI)'],['Admin master','admin@sbsgreen.com.br','Todos os painéis']];
     return this.wrap([
       React.createElement('div',{key:'n',style:{display:'flex',gap:10,alignItems:'flex-start',background:'#eef3ff',borderRadius:13,padding:'14px 16px',font:'500 13px Manrope',color:'#1e2a3a',lineHeight:1.5}},
         React.createElement('span',{style:{color:'#3b6ef5',flex:'none',marginTop:1}},this.ic(this.icons().users)),
@@ -5908,7 +5908,7 @@ class Component extends DCLogic {
     {email:'franz@sbsgreen.com.br',nome:'Franz',perfil:'marketing',precisaTrocar:false},
     {email:'medina@sbsgreen.com.br',nome:'Medina',perfil:'gerente',precisaTrocar:false},
     {email:'tiago.mascheto@sbsgreen.com.br',nome:'Tiago Mascheto',perfil:'ceo',precisaTrocar:false},
-    {email:'victorhugo@sbsgreen.com.br',nome:'Victor Hugo',perfil:'mercado',precisaTrocar:false},
+    {email:'victor.hugo@sbsgreen.com.br',nome:'Victor Hugo',perfil:'mercado',precisaTrocar:false},
     {email:'ti@sbsgreen.com.br',nome:'TI',perfil:'ti',precisaTrocar:false},
     {email:'admin@sbsgreen.com.br',nome:'Admin master',perfil:'admin',precisaTrocar:false}
   ]; }
@@ -6024,7 +6024,7 @@ class Component extends DCLogic {
     const email=((eu&&eu.value)||'').trim().toLowerCase();
     const key=email.split('@')[0].split(/\s/)[0];
     const pass=((ep&&ep.value)||'');
-    const map={franz:'marketing',franca:'marketing',medina:'gerente',tiago:'ceo','tiago.mascheto':'ceo',victor:'mercado',victorhugo:'mercado',admin:'admin',ti:'ti',tecnologia:'ti'};
+    const map={franz:'marketing',franca:'marketing',medina:'gerente',tiago:'ceo','tiago.mascheto':'ceo',victor:'mercado',victorhugo:'mercado','victor.hugo':'mercado',admin:'admin',ti:'ti',tecnologia:'ti'};
     const finish=(role)=>{ if(role==='admin') this.doLoginAdmin(); else this.doLogin(role); };
     const emailFull=email.includes('@')?email:(key+'@sbsgreen.com.br');
     this.setState({loginMsg:'Entrando…'});
