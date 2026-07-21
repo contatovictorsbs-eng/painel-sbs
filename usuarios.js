@@ -21,6 +21,23 @@ const { requireAuth, tenantFromEvent } = require('./_lib/auth');
 function SECRET(){ return process.env.AUTH_SECRET || 'sbs-dev-secret-troque-em-producao'; }
 function hash(senha){ return crypto.createHash('sha256').update(String(senha) + SECRET()).digest('hex'); }
 const PERFIS = ['marketing','gerente','ceo','mercado','ti','admin'];
+const PADRAO_USERS = [
+  { email:'franz@sbsgreen.com.br', perfil:'marketing', nome:'Franz' },
+  { email:'medina@sbsgreen.com.br', perfil:'gerente', nome:'Medina' },
+  { email:'tiago.mascheto@sbsgreen.com.br', perfil:'ceo', nome:'Tiago Mascheto' },
+  { email:'victorhugo@sbsgreen.com.br', perfil:'mercado', nome:'Victor Hugo' },
+  { email:'ti@sbsgreen.com.br', perfil:'ti', nome:'TI' },
+  { email:'admin@sbsgreen.com.br', perfil:'admin', nome:'Admin master' }
+];
+async function semearUsuarios(db){
+  let base = PADRAO_USERS;
+  try { const raw = process.env.USERS_JSON; if (raw){ const j = JSON.parse(raw); if (Array.isArray(j) && j.length) base = j; } } catch(e){}
+  for (const p of base){
+    const email = (p.email||'').trim().toLowerCase(); if(!email) continue;
+    const ex = await db.get('usuarios', email);
+    if (!ex) await db.put('usuarios', { id:email, email, nome:p.nome||email, perfil:p.perfil||'marketing', tenant:'sbs', hash:hash(p.senha||'12345678'), precisaTrocar:true, criadoEm:new Date().toISOString() });
+  }
+}
 function strip(x){ if(!x) return x; const o = Object.assign({}, x); delete o.hash; return o; }
 
 exports.handler = async (event) => {
@@ -32,7 +49,8 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === 'GET') {
       const q = event.queryStringParameters || {};
-      const rows = await db.list('usuarios', {}, pageOpts(Object.assign({ limite: 200 }, q)));
+      let rows = await db.list('usuarios', {}, pageOpts(Object.assign({ limite: 200 }, q)));
+      if (!rows || !rows.length){ await semearUsuarios(db); rows = await db.list('usuarios', {}, pageOpts(Object.assign({ limite: 200 }, q))); }
       return ok(rows.map(strip));
     }
 
