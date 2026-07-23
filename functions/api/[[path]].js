@@ -56,6 +56,43 @@ const _crypto = _nodeCrypto.default || _nodeCrypto;
 function _authSecret(){ return process.env.AUTH_SECRET || 'sbs-dev-secret-troque-em-producao'; }
 function _hashSenha(s){ return _crypto.createHash('sha256').update(String(s) + _authSecret()).digest('hex'); }
 const _PERFIS = ['marketing','gerente','ceo','mercado','ti','admin'];
+async function _enviarBoasVindas(email, nome, perfil){
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return false;
+  const from = process.env.RESEND_FROM || process.env.MAIL_FROM || 'Plataforma SBS <nao-responda@sbsgreen.com.br>';
+  const replyTo = process.env.RESEND_REPLY_TO || 'suporte@sbsgreen.com.br';
+  const url = process.env.APP_URL || 'https://painel-sbs.pages.dev/painel-sbs';
+  const rotulo = {marketing:'Marketing',gerente:'Gerente Nacional',ceo:'CEO',mercado:'Inteligência de Mercado',ti:'Tecnologia (TI)',admin:'Admin master'}[perfil]||perfil;
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method:'POST',
+      headers:{ 'Authorization':'Bearer '+key, 'Content-Type':'application/json' },
+      body: JSON.stringify({ from, to:[email], reply_to: replyTo,
+        subject: 'Seu acesso à Plataforma SBS foi criado',
+        text: 'Olá '+(nome||'')+',\n\nSeu acesso à Plataforma SBS foi criado com o perfil '+rotulo+'.\n\nEndereço: '+url+'\nUsuário: '+email+'\nSenha inicial: 12345678 (você deve trocá-la no primeiro acesso)\n\nNo primeiro login será pedido para ativar a verificação em 2 passos (app autenticador).\n\nSe não reconhece este e-mail, ignore.' })
+    });
+    return r.ok;
+  } catch (e) { return false; }
+}
+const _PADRAO_USERS = [
+  { email:'franz@sbsgreen.com.br', perfil:'marketing', nome:'Franz' },
+  { email:'medina@sbsgreen.com.br', perfil:'gerente', nome:'Medina' },
+  { email:'tiago.mascheto@sbsgreen.com.br', perfil:'ceo', nome:'Tiago Mascheto' },
+  { email:'victor.hugo@sbsgreen.com.br', perfil:'mercado', nome:'Victor Hugo' },
+  { email:'ti@sbsgreen.com.br', perfil:'ti', nome:'TI' },
+  { email:'admin@sbsgreen.com.br', perfil:'admin', nome:'Admin master' }
+];
+async function _semearUsuarios(db){
+  let base = _PADRAO_USERS;
+  try { const raw = process.env.USERS_JSON; if (raw){ const j = JSON.parse(raw); if (Array.isArray(j) && j.length) base = j; } } catch(e){}
+  const criados = [];
+  for (const p of base){
+    const email = (p.email||'').trim().toLowerCase(); if(!email) continue;
+    const ex = await db.get('usuarios', email);
+    if (!ex){ criados.push(await db.put('usuarios', { id:email, email, nome:p.nome||email, perfil:p.perfil||'marketing', tenant:'sbs', hash:_hashSenha(p.senha||'12345678'), precisaTrocar:true, criadoEm:new Date().toISOString() })); }
+  }
+  return criados;
+}
 
 /* Gestão de usuários/acessos (Marketing + Admin). Coleção `usuarios`.
    Mesma fórmula de hash do server/auth.js para que o login funcione.
@@ -69,7 +106,8 @@ async function hUsuarios(event){
     const strip = x => { if(!x) return x; const o = Object.assign({}, x); delete o.hash; return o; };
     if (event.httpMethod === 'GET') {
       const q = event.queryStringParameters || {};
-      const rows = await db.list('usuarios', {}, pageOpts(Object.assign({ limite: 200 }, q)));
+      let rows = await db.list('usuarios', {}, pageOpts(Object.assign({ limite: 200 }, q)));
+      if (!rows || !rows.length){ await _semearUsuarios(db); rows = await db.list('usuarios', {}, pageOpts(Object.assign({ limite: 200 }, q))); }
       return ok(rows.map(strip));
     }
     if (event.httpMethod === 'POST') {
@@ -86,7 +124,8 @@ async function hUsuarios(event){
       const ent = { id: email, email, nome, perfil, tenant: 'sbs', hash: _hashSenha(senhaInicial), precisaTrocar: true, criadoEm: new Date().toISOString(), criadoPor: u.sub || 'sistema' };
       const saved = await db.put('usuarios', ent);
       await audit({ usuario:u.sub, perfil:u.perfil, acao:'criou', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
-      return ok(strip(saved));
+      const emailEnviado = await _enviarBoasVindas(email, nome, perfil);
+      return ok(Object.assign(strip(saved), { emailEnviado }));
     }
     if (event.httpMethod === 'PATCH') {
       const b = JSON.parse(event.body || '{}');
@@ -99,6 +138,12 @@ async function hUsuarios(event){
         await db.put('usuarios', cur);
         await audit({ usuario:u.sub, perfil:u.perfil, acao:'redefiniu-senha', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
         return ok({ id: email, reset: true });
+      }
+      if (b.acao === 'reset-2fa') {
+        cur.twofaOn = false; delete cur.twofaSeg; delete cur.twofaRec;
+        await db.put('usuarios', cur);
+        await audit({ usuario:u.sub, perfil:u.perfil, acao:'resetou-2fa', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
+        return ok({ id: email, reset2fa: true });
       }
       if (b.nome != null && String(b.nome).trim()) cur.nome = String(b.nome).trim();
       if (b.perfil != null) { if (!_PERFIS.includes(b.perfil)) return fail('Perfil inválido'); cur.perfil = b.perfil; }
@@ -408,8 +453,46 @@ const HANDLERS = {
   'tenants': pick(fTenants),
   'usuarios': hUsuarios,
   'vendas': pick(fVendas),
-  'vendedores': pick(fVendedores)
+  'vendedores': pick(fVendedores),
+  'metricas': hMetricas
 };
+
+// Contador de chamadas por rota — diagnóstico de consumo (item 6 do repasse técnico).
+// In-memory por isolate (zera a cada cold start); grava snapshot no Supabase a
+// cada 200 hits acumulados, para sobreviver a reciclagem sem escrever por request.
+const _rotaHits = {};
+let _hitsDesdeFlush = 0;
+async function _contarRota(fn){
+  try {
+    _rotaHits[fn] = (_rotaHits[fn] || 0) + 1;
+    _rotaHits.__total = (_rotaHits.__total || 0) + 1;
+    _hitsDesdeFlush++;
+    if (_hitsDesdeFlush >= 200) {
+      _hitsDesdeFlush = 0;
+      const db = tenantStore('sbs');
+      const prev = (await db.get('metricas', 'rotas')) || { id:'rotas', total:0, rotas:{} };
+      const merged = Object.assign({}, prev.rotas || {});
+      for (const k in _rotaHits){ if(k==='__total') continue; merged[k] = (merged[k]||0) + _rotaHits[k]; }
+      await db.put('metricas', { id:'rotas', total:(prev.total||0)+(_rotaHits.__total||0), rotas:merged, atualizadoEm:new Date().toISOString() });
+      for (const k in _rotaHits) delete _rotaHits[k];
+    }
+  } catch (e) {}
+}
+async function hMetricas(event){
+  const H = { 'content-type':'application/json', 'cache-control':'no-store' };
+  try {
+    const db = tenantStore('sbs');
+    const persist = (await db.get('metricas', 'rotas')) || { total:0, rotas:{} };
+    // Soma o acumulado ainda não gravado deste isolate.
+    const rotas = Object.assign({}, persist.rotas || {});
+    let totalMem = 0;
+    for (const k in _rotaHits){ if(k==='__total'){ totalMem = _rotaHits[k]; continue; } rotas[k]=(rotas[k]||0)+_rotaHits[k]; }
+    const ranking = Object.keys(rotas).map(k=>({ rota:k, hits:rotas[k] })).sort((a,b)=>b.hits-a.hits);
+    return { statusCode:200, headers:H, body: JSON.stringify({ ok:true, data:{ totalPersistido:(persist.total||0)+totalMem, desdeUltimoFlush:_hitsDesdeFlush, ranking, atualizadoEm:persist.atualizadoEm||null } }) };
+  } catch (e) {
+    return { statusCode:200, headers:H, body: JSON.stringify({ ok:false, erro:e.message }) };
+  }
+}
 
 export async function onRequest(context){
   const { request, env, params } = context;
@@ -424,6 +507,7 @@ export async function onRequest(context){
   if (!handler) {
     return json({ ok: false, erro: 'função não encontrada: ' + fn }, 404);
   }
+  if (fn !== 'metricas') { try { await _contarRota(fn); } catch (e) {} }
 
   const url = new URL(request.url);
   const qs = {};

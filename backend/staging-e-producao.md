@@ -61,6 +61,26 @@ MESMOS nomes em cada ambiente, apontando para bancos diferentes:
 
 ---
 
+## Variáveis de ambiente (Cloudflare Pages → Production)
+| Variável | Para quê |
+|---|---|
+| SUPABASE_URL / SUPABASE_SERVICE_KEY | banco (Supabase) |
+| AUTH_SECRET | assina os tokens de sessão e o 2FA — **fixo**; se trocar, todos relogam |
+| USERS_JSON | equipe inicial (opcional; senão usa a lista padrão) |
+| FORCAR_2FA | `on` (padrão) exige 2FA em todo login; `off` desliga |
+| GROQ_API_KEY | Assistente de IA |
+| INTEG_KEY | integração com o app de campo (mesmo valor nos dois lados) |
+| RESEND_API_KEY | envio de e-mail (código de redefinição de senha) |
+| RESEND_FROM | remetente, ex.: `Plataforma SBS <nao-responda@mail.sbsgreen.com.br>` (domínio verificado no Resend) |
+| RESEND_REPLY_TO | e-mail de resposta, ex.: `suporte@sbsgreen.com.br` (opcional) |
+
+### E-mail (Resend) — para o código de senha chegar a usuários reais
+1. Verificar `sbsgreen.com.br` em resend.com/domains e adicionar no DNS: **DKIM** (`resend._domainkey`), **SPF** e **MX** no subdomínio de envio (ex.: `mail.sbsgreen.com.br`).
+2. Definir `RESEND_FROM` com endereço do domínio verificado → **Retry deployment**.
+- Sem domínio verificado (usando `onboarding@resend.dev`), o Resend só entrega ao dono da conta; os demais destinatários dão 403 e o sistema cai em **modo staging** (devolve o código na resposta em vez de enviar). Isso é esperado até verificar o domínio.
+
+---
+
 ## Garantias de que nada se perde
 - **Deploy = só arquivos.** O banco (Supabase) não é tocado pelo deploy.
 - **Sem DROP/DELETE em massa.** As funções (`/api/*`) só fazem `GET/POST/PATCH` e

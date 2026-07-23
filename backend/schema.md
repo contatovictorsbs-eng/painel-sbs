@@ -50,6 +50,8 @@ evento e ele entra na esteira de aprovação (vira projeto). Isolado por `tenant
 **appStatus** — situação do app do evento no fluxo de trabalho (desacopla evento × app × campanha; nada trava):
 `nao_consta` (sem app definido) · `a_criar` (haverá app, ainda não construído) · `em_criacao` (app do parceiro em configuração) · `publicado` (app disponível, vendedores já veem). Vazio/ausente = inferido: SBS padrão → `publicado`; parceira sem cadastro → `em_criacao`. PATCH `{id, appStatus}` avança o estado e grava auditoria `app_estado:<key>`. Atalho "Criar app agora" (eventos em nao_consta/a_criar) abre o cadastro de app de parceiro já vinculado; ao criar → `em_criacao`, ao provisionar o tenant → `publicado`.Status, aprovacaoFase, tenant, criadoEm |
 
+**resultados** (evento sem app do vendedor) — objeto gravado em `eventos.resultados` via PATCH `{id, resultados}` (merge). Campos: `participantes, leads, vendas, faturamento, investimento, clientesNovos, obs, origem:'manual', atualizadoEm` + calculados `ticket, roi, conv`. Lançados pelo botão "Imputar resultados" (Agenda de eventos) quando `appStatus !== 'publicado'`: baixa planilha-modelo CSV, o parceiro preenche, importa-se aqui (ou digita manual). Alimenta `custo`/`conv` do evento e o ROI.
+
 ### eventos-legado
 | id, nome, cidade, uf, data, status(Confirmado/Planejado/Realizado), parceira |
 
@@ -159,7 +161,18 @@ premiação por colocação e a tabela de produtos com preço específico da cam
 Toda campanha é **direcionada** (`destino`): ou a um **evento de parceira** (`destino:'evento'`,
 com `evento`/`app` — vendedores daquele evento) ou à **força de vendas comercial** do SBS Brasil
 (`destino:'comercial'`, com `publico` = todos|regionais|supervisores — sincroniza via `integracao`).
-| id, nome, gtn, inicio(date), fim(date), meta(R$), canal, status(Ativa/Encerrada), destino('evento'/'comercial'), evento, app, publico('todos'/'regionais'/'supervisores'\|null), premios[{pos,premio,bonus}], produtos[{produtoId,preco}] |
+| id, nome, gtn, inicio(date), fim(date), meta(R$), canal, status(Ativa/Encerrada), destino('evento'/'comercial'), evento, app, publico('todos'/'regionais'/'supervisores'\|null), premios[{pos,premio,bonus}], produtos[{produtoId,preco}], cashback{ativo(bool),pct(number)} |
+
+### cashback
+Ação de cashback da campanha (cliente compra no evento com cupom, cadastra no estande e recebe % de volta como desconto na próxima safra). Um registro por linha, distinguido por `kind`:
+- `kind:'registro'` (estande): | id, kind, cliente, cnpj, cidade, uf, contato, cupom, campanhaId, campanha, evento, pct, valorCompra(R$), valorCashback(R$), safra, safraResgate, status('A resgatar'/'Resgatado'), resgatadoEm, criadoEm |
+- `kind:'lead'` (totem 24" no evento): | id, kind, cliente(produtor), produto(comprado), cultura, pedido(nº), valor(R$ opcional), contato(telefone), endereco, cidade, uf, campanhaId, campanha, evento, safra, status('Novo'), criadoEm |
+Rota `/api/cashback` (handler embutido no roteador): GET lista · POST cria · PATCH edita status · DELETE ?id=. Leads exportáveis em CSV pelo painel (no módulo Cashback e no card do evento). **Requer tabela `sbs_cashback` no Supabase** (colunas id, data jsonb — padrão das demais).
+
+### lixeira
+Registro de tudo que é excluído no sistema, com restauração. Um registro por exclusão.
+| id, refId(id do item original), origem('campanhas'/'eventos'/'produtos'/'cashback'/'cashlead'), titulo, resumo, item(objeto original completo p/ restaurar), excluidoEm, excluidoPor |
+Rota `/api/lixeira` (handler embutido): GET lista · POST registra exclusão · DELETE ?id= (exclusão definitiva). Restaurar = re-POST na coleção de origem + DELETE na lixeira. **Requer tabela `sbs_lixeira` no Supabase**.
 
 ### governanca (TI)
 Controle da área de Tecnologia sobre os painéis (persistido no cliente e/ou coleção).
@@ -193,6 +206,11 @@ Usuário de parceira leva `tenant:<slug>` (isola os dados dela).
 | reset | obj \| null | `{cod:hash, exp:epoch}` código de redefinição (30 min) |
 | senhaAlteradaEm | ISO date | última troca |
 | tenant | string | `sbs` (interno) ou slug da parceira |
+| twofaOn | boolean | 2FA (TOTP) ativado |
+| twofaSeg | string | segredo Base32 do TOTP (server-side) |
+| twofaRec | string[] | hashes dos códigos de recuperação (uso único) |
+
+**2FA (verificação em 2 passos):** obrigatória por padrão em todo login (desligar com `FORCAR_2FA=off`). `POST /auth {email,senha}` → `{etapa:'2fa'|'2fa-setup', pretoken}`. `POST /auth?acao=ativar-2fa {pretoken,codigo}` → grava segredo + retorna token e códigos de recuperação. `POST /auth?acao=verificar-2fa {pretoken,codigo}` → token de sessão. `PATCH /usuarios {id,acao:'reset-2fa'}` desativa o 2FA do usuário (reconfigura no próximo login). Segredo TOTP nunca vai ao cliente após a ativação.
 
 Rotas: `POST /auth {email,senha}` → token + precisaTrocar. `POST /senha`:
 `{acao:'trocar',senhaAtual,novaSenha}` (autenticado), `{acao:'solicitar',email}`

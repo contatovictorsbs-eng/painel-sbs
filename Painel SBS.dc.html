@@ -333,8 +333,9 @@ class Component extends DCLogic {
     try{ this._onInstallReady=()=>{ try{this.forceUpdate();}catch(e){} }; window.addEventListener('sbs-install-ready',this._onInstallReady); window.addEventListener('appinstalled',this._onInstallReady); }catch(e){}
     try{ this.loadReal(); }catch(e){}
     try{ this.loadGov(); }catch(e){}
+    try{ this._onVis=()=>{ if(document.hidden) return; try{ if(this._cotTimer) this.loadCotacoes(); }catch(e){} try{ if(this._solTimer) this.loadSolic(); }catch(e){} try{ if(this._locTimer) this.loadLocs(); }catch(e){} }; document.addEventListener('visibilitychange', this._onVis); }catch(e){}
   }
-  componentWillUnmount(){ try{ window.removeEventListener('resize',this._onResize); }catch(e){} try{ window.removeEventListener('sbs-install-ready',this._onInstallReady); }catch(e){} try{ if(this._locTimer){ clearInterval(this._locTimer); this._locTimer=null; } }catch(e){} try{ if(this._solTimer){ clearInterval(this._solTimer); this._solTimer=null; } }catch(e){} try{ if(this._cotTimer){ clearInterval(this._cotTimer); this._cotTimer=null; } }catch(e){} try{ if(this._map){ this._map.remove(); this._map=null; } }catch(e){} }
+  componentWillUnmount(){ try{ window.removeEventListener('resize',this._onResize); }catch(e){} try{ window.removeEventListener('sbs-install-ready',this._onInstallReady); }catch(e){} try{ document.removeEventListener('visibilitychange', this._onVis); }catch(e){} try{ if(this._locTimer){ clearInterval(this._locTimer); this._locTimer=null; } }catch(e){} try{ if(this._solTimer){ clearInterval(this._solTimer); this._solTimer=null; } }catch(e){} try{ if(this._cotTimer){ clearInterval(this._cotTimer); this._cotTimer=null; } }catch(e){} try{ if(this._map){ this._map.remove(); this._map=null; } }catch(e){} }
   _persistKeys(){ return ['auth','isAdmin','role','page','appPage','appUser','eventos','orcamentos','catalogo','leads','partners','robots','notifs','estudo','estudoAplic','campaigns','vendedoresReal','evAnexos','logFiltro','mktDashTab','rankTab','vendFilter','iaConvs','iaActiveId']; }
   salvarEstado(){ try{ if(this.state.role==='app'||!this.state.auth){ return; } const st={}; for(const k of this._persistKeys()){ if(this.state[k]!==undefined) st[k]=this.state[k]; } localStorage.setItem('sbs_estado', JSON.stringify(st)); }catch(e){} }
   componentDidUpdate(prevProps,prevState){
@@ -353,7 +354,7 @@ class Component extends DCLogic {
     const active=(this.state.role==='gerente'||this.state.isAdmin) && this.state.page==='orcamentos';
     const wasActive=prevState&&prevState.page==='orcamentos';
     if(active && !wasActive){ this.loadCotacoes(); }
-    if(active && !this._cotTimer){ this._cotTimer=setInterval(()=>this.loadCotacoes(),30000); }
+    if(active && !this._cotTimer){ this._cotTimer=setInterval(()=>{if(!document.hidden)this.loadCotacoes();},180000); }
     if(!active && this._cotTimer){ clearInterval(this._cotTimer); this._cotTimer=null; }
   }
   loadCotacoes(){
@@ -363,7 +364,7 @@ class Component extends DCLogic {
     const active=this.state.page==='solicitacoes-sbs';
     const wasActive=prevState&&prevState.page==='solicitacoes-sbs';
     if(active && !wasActive){ this.loadSolic(); }
-    if(active && !this._solTimer){ this._solTimer=setInterval(()=>this.loadSolic(),30000); }
+    if(active && !this._solTimer){ this._solTimer=setInterval(()=>{if(!document.hidden)this.loadSolic();},180000); }
     if(!active && this._solTimer){ clearInterval(this._solTimer); this._solTimer=null; }
   }
   loadSolic(){
@@ -409,7 +410,7 @@ class Component extends DCLogic {
   }
   syncMapaEquipe(){
     const active=this.state.role==='ceo' && this.state.page==='mapaequipe';
-    if(active && !this._locTimer){ this.loadLocs(); this._locTimer=setInterval(()=>this.loadLocs(),35000); }
+    if(active && !this._locTimer){ this.loadLocs(); this._locTimer=setInterval(()=>{if(!document.hidden)this.loadLocs();},180000); }
     if(!active && this._locTimer){ clearInterval(this._locTimer); this._locTimer=null; }
     if(active){ this.desenharMapa(); }
     else if(this._map){ try{ this._map.remove(); }catch(e){} this._map=null; this._locLayer=null; }

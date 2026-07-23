@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  .k{font:800 20px 'Plus Jakarta Sans',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#6FA331}
+  .h1{font-family:'Archivo',sans-serif;font-weight:900;line-height:.98;letter-spacing:-.02em}
+  .num{position:absolute;right:56px;bottom:44px;font:700 22px 'Plus Jakarta Sans',sans-serif;color:rgba(12,59,55,.35)}
+  .numd{position:absolute;right:56px;bottom:44px;font:700 22px 'Plus Jakarta Sans',sans-serif;color:rgba(255,255,255,.4)}
+</style>
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%" data-uneditable="">
+
+<section data-label="Capa" data-speaker-notes="Abertura para a diretoria. Esta apresentação vende a ideia: mostra a dor, o antes e depois, uma jornada concreta ponta a ponta, o sistema rodando ao vivo, a prova de escala e custo, o que o sistema NÃO faz (não substitui o Win), e fecha com o pedido de aprovação de um piloto." style="position:relative;display:flex;flex-direction:column;justify-content:flex-end;height:100%;background:#0c3b37;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <img src="assets/capa-sbs.png" alt="SBS Green Seeds" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,43,40,0) 38%,rgba(8,43,40,.6) 100%)"></div>
+  <div style="position:relative;padding:0 120px 76px">
+    <div style="display:inline-flex;align-items:center;gap:10px;padding:9px 18px;border:1px solid rgba(255,255,255,.3);border-radius:999px;color:#eaf4f0;font-weight:600;font-size:19px;backdrop-filter:blur(4px)">Apresentação à Diretoria</div>
+    <div class="h1" style="color:#fff;font-size:62px;margin:26px 0 0;max-width:1320px;text-shadow:0 4px 24px rgba(0,0,0,.35)">Tirar a operação da planilha — e colocar <span style="color:#7fd8c6">no controle</span>.</div>
+    <p style="margin:18px 0 0;font-size:26px;font-weight:500;color:#d7e7e1;max-width:1180px;text-shadow:0 2px 12px rgba(0,0,0,.35)">A dor, a solução, o retorno esperado — e o que decidir hoje.</p>
+  </div>
+</section>
+
+<section data-label="A dor" data-speaker-notes="A dor central em uma frase, com quatro sintomas concretos. Hoje a operação comercial e de marketing vive espalhada em planilhas e WhatsApp: a demanda do campo se perde, a decisão é no achismo, o retorno do evento não é medido e a margem fica exposta. O custo disso é tempo e dinheiro que ninguém enxerga." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:92px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <div class="k" style="color:#f0a24b">O problema</div>
+  <div class="h1" style="font-size:64px;color:#fff;margin:16px 0 14px;max-width:1500px">A operação vive <span style="color:#f0a24b">espalhada</span> — e sem rastro.</div>
+  <p style="margin:0 0 40px;font-size:24px;font-weight:500;color:#bcd3cc;max-width:1320px">Informação em planilhas e conversas soltas. Ninguém sabe o que foi decidido, por quê, nem qual foi o retorno.</p>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+    <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:28px;border-left:5px solid #e8804a"><div style="font:900 24px 'Archivo';color:#fff;line-height:1.1">Demanda se perde</div><p style="margin:10px 0 0;font-size:17px;font-weight:500;color:#bcd3cc;line-height:1.5">Pedido do campo sem dono, sem prazo, sem acompanhamento.</p></div>
+    <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:28px;border-left:5px solid #e8804a"><div style="font:900 24px 'Archivo';color:#fff;line-height:1.1">Decisão no achismo</div><p style="margin:10px 0 0;font-size:17px;font-weight:500;color:#bcd3cc;line-height:1.5">Eventos e campanhas escolhidos sem dado real de mercado.</p></div>
+    <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:28px;border-left:5px solid #e8804a"><div style="font:900 24px 'Archivo';color:#fff;line-height:1.1">Retorno invisível</div><p style="margin:10px 0 0;font-size:17px;font-weight:500;color:#bcd3cc;line-height:1.5">Feira e dia de campo sem medir custo × resultado.</p></div>
+    <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:28px;border-left:5px solid #e8804a"><div style="font:900 24px 'Archivo';color:#fff;line-height:1.1">Margem exposta</div><p style="margin:10px 0 0;font-size:17px;font-weight:500;color:#bcd3cc;line-height:1.5">Descontos e aprovações sem controle nem rastro.</p></div>
+  </div>
+  <div class="numd">01</div>
+</section>
+
+<section data-label="Antes × Depois" data-speaker-notes="O slide que mais convence: antes e depois lado a lado. Antes: planilha e WhatsApp, sem dono, decisão no achismo, retorno que ninguém mede. Depois: tudo no painel, demanda com dono e prazo, decisão com dado de mercado, retorno medido em Resultados e Ações. Mesma operação, controle diferente." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k" style="color:#0B6B61">A virada</div>
+  <div class="h1" style="font-size:64px;color:#0c3b37;margin:16px 0 40px;max-width:1500px">Mesma operação, <span style="color:#4d7a1f">outro controle</span>.</div>
+  <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:28px">
+    <div style="background:#e7e3dd;border:1px solid rgba(120,90,60,.2);border-radius:22px;padding:36px 38px">
+      <div style="display:inline-block;font:800 13px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#8a6a48;background:rgba(138,106,72,.16);padding:7px 15px;border-radius:999px">Hoje</div>
+      <div style="display:flex;flex-direction:column;gap:16px;margin-top:22px;font-size:21px;font-weight:500;color:#5c5348;line-height:1.4">
+        <div style="display:flex;gap:12px"><span style="color:#b06a4a;font-weight:800">✕</span> Planilhas soltas e WhatsApp</div>
+        <div style="display:flex;gap:12px"><span style="color:#b06a4a;font-weight:800">✕</span> Demanda sem dono nem prazo</div>
+        <div style="display:flex;gap:12px"><span style="color:#b06a4a;font-weight:800">✕</span> Evento escolhido no achismo</div>
+        <div style="display:flex;gap:12px"><span style="color:#b06a4a;font-weight:800">✕</span> Retorno que ninguém mede</div>
+        <div style="display:flex;gap:12px"><span style="color:#b06a4a;font-weight:800">✕</span> Desconto sem rastro</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;color:#6FA331;font-size:52px;font-weight:800">→</div>
+    <div style="background:#0c3b37;border-radius:22px;padding:36px 38px;color:#eaf4f0">
+      <div style="display:inline-block;font:800 13px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#0c3b37;background:#a8e06b;padding:7px 15px;border-radius:999px">Com a plataforma</div>
+      <div style="display:flex;flex-direction:column;gap:16px;margin-top:22px;font-size:21px;font-weight:500;color:#d7e7e1;line-height:1.4">
+        <div style="display:flex;gap:12px"><span style="color:#a8e06b;font-weight:800">✓</span> Tudo num painel, com histórico</div>
+        <div style="display:flex;gap:12px"><span style="color:#a8e06b;font-weight:800">✓</span> Demanda com dono, prazo e status</div>
+        <div style="display:flex;gap:12px"><span style="color:#a8e06b;font-weight:800">✓</span> Estudo de mercado antes de decidir</div>
+        <div style="display:flex;gap:12px"><span style="color:#a8e06b;font-weight:800">✓</span> Retorno medido em Resultados &amp; Ações</div>
+        <div style="display:flex;gap:12px"><span style="color:#a8e06b;font-weight:800">✓</span> Desconto e aprovação com parecer</div>
+      </div>
+    </div>
+  </div>
+  <div class="num">02</div>
+</section>
+
+<section data-label="Jornada de uma demanda" data-speaker-notes="A história ponta a ponta com um caso concreto — não features soltas. Siga UMA demanda: o supervisor pede material/apoio pelo painel; o marketing lê e a inteligência estuda; vira uma campanha com meta e catálogo de preço; a campanha chega ao painel do vendedor; o vendedor trabalha a prospecção (cotação, visita, rota); e a ação é medida em Resultados e Ações — que o gerente nacional lê. Um caminho só, com rastro em cada passo." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 110px;background:#0c3b37;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <div class="k" style="color:#a8e06b">Uma demanda, do começo ao fim</div>
+  <div class="h1" style="font-size:60px;color:#fff;margin:16px 0 12px;max-width:1500px">Como uma ideia do campo <span style="color:#a8e06b">vira resultado</span>.</div>
+  <p style="margin:0 0 40px;font-size:22px;font-weight:500;color:#bcd3cc;max-width:1320px">Um caminho único — cada passo fica registrado, ninguém precisa perguntar “onde parou?”.</p>
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;align-items:stretch">
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:24px 20px"><div style="font:900 15px 'Plus Jakarta Sans';color:#7fd8c6">1 · Campo</div><div style="font:800 21px 'Archivo';color:#fff;margin:8px 0 6px;line-height:1.1">Supervisor pede</div><div style="font-size:15px;color:#bcd3cc;font-weight:500;line-height:1.45">Material ou apoio, pelo próprio painel.</div></div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:24px 20px"><div style="font:900 15px 'Plus Jakarta Sans';color:#7fd8c6">2 · Marketing</div><div style="font:800 21px 'Archivo';color:#fff;margin:8px 0 6px;line-height:1.1">Lê e tria</div><div style="font-size:15px;color:#bcd3cc;font-weight:500;line-height:1.45">Recebe a demanda registrada, com prazo.</div></div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:24px 20px"><div style="font:900 15px 'Plus Jakarta Sans';color:#7fd8c6">3 · Inteligência</div><div style="font:800 21px 'Archivo';color:#fff;margin:8px 0 6px;line-height:1.1">Estuda</div><div style="font-size:15px;color:#bcd3cc;font-weight:500;line-height:1.45">Viabilidade, preço e região. Parecer.</div></div>
+    <div style="background:rgba(111,163,49,.2);border:1px solid rgba(111,163,49,.45);border-radius:16px;padding:24px 20px"><div style="font:900 15px 'Plus Jakarta Sans';color:#a8e06b">4 · Vira ação</div><div style="font:800 21px 'Archivo';color:#fff;margin:8px 0 6px;line-height:1.1">Campanha</div><div style="font-size:15px;color:#dcebc9;font-weight:500;line-height:1.45">Meta e catálogo de preço definidos.</div></div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:24px 20px"><div style="font:900 15px 'Plus Jakarta Sans';color:#7fd8c6">5 · Vendedor</div><div style="font:800 21px 'Archivo';color:#fff;margin:8px 0 6px;line-height:1.1">Prospecta</div><div style="font-size:15px;color:#bcd3cc;font-weight:500;line-height:1.45">Cotação, visita e rota no painel.</div></div>
+    <div style="background:#6FA331;border-radius:16px;padding:24px 20px"><div style="font:900 15px 'Plus Jakarta Sans';color:#0c3b37">6 · Gestão</div><div style="font:800 21px 'Archivo';color:#0c3b37;margin:8px 0 6px;line-height:1.1">Mede</div><div style="font-size:15px;color:#123;font-weight:600;line-height:1.45">Resultados &amp; Ações: o Nacional lê tudo.</div></div>
+  </div>
+  <p style="margin:34px 0 0;font-size:21px;font-weight:600;color:#a8e06b">Da conversa no campo ao número na tela do Nacional — sem sair do sistema.</p>
+  <div class="numd">03</div>
+</section>
+
+<section data-label="Ver ao vivo" data-speaker-notes="Convite para ver funcionando. Diretoria compra o que vê. Abrir o link de produção e entrar com os acessos de teste. Mostrar rapidamente: uma demanda, uma campanha e o mapa da equipe ao vivo. Não é mockup — está no ar." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:92px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k" style="color:#0B6B61">Não é mockup — está no ar</div>
+  <div class="h1" style="font-size:66px;color:#0c3b37;margin:16px 0 14px;max-width:1500px">Ver <span style="color:#4d7a1f">funcionando</span>, agora.</div>
+  <p style="margin:0 0 36px;font-size:23px;font-weight:500;color:#5a6b66;max-width:1300px">Plataforma publicada e rodando. Durante a reunião, entramos ao vivo e seguimos uma demanda, uma campanha e o mapa da equipe.</p>
+  <div style="display:flex;gap:26px;align-items:stretch">
+    <div style="flex:1.1;background:#0c3b37;border-radius:20px;padding:36px 40px;color:#fff;display:flex;flex-direction:column;justify-content:center">
+      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#6FA331">Endereço</div>
+      <div style="font:900 34px 'Archivo';color:#fff;margin:12px 0 8px;word-break:break-all">painel-sbs.pages.dev</div>
+      <div style="font-size:18px;color:#c9dcd6;font-weight:500">Um perfil por setor · dados reais no banco</div>
+    </div>
+    <div style="flex:1;background:#fff;border:1px solid rgba(12,59,55,.1);border-radius:20px;padding:32px 36px">
+      <div style="font:800 15px 'Plus Jakarta Sans';letter-spacing:.14em;text-transform:uppercase;color:#0B6B61;margin-bottom:16px">O que mostramos</div>
+      <div style="display:flex;flex-direction:column;gap:14px;font-size:20px;font-weight:500;color:#46584f;line-height:1.4">
+        <div style="display:flex;gap:12px"><span style="color:#6FA331;font-weight:800">•</span> Uma demanda entrando e sendo aprovada</div>
+        <div style="display:flex;gap:12px"><span style="color:#6FA331;font-weight:800">•</span> Uma campanha publicada no painel do vendedor</div>
+        <div style="display:flex;gap:12px"><span style="color:#6FA331;font-weight:800">•</span> O mapa da equipe ao vivo (CEO)</div>
+      </div>
+    </div>
+  </div>
+  <div class="num">04</div>
+</section>
+
+<section data-label="As telas do sistema" data-speaker-notes="Telas reais do sistema em produção, para ilustrar como funciona. Da esquerda para a direita: 1) Agenda de eventos — o calendário compartilhado onde qualquer perfil cria um evento e o envia para aprovação. 2) Criação e gestão de campanhas — cada campanha com meta, período, premiação e botões de editar, compartilhar e encerrar. 3) Acompanhamento da campanha em Resultados das Ações — faturamento x meta, vendas, leads, ticket e ROI em tempo real. 4) Painel do vendedor — mapa e carteira no campo, com clientes, prospects, rotas e visitas. São capturas do ambiente real, não maquete." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:76px 90px;background:#0c3b37;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <div class="k" style="color:#a8e06b">O sistema por dentro</div>
+  <div class="h1" style="font-size:44px;color:#fff;margin:10px 0 6px;max-width:1500px">Telas <span style="color:#a8e06b">reais</span>.</div>
+  <p style="margin:0 0 22px;font-size:18px;font-weight:500;color:#bcd3cc;max-width:1320px">Do evento à campanha e ao acompanhamento do resultado — tudo no mesmo ambiente.</p>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px 28px;align-items:start;max-width:1360px;margin:0 auto;width:100%">
+    <div>
+      <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 40px rgba(0,0,0,.32);background:#fff;aspect-ratio:16/9">
+        <img src="assets/tela-agenda-eventos.png" alt="Agenda de eventos" style="width:100%;height:100%;object-fit:contain;display:block;image-rendering:auto">
+      </div>
+      <div style="font:800 21px 'Archivo';color:#fff;margin:13px 0 4px">1 · Criação de eventos</div>
+      <div style="font-size:15px;font-weight:500;color:#bcd3cc;line-height:1.45">Calendário compartilhado — qualquer perfil cria e envia para aprovação.</div>
+    </div>
+    <div>
+      <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 40px rgba(0,0,0,.32);background:#fff;aspect-ratio:16/9">
+        <img src="assets/tela-campanhas.png" alt="Criação de campanhas" style="width:100%;height:100%;object-fit:contain;display:block;image-rendering:auto">
+      </div>
+      <div style="font:800 21px 'Archivo';color:#fff;margin:13px 0 4px">2 · Criação de campanhas</div>
+      <div style="font-size:15px;font-weight:500;color:#bcd3cc;line-height:1.45">Meta, período, premiação e catálogo — editar, compartilhar ou encerrar.</div>
+    </div>
+    <div>
+      <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 40px rgba(0,0,0,.32);background:#fff;aspect-ratio:16/9">
+        <img src="assets/tela-campanhas-gestao.png" alt="Acompanhamento da campanha" style="width:100%;height:100%;object-fit:contain;display:block;image-rendering:auto">
+      </div>
+      <div style="font:800 21px 'Archivo';color:#fff;margin:13px 0 4px">3 · Acompanhamento</div>
+      <div style="font-size:15px;font-weight:500;color:#bcd3cc;line-height:1.45">Faturamento × meta, vendas, leads, ticket e ROI em tempo real.</div>
+    </div>
+    <div>
+      <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 40px rgba(0,0,0,.32);background:#fff;aspect-ratio:16/9">
+        <img src="assets/tela-vendedor-mapa.png" alt="Painel do vendedor — mapa e carteira" style="width:100%;height:100%;object-fit:contain;display:block;image-rendering:auto">
+      </div>
+      <div style="font:800 21px 'Archivo';color:#fff;margin:13px 0 4px">4 · Painel do vendedor</div>
+      <div style="font-size:15px;font-weight:500;color:#bcd3cc;line-height:1.45">Mapa e carteira no campo — clientes, prospects, rotas e visitas.</div>
+    </div>
+  </div>
+  <div class="numd">05</div>
+</section>
+
+<section data-label="Escala &amp; segurança" data-speaker-notes="Responder à objeção de custo e risco antes de ser perguntada. Pronto para mais de mil usuários, roda em infraestrutura gerenciada de baixo custo (Cloudflare + Supabase), começa praticamente de graça no piloto e cresce em degraus previsíveis. LGPD por perfil, banco blindado, ambientes de teste e produção separados. Sem servidor próprio para manter." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k" style="color:#7fd8c6">Pronto para crescer</div>
+  <div class="h1" style="font-size:62px;color:#fff;margin:16px 0 14px;max-width:1500px">Escala, custo e segurança <span style="color:#7fd8c6">resolvidos</span>.</div>
+  <p style="margin:0 0 38px;font-size:23px;font-weight:500;color:#bcd3cc;max-width:1320px">Infraestrutura gerenciada de nível bancário, sem servidor próprio para manter ou invadir.</p>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:28px 26px"><div style="font:900 30px 'Archivo';color:#a8e06b">1.000+</div><div style="font:800 19px 'Archivo';color:#fff;margin:8px 0 6px">usuários</div><p style="margin:0;font-size:16px;color:#c9dcd6;font-weight:500;line-height:1.45">Arquitetura preparada para o time todo, sem licença por assento.</p></div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:28px 26px"><div style="font:900 30px 'Archivo';color:#a8e06b">~R$ 0→150</div><div style="font:800 19px 'Archivo';color:#fff;margin:8px 0 6px">por mês</div><p style="margin:0;font-size:16px;color:#c9dcd6;font-weight:500;line-height:1.45">De graça no piloto; degraus previsíveis conforme o uso.</p></div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:28px 26px"><div style="font:900 30px 'Archivo';color:#a8e06b">LGPD</div><div style="font:800 19px 'Archivo';color:#fff;margin:8px 0 6px">por perfil</div><p style="margin:0;font-size:16px;color:#c9dcd6;font-weight:500;line-height:1.45">Cada setor vê só o seu, com log de acesso a dados pessoais.</p></div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:28px 26px"><div style="font:900 30px 'Archivo';color:#a8e06b">Teste + Prod</div><div style="font:800 19px 'Archivo';color:#fff;margin:8px 0 6px">separados</div><p style="margin:0;font-size:16px;color:#c9dcd6;font-weight:500;line-height:1.45">Banco blindado e backup automático. Nada quebra no ar.</p></div>
+  </div>
+  <div class="numd">06</div>
+</section>
+
+<section data-label="O que NÃO é" data-speaker-notes="Alinhar expectativa e ganhar credibilidade. Deixar explícito o escopo: a plataforma NÃO substitui o sistema de pedido/venda (o Win). Ela é para prospecção, gestão de demandas, campanhas, eventos e leitura da ação do campo. O pedido em si continua sendo tirado no sistema atual. Isso evita frustração e mostra que sabemos onde a ferramenta agrega." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:92px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+  <div class="k" style="color:#0B6B61">Escopo claro</div>
+  <div class="h1" style="font-size:64px;color:#0c3b37;margin:16px 0 38px;max-width:1500px">O que a plataforma <span style="color:#4d7a1f">é</span> — e o que <span style="color:#b06a4a">não é</span>.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:stretch">
+    <div style="background:#fff;border:1px solid rgba(12,59,55,.1);border-top:6px solid #6FA331;border-radius:20px;padding:34px 38px">
+      <div style="font:800 22px 'Archivo';color:#0c3b37;margin-bottom:18px">É para</div>
+      <div style="display:flex;flex-direction:column;gap:13px;font-size:20px;font-weight:500;color:#46584f;line-height:1.4">
+        <div style="display:flex;gap:12px"><span style="color:#6FA331;font-weight:800">✓</span> Prospecção de novos clientes por estado</div>
+        <div style="display:flex;gap:12px"><span style="color:#6FA331;font-weight:800">✓</span> Gestão de demandas, campanhas e eventos</div>
+        <div style="display:flex;gap:12px"><span style="color:#6FA331;font-weight:800">✓</span> Cotação de desconto e catálogo de preço</div>
+        <div style="display:flex;gap:12px"><span style="color:#6FA331;font-weight:800">✓</span> Leitura da ação do campo (Resultados &amp; Ações)</div>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid rgba(12,59,55,.1);border-top:6px solid #b06a4a;border-radius:20px;padding:34px 38px">
+      <div style="font:800 22px 'Archivo';color:#0c3b37;margin-bottom:18px">Não é</div>
+      <div style="display:flex;flex-direction:column;gap:13px;font-size:20px;font-weight:500;color:#46584f;line-height:1.4">
+        <div style="display:flex;gap:12px"><span style="color:#b06a4a;font-weight:800">✕</span> Sistema de pedido / faturamento de venda</div>
+        <div style="display:flex;gap:12px"><span style="color:#b06a4a;font-weight:800">✕</span> Substituto do sistema comercial atual</div>
+        <div style="display:flex;gap:12px"><span style="color:#b06a4a;font-weight:800">✕</span> ERP ou controle de estoque</div>
+      </div>
+      <p style="margin:20px 0 0;font-size:17px;font-weight:600;color:#8a6a48;line-height:1.45">O pedido segue sendo tirado no sistema comercial. Aqui trabalhamos a prospecção e a gestão que leva até ele.</p>
+    </div>
+  </div>
+  <div class="num">07</div>
+</section>
+
+<section data-label="Próximo passo" data-speaker-notes="Fechamento com pedido claro — toda apresentação de diretoria precisa de um call to action. O pedido: aprovar um piloto com 1 parceiro e 1 região, por um período curto, com metas simples de acompanhamento. Baixo risco, começa de graça, resultado visível em semanas. Abrir para perguntas." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:120px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+  <img src="assets/capa-sbs.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:.26">
+  <div style="position:absolute;inset:0;background:radial-gradient(120% 120% at 85% 100%,rgba(15,74,68,.78) 0%,rgba(12,59,55,.92) 55%,#082b28 100%)"></div>
+  <div style="position:relative">
+    <div class="k">O que decidimos hoje</div>
+    <div class="h1" style="font-size:80px;margin:22px 0 0;max-width:1400px">Aprovar um <span style="color:#7fd8c6">piloto</span>.</div>
+    <p style="margin:32px 0 0;font-size:26px;font-weight:500;color:#d7e7e1;max-width:1160px">1 parceiro · 1 região · período curto, com metas simples. Baixo risco, começa de graça, resultado visível em semanas.</p>
+    <div style="display:flex;gap:16px;margin-top:40px;flex-wrap:wrap">
+      <span style="padding:14px 24px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:999px;font-size:19px;font-weight:600">Escolher parceiro &amp; região</span>
+      <span style="padding:14px 24px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:999px;font-size:19px;font-weight:600">Definir metas do piloto</span>
+      <span style="padding:14px 24px;background:#6FA331;color:#0c3b37;border-radius:999px;font-size:19px;font-weight:800">Treinar a equipe e começar</span>
+    </div>
+    <div style="display:inline-flex;align-items:center;background:#fff;border-radius:16px;padding:16px 26px;margin-top:56px;box-shadow:0 16px 36px rgba(0,0,0,.25)">
+      <img src="logo-sbs.png" alt="SBS Green Seeds" style="height:46px;display:block">
+    </div>
+  </div>
+</section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

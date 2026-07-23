@@ -17,11 +17,20 @@
   .h1{font-family:'Archivo',sans-serif;font-weight:900;line-height:.98;letter-spacing:-.02em}
   .num{position:absolute;right:56px;bottom:44px;font:700 22px 'Plus Jakarta Sans',sans-serif;color:rgba(12,59,55,.35)}
   .numd{position:absolute;right:56px;bottom:44px;font:700 22px 'Plus Jakarta Sans',sans-serif;color:rgba(255,255,255,.4)}
+
+  @media print {
+    *,*::before,*::after{
+      -webkit-print-color-adjust:exact;print-color-adjust:exact;
+      animation-delay:-99s !important;animation-duration:.001s !important;
+      animation-iteration-count:1 !important;animation-fill-mode:both !important;
+      animation-play-state:running !important;transition-duration:0s !important;
+    }
+  }
 </style>
 </helmet>
 <x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%" data-uneditable="">
 
-<section data-label="Capa" data-speaker-notes="Abertura. Apresentar o ecossistema SBS Green Seeds: um sistema único que conecta o vendedor no campo até o CEO, passando por supervisão, gerência regional e nacional, marketing e inteligência de mercado." style="position:relative;display:flex;flex-direction:column;justify-content:flex-end;height:100%;background:#0c3b37;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+<section data-deck-active data-label="Capa" data-speaker-notes="Abertura. Apresentar o ecossistema SBS Green Seeds: um sistema único que conecta o vendedor no campo até o CEO, passando por supervisão, gerência regional e nacional, marketing e inteligência de mercado." style="position:relative;display:flex;flex-direction:column;justify-content:flex-end;height:100%;background:#0c3b37;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
   <img src="assets/capa-sbs.png" alt="SBS Green Seeds — Semeando o futuro regenerativo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">
   <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,43,40,0) 40%,rgba(8,43,40,.55) 100%)"></div>
   <div style="position:relative;padding:0 120px 72px">
@@ -33,7 +42,7 @@
 
 
 
-<section data-label="As dores de hoje" data-speaker-notes="As dores que vamos sanar. Hoje a operação comercial e de marketing vive espalhada e sem rastro. 1) Informação em planilhas soltas e WhatsApp — se perde, não há histórico. 2) Decisões no achismo — sem dado real de mercado para embasar eventos e campanhas. 3) Eventos e feiras sem medir ROI — investe-se sem saber o retorno. 4) Vendas do campo demoram a chegar à gestão — a visão sempre atrasada. 5) Demandas do campo se perdem — sem prazo, sem dono, sem acompanhamento. 6) Descontos e aprovações sem controle — margem exposta. É exatamente isso que a plataforma resolve." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+<section data-deck-active data-label="As dores de hoje" data-speaker-notes="As dores que vamos sanar. Hoje a operação comercial e de marketing vive espalhada e sem rastro. 1) Informação em planilhas soltas e WhatsApp — se perde, não há histórico. 2) Decisões no achismo — sem dado real de mercado para embasar eventos e campanhas. 3) Eventos e feiras sem medir ROI — investe-se sem saber o retorno. 4) Vendas do campo demoram a chegar à gestão — a visão sempre atrasada. 5) Demandas do campo se perdem — sem prazo, sem dono, sem acompanhamento. 6) Descontos e aprovações sem controle — margem exposta. É exatamente isso que a plataforma resolve." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
   <div class="k" style="color:#f0a24b">O que enfrentamos hoje</div>
   <div class="h1" style="font-size:60px;color:#fff;margin:16px 0 8px;max-width:1500px">As <span style="color:#f0a24b">dores</span> que vamos sanar.</div>
   <p style="margin:0 0 28px;font-size:22px;font-weight:500;color:#bcd3cc;max-width:1220px">A operação comercial, de marketing e de inteligência de mercado vive espalhada, sem dado real e sem rastro. Cada dor abaixo tem uma resposta direta na plataforma.</p>
@@ -83,7 +92,7 @@
 </section>
 
 
-<section data-label="Proposta" data-speaker-notes="A proposta do projeto. Hoje a operação da SBS vive espalhada em planilhas, mensagens e decisões no achismo, sem histórico. Propomos uma plataforma única: um painel por perfil (Marketing, Gerente Nacional, CEO e Inteligência de Mercado) mais o app de eventos, onde a demanda do campo vira ação e sobe até o CEO sem perder o rastro. O ganho é operar ponta a ponta com dado real e histórico compartilhado." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#0c3b37;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+<section data-deck-active data-label="Proposta" data-speaker-notes="A proposta do projeto. Hoje a operação da SBS vive espalhada em planilhas, mensagens e decisões no achismo, sem histórico. Propomos uma plataforma única: um painel por perfil (Marketing, Gerente Nacional, CEO e Inteligência de Mercado) mais o app de eventos, onde a demanda do campo vira ação e sobe até o CEO sem perder o rastro. O ganho é operar ponta a ponta com dado real e histórico compartilhado." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#0c3b37;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
   <div class="k" style="color:#a8e06b">A proposta</div>
   <div class="h1" style="font-size:64px;color:#fff;margin:16px 0 44px;max-width:1500px">Fluxo de trabalho: <span style="color:#a8e06b">Inteligência de Mercado</span> e Gerente Nacional.</div>
 
@@ -117,7 +126,7 @@
 </section>
 
 
-<section data-label="Inteligência · Da demanda à ação" data-speaker-notes="ESTE É O FOCO. Como a Inteligência de Mercado transforma uma demanda em ação concreta. 1) A demanda nasce — do campo, do Nacional ou do próprio radar de mercado da Inteligência (concorrência, preço, sazonalidade, região quente). 2) Passa pelo fluxo de estudo, conduzido pela Inteligência: viabilidade, leitura de preço e concorrência, público e região, e o parecer com recomendação. 3) Vira um Evento ou uma Campanha — com meta, praça e verba sugeridas — e segue para a esteira de aprovação. Tudo no mesmo painel, com histórico." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+<section data-deck-active data-label="Inteligência · Da demanda à ação" data-speaker-notes="ESTE É O FOCO. Como a Inteligência de Mercado transforma uma demanda em ação concreta. 1) A demanda nasce — do campo, do Nacional ou do próprio radar de mercado da Inteligência (concorrência, preço, sazonalidade, região quente). 2) Passa pelo fluxo de estudo, conduzido pela Inteligência: viabilidade, leitura de preço e concorrência, público e região, e o parecer com recomendação. 3) Vira um Evento ou uma Campanha — com meta, praça e verba sugeridas — e segue para a esteira de aprovação. Tudo no mesmo painel, com histórico." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k" style="color:#0B6B61">Inteligência de Mercado · o motor</div>
   <div class="h1" style="font-size:64px;color:#0c3b37;margin:16px 0 8px;max-width:1500px">Da <span style="color:#0e857a;white-space:nowrap">demanda</span> à <span style="color:#4d7a1f;white-space:nowrap">ação</span> — passando pelo estudo.</div>
   <p style="margin:0 0 40px;font-size:24px;font-weight:500;color:#5a6b66;max-width:1300px">Nenhum evento ou campanha nasce no achismo: a Inteligência capta a demanda, estuda e só então ela vira ação.</p>
@@ -164,7 +173,7 @@
 
   <p style="margin:30px 0 0;font-size:20px;font-weight:600;color:#0B6B61">Mesmo painel, histórico compartilhado — a demanda vira ação sem perder o rastro.</p>
   <div class="num">03</div>
-</section><section data-label="Nacional × Inteligência" data-speaker-notes="Como Gerente Nacional e Inteligência de Mercado trabalham juntos, em ciclo: Nacional define a campanha e a meta; Inteligência estuda viabilidade, preço e concorrência; voltam com o parecer conjunto; Nacional decide e aciona o campo. As duas áreas acompanham as mesmas tarefas no mesmo painel, com histórico compartilhado. A demanda criada entre Nacional e Inteligência pode evoluir para um evento ou campanha e seguir para a esteira de aprovação da ação." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:92px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif">
+</section><section data-deck-active data-label="Nacional × Inteligência" data-speaker-notes="Como Gerente Nacional e Inteligência de Mercado trabalham juntos, em ciclo: Nacional define a campanha e a meta; Inteligência estuda viabilidade, preço e concorrência; voltam com o parecer conjunto; Nacional decide e aciona o campo. As duas áreas acompanham as mesmas tarefas no mesmo painel, com histórico compartilhado. A demanda criada entre Nacional e Inteligência pode evoluir para um evento ou campanha e seguir para a esteira de aprovação da ação." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:92px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k" style="color:#7fd8c6">Fluxo de trabalho · Gestão</div>
   <div class="h1" style="font-size:62px;color:#fff;margin:16px 0 10px;max-width:1400px">Nacional e Inteligência trabalham <span style="color:#7fd8c6">em ciclo</span>.</div>
   <p style="margin:0 0 40px;font-size:24px;font-weight:500;color:#c9dcd6;max-width:1300px">Nenhuma campanha anda sozinha: estratégia e leitura de mercado se alternam sobre a mesma tarefa, com parecer e histórico compartilhados.</p>
@@ -207,7 +216,7 @@
 
 
 
-<section data-label="Solicitações" data-speaker-notes="Fluxo de solicitações vindas do Painel Vendedor: o campo pede (campanha, evento, material, custo), Marketing é o porteiro, depois Nacional, Inteligência e CEO. A decisão volta e notifica o solicitante." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+<section data-deck-active data-label="Solicitações" data-speaker-notes="Fluxo de solicitações vindas do Painel Vendedor: o campo pede (campanha, evento, material, custo), Marketing é o porteiro, depois Nacional, Inteligência e CEO. A decisão volta e notifica o solicitante." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k">Colaboração</div>
   <div class="h1" style="font-size:64px;color:#0c3b37;margin:18px 0 16px;max-width:1400px">O campo pede, a gestão decide — com rastro.</div>
   <p style="margin:0 0 34px;font-size:24px;font-weight:500;color:#5a6b66;max-width:1300px">Solicitações criadas no Painel Vendedor (campanha, evento, material, item com custo) entram numa esteira de aprovação sequencial.</p>
@@ -232,7 +241,7 @@
 
 
 
-<section data-label="Integração" data-speaker-notes="Os dois sistemas (Painel Vendedor e Painel) compartilham o MESMO banco Supabase, ligados por um barramento com payload livre. Novas features trocam dados sem mudar o schema." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#ffffff;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+<section data-deck-active data-label="Integração" data-speaker-notes="Os dois sistemas (Painel Vendedor e Painel) compartilham o MESMO banco Supabase, ligados por um barramento com payload livre. Novas features trocam dados sem mudar o schema." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#ffffff;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k">Arquitetura</div>
   <div class="h1" style="font-size:74px;color:#0c3b37;margin:22px 0 54px;max-width:1400px">Dois sistemas, um só banco.</div>
   <div style="display:flex;align-items:center;gap:28px">
@@ -243,7 +252,7 @@
   <div class="num">08</div>
 </section>
 
-<section data-label="Segurança &amp; LGPD" data-speaker-notes="Segurança e LGPD numa visão só. Privacidade: login por perfil (cada setor vê só o que opera), auditoria de acesso a dados de clientes/vendedores, e localização sempre consentida, sem rastreio oculto. Infraestrutura: banco com RLS (ninguém acessa direto), token+perfil em cada requisição, isolamento por parceiro, HTTPS ponta a ponta com chaves só no servidor, ambientes de teste e produção separados, e backup automático." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:80px 100px;background:#0B6B61;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
+<section data-deck-active data-label="Segurança &amp; LGPD" data-speaker-notes="Segurança e LGPD numa visão só. Privacidade: login por perfil (cada setor vê só o que opera), auditoria de acesso a dados de clientes/vendedores, e localização sempre consentida, sem rastreio oculto. Infraestrutura: banco com RLS (ninguém acessa direto), token+perfil em cada requisição, isolamento por parceiro, HTTPS ponta a ponta com chaves só no servidor, ambientes de teste e produção separados, e backup automático." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:80px 100px;background:#0B6B61;color:#fff;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k">Segurança &amp; LGPD</div>
   <div class="h1" style="font-size:62px;margin:16px 0 10px">Protegido por padrão. Cada um vê o que é seu.</div>
   <p style="margin:0 0 34px;font-size:22px;font-weight:500;color:#c9dcd6;max-width:1340px">Privacidade por perfil e infraestrutura gerenciada de nível bancário — sem servidor próprio para invadir ou vazar.</p>
@@ -271,7 +280,7 @@
   <div class="numd">09</div>
 </section>
 
-<section data-label="Custo" data-speaker-notes="Custo ao longo do tempo. O sistema roda em infraestrutura de baixo custo que escala por uso. Começa praticamente de graça no piloto; conforme cresce o número de usuários e dados, sobe em degraus previsíveis. Sem licença por usuário, sem servidor dedicado. Valores aproximados em reais, dependem do câmbio e do uso real — confirmar na contratação." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#0c3b37;font-family:'Plus Jakarta Sans',sans-serif">
+<section data-deck-active data-label="Custo" data-speaker-notes="Custo ao longo do tempo. O sistema roda em infraestrutura de baixo custo que escala por uso. Começa praticamente de graça no piloto; conforme cresce o número de usuários e dados, sobe em degraus previsíveis. Sem licença por usuário, sem servidor dedicado. Valores aproximados em reais, dependem do câmbio e do uso real — confirmar na contratação." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:96px 120px;background:#eef1ee;color:#0c3b37;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k">Custo ao longo do uso</div>
   <div class="h1" style="font-size:70px;margin:22px 0 16px;max-width:1400px">Escala por uso — sem licença por pessoa.</div>
   <p style="margin:0 0 42px;font-size:23px;font-weight:500;color:#5a6b66;max-width:1340px">Infraestrutura sob demanda (Cloudflare + Supabase). Cresce em degraus previsíveis conforme usuários e volume de dados — não por assento.</p>
@@ -299,7 +308,7 @@
   <div class="num">10</div>
 </section>
 
-<section data-label="O que NÃO é" data-speaker-notes="Alinhar expectativa e ganhar credibilidade. Deixar explícito o escopo: a plataforma NÃO substitui o sistema de pedido/venda. Ela é para prospecção, gestão de demandas, campanhas, eventos e leitura da ação do campo. O pedido em si continua sendo tirado no sistema comercial atual. Isso evita frustração e mostra que sabemos onde a ferramenta agrega." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:92px 120px;background:#ffffff;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
+<section data-deck-active data-label="O que NÃO é" data-speaker-notes="Alinhar expectativa e ganhar credibilidade. Deixar explícito o escopo: a plataforma NÃO substitui o sistema de pedido/venda. Ela é para prospecção, gestão de demandas, campanhas, eventos e leitura da ação do campo. O pedido em si continua sendo tirado no sistema comercial atual. Isso evita frustração e mostra que sabemos onde a ferramenta agrega." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:92px 120px;background:#ffffff;color:#12211e;font-family:'Plus Jakarta Sans',sans-serif">
   <div class="k" style="color:#0B6B61">Escopo claro</div>
   <div class="h1" style="font-size:64px;color:#0c3b37;margin:16px 0 38px;max-width:1500px">O que a plataforma <span style="color:#4d7a1f">é</span> — e o que <span style="color:#b06a4a">não é</span>.</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:stretch">
@@ -326,7 +335,7 @@
   <div class="num">11</div>
 </section>
 
-<section data-label="Retorno esperado" data-speaker-notes="O payoff do projeto — o que a SBS ganha. Cada benefício responde a uma dor do início. 1) Decisão com dado real, menos achismo. 2) Nada se perde: demanda com dono, prazo e histórico. 3) ROI de evento e campanha visível — investir onde retorna. 4) Ciclo da demanda à ação mais rápido. 5) Margem protegida, aprovações com parecer. 6) Visão ponta a ponta, o mesmo dado para cada perfil. Fechar dizendo: menos tempo em planilha, mais tempo decidindo." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+<section data-deck-active data-label="Retorno esperado" data-speaker-notes="O payoff do projeto — o que a SBS ganha. Cada benefício responde a uma dor do início. 1) Decisão com dado real, menos achismo. 2) Nada se perde: demanda com dono, prazo e histórico. 3) ROI de evento e campanha visível — investir onde retorna. 4) Ciclo da demanda à ação mais rápido. 5) Margem protegida, aprovações com parecer. 6) Visão ponta a ponta, o mesmo dado para cada perfil. Fechar dizendo: menos tempo em planilha, mais tempo decidindo." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:88px 120px;background:#0B6B61;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
   <div class="k" style="color:#a8e06b">Retorno esperado</div>
   <div class="h1" style="font-size:66px;color:#fff;margin:16px 0 12px;max-width:1500px">O que a SBS <span style="color:#a8e06b">ganha</span> com isso.</div>
   <p style="margin:0 0 40px;font-size:23px;font-weight:500;color:#bcd9d0;max-width:1320px">Cada ganho responde a uma dor de hoje .</p>
@@ -362,7 +371,7 @@
 
 
 
-<section data-label="As telas do sistema" data-speaker-notes="Telas reais do sistema em produção, para ilustrar como funciona. 1) Agenda de eventos — calendário compartilhado onde qualquer perfil cria um evento e o envia para aprovação. 2) Criação de campanhas — cada campanha com meta, período, premiação e botões de editar, compartilhar e encerrar. 3) Acompanhamento em Resultados das Ações — faturamento x meta, vendas, leads, ticket e ROI em tempo real. 4) Painel do vendedor — mapa e carteira no campo, com clientes, prospects, rotas e visitas. São capturas do ambiente real, não maquete." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:76px 90px;background:#0c3b37;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+<section data-deck-active data-label="As telas do sistema" data-speaker-notes="Telas reais do sistema em produção, para ilustrar como funciona. 1) Agenda de eventos — calendário compartilhado onde qualquer perfil cria um evento e o envia para aprovação. 2) Criação de campanhas — cada campanha com meta, período, premiação e botões de editar, compartilhar e encerrar. 3) Acompanhamento em Resultados das Ações — faturamento x meta, vendas, leads, ticket e ROI em tempo real. 4) Painel do vendedor — mapa e carteira no campo, com clientes, prospects, rotas e visitas. São capturas do ambiente real, não maquete." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:76px 90px;background:#0c3b37;color:#eaf4f0;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
   <div class="k" style="color:#a8e06b">O sistema por dentro</div>
   <div class="h1" style="font-size:44px;color:#fff;margin:10px 0 6px;max-width:1500px">Telas <span style="color:#a8e06b">reais</span>.</div>
   <p style="margin:0 0 22px;font-size:18px;font-weight:500;color:#bcd3cc;max-width:1320px">Do evento à campanha e ao acompanhamento do resultado — tudo no mesmo ambiente.</p>
@@ -399,7 +408,7 @@
   <div class="numd">13</div>
 </section>
 
-<section data-label="Encerramento" data-speaker-notes="Fechamento: a plataforma conecta todos os setores num fluxo só. Abrir para perguntas e definir próximos passos de treinamento por equipe." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:120px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
+<section data-deck-active data-label="Encerramento" data-speaker-notes="Fechamento: a plataforma conecta todos os setores num fluxo só. Abrir para perguntas e definir próximos passos de treinamento por equipe." style="position:relative;display:flex;flex-direction:column;justify-content:center;height:100%;padding:120px;background:#0c3b37;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden">
   <img src="assets/capa-sbs.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:.28">
   <div style="position:absolute;inset:0;background:radial-gradient(120% 120% at 85% 100%,rgba(15,74,68,.75) 0%,rgba(12,59,55,.9) 55%,#082b28 100%)"></div>
   <div style="position:relative">
@@ -414,5 +423,18 @@
 
 </x-import>
 </x-dc>
+<script>
+addEventListener('load', () => {
+  (async () => {
+    try { await document.fonts.ready; } catch (e) {}
+    const imgs = Array.from(document.images).filter((i) => !i.complete);
+    await Promise.race([
+      Promise.allSettled(imgs.map((i) => i.decode())),
+      new Promise((r) => setTimeout(r, 8000)),
+    ]);
+    setTimeout(() => window.print(), 700);
+  })();
+});
+</script>
 </body>
 </html>

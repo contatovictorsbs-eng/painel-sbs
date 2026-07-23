@@ -20,13 +20,16 @@ function forte(s){ return typeof s === 'string' && s.length >= 8; }
 async function enviarEmail(email, cod){
   const key = process.env.RESEND_API_KEY;
   if (!key) return false;
+  const from = process.env.RESEND_FROM || process.env.MAIL_FROM || 'Plataforma SBS <nao-responda@sbsgreen.com.br>';
+  const replyTo = process.env.RESEND_REPLY_TO || 'suporte@sbsgreen.com.br';
   try {
     const r = await fetch('https://api.resend.com/emails', {
       method:'POST',
       headers:{ 'Authorization':'Bearer '+key, 'Content-Type':'application/json' },
       body: JSON.stringify({
-        from: process.env.MAIL_FROM || 'SBS Green Seeds <nao-responder@sbsgreen.com.br>',
+        from,
         to: [email],
+        reply_to: replyTo,
         subject: 'Redefinição de senha — Plataforma SBS',
         text: 'Seu código de redefinição é ' + cod + '. Ele vale por 30 minutos. Se não foi você, ignore este e-mail.'
       })

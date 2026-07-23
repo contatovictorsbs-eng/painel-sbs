@@ -3,6 +3,6 @@
 # Home abre o painel
 /   /painel-sbs.html   200
 
-# Protege fontes do backend e docs de acesso direto
-/server/*    /painel-sbs.html   404
-/backend/*   /painel-sbs.html   404
+# Protege fontes do backend e docs: acesso direto volta para a home (302)
+/server/*    /   302
+/backend/*   /   302

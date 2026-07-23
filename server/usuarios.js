@@ -39,6 +39,26 @@ async function semearUsuarios(db){
   }
 }
 function strip(x){ if(!x) return x; const o = Object.assign({}, x); delete o.hash; return o; }
+async function enviarBoasVindas(email, nome, perfil){
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return false;
+  const from = process.env.RESEND_FROM || process.env.MAIL_FROM || 'Plataforma SBS <nao-responda@sbsgreen.com.br>';
+  const replyTo = process.env.RESEND_REPLY_TO || 'suporte@sbsgreen.com.br';
+  const url = process.env.APP_URL || 'https://painel-sbs.pages.dev/painel-sbs';
+  const rotulo = {marketing:'Marketing',gerente:'Gerente Nacional',ceo:'CEO',mercado:'Inteligência de Mercado',ti:'Tecnologia (TI)',admin:'Admin master'}[perfil]||perfil;
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method:'POST',
+      headers:{ 'Authorization':'Bearer '+key, 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        from, to:[email], reply_to: replyTo,
+        subject: 'Seu acesso à Plataforma SBS foi criado',
+        text: 'Olá '+(nome||'')+',\n\nSeu acesso à Plataforma SBS foi criado com o perfil '+rotulo+'.\n\nEndereço: '+url+'\nUsuário: '+email+'\nSenha inicial: 12345678 (você deve trocá-la no primeiro acesso)\n\nNo primeiro login será pedido para ativar a verificação em 2 passos (app autenticador).\n\nSe não reconhece este e-mail, ignore.'
+      })
+    });
+    return r.ok;
+  } catch (e) { return false; }
+}
 
 exports.handler = async (event) => {
   try {
@@ -68,7 +88,8 @@ exports.handler = async (event) => {
       const ent = { id: email, email, nome, perfil, tenant: 'sbs', hash: hash(senhaInicial), precisaTrocar: true, criadoEm: new Date().toISOString(), criadoPor: u.sub || 'sistema' };
       const saved = await db.put('usuarios', ent);
       await audit({ usuario:u.sub, perfil:u.perfil, acao:'criou', entidade:'usuarios', entidadeId:email, ip:clientIp(event) });
-      return ok(strip(saved));
+      const emailEnviado = await enviarBoasVindas(email, nome, perfil);
+      return ok(Object.assign(strip(saved), { emailEnviado }));
     }
 
     if (event.httpMethod === 'PATCH') {
