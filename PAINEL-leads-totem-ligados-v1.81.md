@@ -17,8 +17,8 @@ POST /api/integracao
   titulo:  '<nome do produtor>',
   resumo:  '<cidade · uf · cultura>',
   payload: {
-    produtor, cnpj, produtoComprado, cultura, areaHa,
-    telefone, endereco, cidade, uf,
+    produtor, matricula, cnpj, produtoComprado, cultura, areaHa, quantidadeKg,
+    prazoPagamento, telefone, endereco, cidade, uf,
     lat, lng,                 // do navigator.geolocation no totem
     numeroPedido, valor,
     campanha, evento, safra
@@ -27,6 +27,18 @@ POST /api/integracao
 ```
 
 Vocês consomem sob demanda: `GET /api/integracao?de=painel-sbs&tipo=lead-prospeccao`.
+
+## Campos novos nesta versão (v1.82)
+Adicionamos ao cadastro do totem — todos entram no payload acima:
+- `matricula` — matrícula do cooperado na cooperativa.
+- `quantidadeKg` — quantidade comprada em kg.
+- `prazoPagamento` — À vista / 30 / 60 / 90 / 120 dias / Safra / Barter.
+- Assinatura digital do cliente (fica no Painel para o documento; **não** vai no payload por ser imagem pesada — avisem se quiserem).
+
+## Dois cenários do evento (contexto)
+A campanha agora tem `tipoVenda`:
+- **`canal`** (ex.: Coopercitrus): a cooperativa vende; nós só **captamos o comprador** no totem e geramos **comprovante de cashback**.
+- **`direta`** (ex.: Beef Day, cliente final): a SBS vende; o totem gera um **contrato de compra** com assinatura. Os leads continuam indo para o barramento igual.
 
 ## Sobre os 3 campos que pediram
 - **lat/lng (crítico):** ✅ incluído. O totem pede a posição do dispositivo (`navigator.geolocation`). Ressalva honesta: no estande, o totem costuma ser um tablet fixo — a coordenada será a **do estande**, não a da fazenda do produtor. Por isso mandamos também o `endereco` completo para vocês geocodificarem na origem quando a fazenda ≠ estande. Se o produtor cadastrar pelo próprio celular, aí sim a posição é dele.

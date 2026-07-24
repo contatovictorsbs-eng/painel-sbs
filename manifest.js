@@ -8,7 +8,7 @@
    a documentação se atualiza sozinha a partir deste ponto único.
    =========================================================== */
 window.SBS_MANIFEST = {
-  versao: '1.81.0',
+  versao: '1.82.0',
   atualizadoEm: '2026-07-24',
 
   // ---- Perfis de acesso ----
@@ -134,6 +134,7 @@ window.SBS_MANIFEST = {
 
   // ---- Changelog (mais recente no topo) ----
   changelog: [
+    { versao:'1.82.0', data:'2026-07-24', itens:['CAMPANHA: novo campo tipoVenda ("direta"=cliente final → gera CONTRATO DE COMPRA / "canal"=cooperativa/parceiro → gera COMPROVANTE DE CASHBACK), selecionável na criação/edição. TOTEM: novos campos matrícula do cooperado, quantidade (kg), prazo de pagamento e ASSINATURA DIGITAL (canvas, dedo/mouse). Ao concluir, gera documento (contrato ou comprovante) com os dados + assinatura, com botões Baixar e Compartilhar por WhatsApp (Web Share API + fallback download). Campos novos também no push lead-prospeccao e no CSV. Sem mudança de schema (jsonb).'] },
     { versao:'1.81.0', data:'2026-07-24', itens:['CASHBACK/TOTEM → PROSPECÇÃO SBS GREEN. Totem passou a captar CPF/CNPJ, hectares de área (areaHa) e a GEOLOCALIZAÇÃO do dispositivo (navigator.geolocation → lat/lng) — atende ao pedido do app de vendas (mapa/rota). Cada cadastro do totem agora é PUBLICADO no barramento (POST /api/integracao) com tipo:"lead-prospeccao" e payload {produtor,cnpj,produtoComprado,cultura,areaHa,telefone,endereco,cidade,uf,lat,lng,numeroPedido,valor,campanha,evento,safra}. O SBS Green consome sob demanda (GET /api/integracao?de=painel-sbs&tipo=lead-prospeccao). CSV de leads agora inclui CPF/CNPJ, hectares e lat/lng.'] },
     { versao:'1.80.0', data:'2026-07-23', itens:['ESCALABILIDADE — polling corrigido nos 3 laços (cotações, solicitações, mapa da equipe): pausam quando a aba está em segundo plano (document.hidden) e intervalo subiu de 30/35s para 180s; atualização imediata ao voltar à aba (visibilitychange). Corrige o estouro da cota de requisições da conta Cloudflare (Error 1027). Correção aplicada na FONTE (Painel SBS.dc.html) + bundles painel-sbs.html/index.html. Novo endpoint de diagnóstico /api/metricas (contador de chamadas por rota, in-memory por isolate com snapshot na coleção `metricas` a cada 200 hits) para identificar a rota /api/* que concentra volume.'] },
     { versao:'1.79.0', data:'2026-07-20', itens:['SEGURANÇA — Autenticação em 2 passos (2FA/TOTP) obrigatória em TODO login do painel. Fluxo: e-mail+senha → código de 6 dígitos do app autenticador (Google Authenticator/Authy). 1º acesso mostra QR + chave manual + códigos de recuperação (uso único). server/_lib/totp.js (RFC 6238, sem dependências). server/auth.js: ações ativar-2fa e verificar-2fa (pretoken assinado, TTL curto). Gestão de Acessos ganhou botão “Resetar 2FA”. Variável FORCAR_2FA=off desliga se necessário. Campos novos na coleção usuarios: twofaOn, twofaSeg, twofaRec[].'] },
