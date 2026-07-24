@@ -1780,6 +1780,32 @@ class Component extends DCLogic {
       this.showToast('Leads exportados ('+leads.length+') ✓');
     }catch(err){ this.showToast('Não foi possível exportar'); }
   }
+  gerarResgateDoLead(l){
+    if(!l) return;
+    if(l.resgateGerado){ this.showToast('Este lead já virou um resgate'); return; }
+    const camp=this.allCampaigns().find(c=>String(c.id)===String(l.campanhaId));
+    const pct=(camp&&camp.cashback&&camp.cashback.pct)||0;
+    if(!pct){ this.showToast('A campanha deste lead não tem % de cashback definido'); return; }
+    const valorCompra=Number(l.valor)||0;
+    const valorCashback=valorCompra*pct/100;
+    const reg={ id:Date.now(), kind:'registro', cliente:l.cliente, cnpj:l.cnpj, cidade:l.cidade, uf:l.uf, contato:l.contato,
+      cupom:l.pedido||'', campanhaId:camp?camp.id:l.campanhaId, campanha:l.campanha, evento:l.evento||'',
+      pct, valorCompra, valorCashback, safra:this.safraAtual(), safraResgate:this.proximaSafra(), status:'A resgatar',
+      origemLeadId:l.id, criadoEm:new Date().toISOString(), criadoPor:this.roleMeta().name||'' };
+    const marcado=Object.assign({},l,{resgateGerado:true});
+    this.setState({cashback:[reg,...(this.state.cashback||[]).map(r=>r.id===l.id?marcado:r)], leadDetalhe:null, cashTab:'registros'});
+    try{ this.apiSend('cashback','POST',reg).catch(()=>{}); }catch(e){}
+    try{ this.apiSend('cashback','PATCH',{id:l.id, resgateGerado:true}).catch(()=>{}); }catch(e){}
+    this.showToast('Resgate criado ("A resgatar") — R$ '+valorCashback.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}));
+  }
+  toggleResgate(r){ if(r&&r._lead) return this.toggleResgateLead(r.id); return this.toggleCashbackStatus(r.id); }
+  toggleResgateLead(id){
+    const list=(this.state.cashback||[]).map(l=>l.id===id?Object.assign({},l,{resgatado:!l.resgatado, resgatadoEm:l.resgatado?null:new Date().toISOString()}):l);
+    this.setState({cashback:list});
+    const l=list.find(x=>x.id===id);
+    try{ this.apiSend('cashback','PATCH',{id, resgatado:!!l.resgatado, resgatadoEm:l.resgatadoEm||null}).catch(()=>{}); }catch(e){}
+    this.showToast(l.resgatado?'Lead marcado como resgatado':'Lead voltou para “a resgatar”');
+  }
   excluirCashbackLead(id){
     if(typeof confirm!=='undefined' && !confirm('Excluir este lead captado? Ele vai para a Lixeira e pode ser restaurado.')) return;
     const it=(this.state.cashback||[]).find(r=>r.id===id); if(it) this.moverLixeira('cashlead',it,{resumo:[it.produto,it.campanha].filter(Boolean).join(' · ')});
@@ -1872,7 +1898,11 @@ class Component extends DCLogic {
   }
   pgCashback(){
     const h=React.createElement; const I=this.icons();
-    const list=this.cashbackList(); const camps=this.campanhasComCashback();
+    const regsBase=this.cashbackList(); const camps=this.campanhasComCashback();
+    // Cada lead captado no evento vira uma linha de resgate automática (a menos que já tenha virado registro manual)
+    const leadsResg=this.cashbackLeads().filter(l=>!l.resgateGerado).map(l=>{ const cp=this.allCampaigns().find(c=>String(c.id)===String(l.campanhaId)); const pct=(cp&&cp.cashback&&cp.cashback.pct)||0; const vc=Number(l.valor)||0;
+      return { id:l.id, _lead:true, cliente:l.cliente, cnpj:l.cnpj, cidade:l.cidade, uf:l.uf, cupom:l.pedido||'', campanhaId:l.campanhaId, campanha:l.campanha, evento:l.evento, pct, valorCompra:vc, valorCashback:vc*pct/100, safra:l.safra, safraResgate:this.proximaSafra(), status:l.resgatado?'Resgatado':'A resgatar', standOrigem:l.standOrigem }; });
+    const list=regsBase.concat(leadsResg);
     const fSafra=this.state.cashFSafra||'todas'; const fStatus=this.state.cashFStatus||'todos';
     const safras=Array.from(new Set(list.map(r=>r.safraResgate).filter(Boolean)));
     let vis=list.slice();
@@ -1910,8 +1940,8 @@ class Component extends DCLogic {
       h('div',{style:{flex:'none',textAlign:'right'}},h('div',{style:{font:'500 11px Manrope',color:'#8a9a94'}},'Cashback '+(r.pct||0)+'%'),h('div',{style:{font:'800 14px Archivo',color:'#2b6fdb'}},this.brl(r.valorCashback||0))),
       h('div',{style:{flex:'none',textAlign:'center'}},h('div',{style:{font:'500 11px Manrope',color:'#8a9a94'}},'Resgate'),h('div',{style:{font:'700 12px Manrope',color:'#0c3b37'}},r.safraResgate||'—')),
       this.chip(r.status,r.status==='Resgatado'?'#00867f':'#c98a1e'),
-      h('button',{onClick:()=>this.toggleCashbackStatus(r.id),style:{flex:'none',background:r.status==='Resgatado'?'#eef1ee':'#e4f5ec',color:r.status==='Resgatado'?'#5c6b67':'#00867f',border:'none',borderRadius:9,padding:'8px 12px',font:'700 12px Manrope',cursor:'pointer'}},r.status==='Resgatado'?'Reabrir':'Marcar resgatado'),
-      h('button',{onClick:()=>this.excluirCashback(r.id),title:'Excluir',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 10px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(I.trash)));
+      h('button',{onClick:()=>this.toggleResgate(r),style:{flex:'none',background:r.status==='Resgatado'?'#eef1ee':'#e4f5ec',color:r.status==='Resgatado'?'#5c6b67':'#00867f',border:'none',borderRadius:9,padding:'8px 12px',font:'700 12px Manrope',cursor:'pointer'}},r.status==='Resgatado'?'Reabrir':'Marcar resgatado'),
+      r._lead?h('span',{style:{flex:'none',font:'700 10px Manrope',color:'#2b6fdb',background:'#eef4ff',borderRadius:20,padding:'4px 9px'}},'via totem'):h('button',{onClick:()=>this.excluirCashback(r.id),title:'Excluir',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 10px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(I.trash)));
     return this.wrap([
       h('div',{key:'nt',style:{display:'flex',alignItems:'center',gap:12,background:'#0c3b37',borderRadius:14,padding:'15px 18px'}},
         h('span',{style:{color:'#7fb0ff',flex:'none'}},this.ic(I.gift)),
@@ -1927,8 +1957,23 @@ class Component extends DCLogic {
             h('div',{style:{display:'flex',gap:8}},
               h('button',{onClick:()=>linkCopy(key,url),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:cop?'#00867f':'#2b6fdb',color:'#fff',border:'none',borderRadius:8,padding:'7px 12px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(cop?I.check:(I.copy||['M9 9h10v10H9z','M5 15V5h10'])),cop?'Copiado':'Copiar'),
               h('a',{href:'https://wa.me/?text='+encodeURIComponent('Cadastro de Cashback SBS'+(c?(' — '+c.nome):'')+' ('+rotulo+') — abra no tablet do evento: '+url),target:'_blank',rel:'noopener',onClick:()=>{try{if(navigator.clipboard)navigator.clipboard.writeText(url);}catch(e){}},style:{flex:'none',display:'flex',alignItems:'center',gap:7,background:'#25D366',color:'#fff',borderRadius:8,padding:'7px 12px',font:'700 12px Manrope',textDecoration:'none'}},this.ic(['M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.5A10 10 0 1 0 12 2z']),'WhatsApp'))); };
+        const resumoCamp=(c)=>{ if(!c) return null;
+          const regs=this.cashbackList().filter(r=>String(r.campanhaId)===String(c.id));
+          const lds=this.cashbackLeads().filter(r=>String(r.campanhaId)===String(c.id));
+          const compras=regs.reduce((s,r)=>s+(r.valorCompra||0),0);
+          const cbTot=regs.reduce((s,r)=>s+(r.valorCashback||0),0);
+          const cbResg=regs.filter(r=>r.status!=='Resgatado').reduce((s,r)=>s+(r.valorCashback||0),0);
+          const cel=(lab,val,cor)=>h('div',{style:{background:'#fff',border:'1px solid #dbe6f5',borderRadius:9,padding:'8px 10px'}},h('div',{style:{font:'800 16px/1 Archivo',color:cor||'#0c3b37'}},val),h('div',{style:{font:'600 10px Manrope',color:'#5c6b67',marginTop:3}},lab));
+          return h('div',{style:{flex:'none',width:230,background:'#f4f7fb',border:'1px solid #dbe6f5',borderRadius:11,padding:12}},
+            h('div',{style:{font:'700 11px Manrope',color:'#8a9a94',marginBottom:8,textTransform:'uppercase',letterSpacing:'.04em'}},'Gerado nesta campanha'),
+            h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}},
+              cel('Cadastros (totem)',String(lds.length),'#2b6fdb'),
+              cel('Resgates',String(regs.length)),
+              cel('Compras vinculadas',this.brl(compras)),
+              cel('Cashback total',this.brl(cbTot),'#2b6fdb')),
+            h('div',{style:{marginTop:8,background:'#fff5e9',border:'1px solid #f0dcb8',borderRadius:9,padding:'8px 10px'}},h('div',{style:{font:'800 16px/1 Archivo',color:'#c98a1e'}},this.brl(cbResg)),h('div',{style:{font:'600 10px Manrope',color:'#8a6a1e',marginTop:3}},'Cashback a resgatar'))); };
         const linkRow=(c)=>{ const nomeParc=(c&&c.canal)||'Parceiro';
-          return h('div',{key:c?c.id:'geral',style:{background:'#fff',border:'1px solid #c9dcff',borderRadius:12,padding:'13px 15px',display:'flex',flexDirection:'column',gap:10}},
+          const esquerda=h('div',{style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:10}},
             h('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}},
               h('span',{style:{color:'#2b6fdb',flex:'none'}},this.ic(I.gift)),
               h('span',{style:{font:'800 14px Archivo',color:'#0c3b37',flex:1,minWidth:0}},c?c.nome:'Todas as campanhas (escolhe no totem)'),
@@ -1939,7 +1984,8 @@ class Component extends DCLogic {
             h('div',{style:{display:'flex',gap:9,flexWrap:'wrap'}},
               h('button',{onClick:()=>this.abrirTotem(c&&c.id),style:{display:'flex',alignItems:'center',gap:7,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.gauge||I.plus),'Abrir totem'),
               c&&this.effStatus(c)==='Ativa'?h('button',{onClick:()=>this.encerrarCamp(c.id),style:{display:'flex',alignItems:'center',gap:7,background:'#fff5e9',color:'#c98a1e',border:'1px solid #f0dcb8',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.check||['M20 6 9 17l-5-5']),'Finalizar'):(c?h('span',{style:{display:'flex',alignItems:'center',gap:6,font:'700 12px Manrope',color:'#8a9a94',background:'#eef1ee',borderRadius:9,padding:'8px 13px'}},'Encerrada'):null),
-              c?h('button',{onClick:()=>this.excluirCamp(c),title:'Excluir campanha',style:{display:'flex',alignItems:'center',gap:7,background:'#fff',color:'#c2564b',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.trash),'Excluir'):null)); };
+              c?h('button',{onClick:()=>this.excluirCamp(c),title:'Excluir campanha',style:{display:'flex',alignItems:'center',gap:7,background:'#fff',color:'#c2564b',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.trash),'Excluir'):null));
+          return h('div',{key:c?c.id:'geral',style:{background:'#fff',border:'1px solid #c9dcff',borderRadius:12,padding:'13px 15px',display:'flex',gap:14,flexWrap:'wrap',alignItems:'stretch'}}, esquerda, resumoCamp(c)); };
         return h('div',{style:{background:'#eef4ff',border:'1px solid #c9dcff',borderRadius:14,padding:'16px 18px'}},
           h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:4}},h('span',{style:{color:'#2b6fdb'}},this.ic(I.share||['M4 12v8h16v-8','M12 3v13','M8 7l4-4 4 4'])),h('span',{style:{font:'800 14px Archivo',color:'#0c3b37'}},'Links do totem por campanha')),
           h('div',{style:{font:'500 12.5px Manrope',color:'#5c6b67',marginBottom:12}},'Cada campanha tem DOIS links de cadastro que caem no mesmo lugar: um para o NOSSO estande (SBS) e outro para o estande do PARCEIRO (ex.: Coopercitrus). Compartilhe o link certo com cada equipe — abre direto a tela de cadastro (sem login), pronta para o totem de 24".'),
@@ -1976,6 +2022,7 @@ class Component extends DCLogic {
             h('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginTop:3}},[l.produto,l.cultura,(l.pedido&&('pedido '+l.pedido)),(l.valor?('R$ '+Number(l.valor).toLocaleString('pt-BR')):''),l.contato,(l.cidade&&(l.cidade+(l.uf?('/'+l.uf):''))),l.campanha].filter(Boolean).join(' · '))),
           h('div',{style:{flex:'none',font:'500 11.5px Manrope',color:'#8a9a94'}},l.criadoEm?new Date(l.criadoEm).toLocaleDateString('pt-BR'):''),
           standBadge(l),
+          l.resgateGerado?h('span',{style:{flex:'none',font:'700 11px Manrope',color:'#00867f',background:'#e4f5ec',borderRadius:20,padding:'4px 10px'}},'Resgate gerado'):h('button',{onClick:e=>{e.stopPropagation();this.gerarResgateDoLead(l);},title:'Gerar resgate a partir deste lead',style:{flex:'none',background:'#fff5e9',border:'none',borderRadius:9,padding:'8px 12px',color:'#c98a1e',cursor:'pointer',font:'700 12px Manrope'}},'Gerar resgate'),
           h('button',{onClick:e=>{e.stopPropagation();this.setState({leadDetalhe:l});},title:'Ver detalhes',style:{flex:'none',background:'#eef4ff',border:'none',borderRadius:9,padding:'8px 12px',color:'#2b6fdb',cursor:'pointer',font:'700 12px Manrope'}},'Ver'),
           h('button',{onClick:e=>{e.stopPropagation();this.excluirCashbackLead(l.id);},title:'Excluir',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 10px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(I.trash)));
         const fb=(k,lab)=>h('button',{key:k,onClick:()=>this.setState({cashLeadStand:k}),style:{background:fStand===k?'#0c3b37':'#eef1ee',color:fStand===k?'#fff':'#0c3b37',border:'none',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},lab);
@@ -1984,8 +2031,12 @@ class Component extends DCLogic {
             this.h('Leads captados no totem ('+leads.length+')','Clique em um lead para ver todos os dados. Filtre por estande antes de exportar.'),
             h('button',{onClick:()=>this.exportarCashbackLeads(fStand),style:{display:'flex',alignItems:'center',gap:7,background:'#0c3b37',color:'#fff',border:'none',borderRadius:10,padding:'10px 15px',font:'700 12.5px Manrope',cursor:'pointer'}},this.ic(I.download||['M12 3v12','M7 10l5 5 5-5','M5 21h14']),'Exportar leads (CSV)')),
           h('div',{style:{display:'flex',gap:9,marginBottom:14,flexWrap:'wrap'}}, fb('todos','Todos ('+this.cashbackLeads().length+')'), fb('sbs','Nosso estande ('+nSbs+')'), fb('parceiro','Estande parceiro ('+nParc+')')),
-          leads.length?h('div',{style:{display:'flex',flexDirection:'column',gap:10}},leads.map(lrow))
-            :h('div',{style:{padding:'40px 16px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94',border:'1px dashed rgba(12,59,55,.15)',borderRadius:14}},'Nenhum lead neste filtro.')]); })():null,
+          (()=>{ if(!leads.length) return h('div',{style:{padding:'40px 16px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94',border:'1px dashed rgba(12,59,55,.15)',borderRadius:14}},'Nenhum lead neste filtro.');
+            const grupos={}; leads.forEach(l=>{ const k=l.campanha||'Sem campanha'; (grupos[k]=grupos[k]||[]).push(l); });
+            return h('div',{style:{display:'flex',flexDirection:'column',gap:18}}, Object.keys(grupos).map(nome=>h('div',{key:nome},
+              h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:9}},h('span',{style:{width:5,height:18,borderRadius:20,background:'#2b6fdb'}}),h('span',{style:{font:'800 14px Archivo',color:'#0c3b37'}},nome),h('span',{style:{font:'700 11px Manrope',color:'#5c6b67',background:'#eef1ee',borderRadius:20,padding:'3px 9px'}},grupos[nome].length+' lead(s)')),
+              h('div',{style:{display:'flex',flexDirection:'column',gap:10}},grupos[nome].map(lrow))))); })()]);
+      })():null,
       this.leadDetalheModal(),
       this.cashTotemOverlay(),
     ]);
