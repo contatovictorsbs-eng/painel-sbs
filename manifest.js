@@ -8,7 +8,7 @@
    a documentação se atualiza sozinha a partir deste ponto único.
    =========================================================== */
 window.SBS_MANIFEST = {
-  versao: '1.85.0',
+  versao: '1.86.0',
   atualizadoEm: '2026-07-24',
 
   // ---- Perfis de acesso ----
@@ -134,6 +134,7 @@ window.SBS_MANIFEST = {
 
   // ---- Changelog (mais recente no topo) ----
   changelog: [
+    { versao:'1.86.0', data:'2026-07-24', itens:['LEADS DO TOTEM: clique em qualquer lead abre modal com TODOS os dados (produtor, matrícula, CNPJ, produto, cultura, hectares, qtd, valor, prazo, contato, endereço, estande, tipo de venda, campanha, evento, safra, assinatura) + baixar documento. Filtro por estande (Todos / Nosso estande SBS / Estande parceiro) e exportação CSV respeita o filtro selecionado. Badge de origem em cada lead.'] },
     { versao:'1.85.0', data:'2026-07-24', itens:['TOTEM: removidos o seletor de origem (celular/estande) e o filtro de campanha da tela do totem (o link já é da campanha). Agora cada campanha gera DOIS links que caem no mesmo lugar: nosso estande (#totem-<id>) e estande do parceiro (#totem-<id>-parc). O lead grava standOrigem (sbs|parceiro); coordOrigem fixo em estande (lat/lng nulos). Rótulo do estande aparece no topo do totem.'] },
     { versao:'1.84.0', data:'2026-07-24', itens:['TOTEM/INTEGRAÇÃO: seletor de origem do cadastro (estande/celular do produtor) → coordOrigem no lead e payload; no estande envia lat/lng nulos (evita 200 pinos no mesmo ponto no mapa do SBS Green). tipoVenda e canalVenda agora vão no payload do lead-prospeccao (não só na campanha). CSV de leads inclui matrícula, qtd, prazo, origem coord, tipo venda e canal.'] },
     { versao:'1.83.0', data:'2026-07-24', itens:['CAMPANHA: prazos de pagamento aceitos configuráveis (campo prazos[]) — só os selecionados aparecem no totem; permite adicionar prazos custom. CORREÇÃO: assinatura do comprador/cooperado não aparecia no documento salvo/compartilhado — altura do canvas agora é dinâmica (calculada pelo conteúdo), assinatura sempre visível no contrato e no comprovante.'] },

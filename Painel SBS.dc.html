@@ -1722,9 +1722,41 @@ class Component extends DCLogic {
     this._totemGeo=null; this._totemSig=null; this.captarGeoTotem();
     setTimeout(()=>{ try{ this.setState({totemDone:false}); }catch(e){} }, 3500);
   }
-  exportarCashbackLeads(){
-    const leads=this.cashbackLeads();
-    this._exportLeadsCsv(leads,'leads-cashback-'+this.safraAtual().replace('/','-'));
+  exportarCashbackLeads(stand){
+    let leads=this.cashbackLeads();
+    if(stand&&stand!=='todos') leads=leads.filter(l=>(l.standOrigem||'sbs')===stand);
+    const suf=stand&&stand!=='todos'?('-'+stand):'';
+    this._exportLeadsCsv(leads,'leads-cashback'+suf+'-'+this.safraAtual().replace('/','-'));
+  }
+  leadDetalheModal(){
+    const l=this.state.leadDetalhe; if(!l) return null;
+    const h=React.createElement; const I=this.icons(); const p=l.standOrigem==='parceiro';
+    const brl=v=>v?('R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})):'—';
+    const campos=[
+      ['Produtor', l.cliente],['Matrícula', l.matricula],['CPF / CNPJ', l.cnpj],
+      ['Produto comprado', l.produto],['Cultura', l.cultura],
+      ['Hectares', l.areaHa?Number(l.areaHa).toLocaleString('pt-BR'):''],
+      ['Quantidade (kg)', l.quantidadeKg?Number(l.quantidadeKg).toLocaleString('pt-BR'):''],
+      ['Nº do pedido', l.pedido],['Valor', brl(l.valor)],['Prazo de pagamento', l.prazoPagamento],
+      ['Telefone', l.contato],['Endereço', l.endereco],['Cidade/UF', [l.cidade,l.uf].filter(Boolean).join('/')],
+      ['Estande', p?('Parceiro'+(l.canalVenda?(' · '+l.canalVenda):'')):'Nosso (SBS)'],
+      ['Tipo de venda', l.tipoVenda],['Campanha', l.campanha],['Evento', l.evento],
+      ['Safra', l.safra],['Cadastrado em', l.criadoEm?new Date(l.criadoEm).toLocaleString('pt-BR'):'']
+    ].filter(x=>x[1]);
+    return h('div',{onClick:()=>this.setState({leadDetalhe:null}),style:{position:'fixed',inset:0,background:'rgba(6,32,29,.5)',zIndex:80,display:'flex',alignItems:'center',justifyContent:'center',padding:20}},
+      h('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:18,padding:24,maxWidth:560,width:'100%',maxHeight:'86vh',overflowY:'auto',boxShadow:'0 30px 80px rgba(0,0,0,.35)'}},
+        h('div',{style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,marginBottom:16}},
+          h('div',null,h('div',{style:{font:'900 20px Archivo',color:'#0c3b37'}},l.cliente||'Lead'),
+            h('span',{style:{display:'inline-block',marginTop:6,font:'700 11px Manrope',color:p?'#c98a1e':'#00867f',background:p?'#fff5e9':'#e4f5ec',borderRadius:20,padding:'3px 10px'}},p?('Estande parceiro'+(l.canalVenda?(' · '+l.canalVenda):'')):'Nosso estande (SBS)')),
+          h('button',{onClick:()=>this.setState({leadDetalhe:null}),style:{flex:'none',background:'#eef1ee',border:'none',borderRadius:9,width:34,height:34,cursor:'pointer',font:'700 16px Manrope',color:'#0c3b37'}},'×')),
+        h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}},campos.map((c,i)=>
+          h('div',{key:i,style:{background:'#f7f9f7',borderRadius:10,padding:'10px 12px'}},
+            h('div',{style:{font:'600 11px Manrope',color:'#8a9a94'}},c[0]),
+            h('div',{style:{font:'700 14px Manrope',color:'#12211e',marginTop:3,wordBreak:'break-word'}},String(c[1]))))),
+        l.assinatura?h('div',{style:{marginTop:14}},h('div',{style:{font:'600 11px Manrope',color:'#8a9a94',marginBottom:6}},'Assinatura'),h('img',{src:l.assinatura,style:{maxWidth:'100%',height:80,objectFit:'contain',border:'1px solid #eef1ee',borderRadius:10,background:'#fbfdfc'}})):null,
+        h('div',{style:{display:'flex',gap:10,marginTop:18,justifyContent:'flex-end'}},
+          h('button',{onClick:()=>{this.setState({totemUltimo:l});this.baixarComprovante();},style:{display:'flex',alignItems:'center',gap:7,background:'#eef4ff',color:'#2b6fdb',border:'none',borderRadius:10,padding:'10px 15px',font:'700 12.5px Manrope',cursor:'pointer'}},this.ic(I.download||['M12 3v12','M7 10l5 5 5-5','M5 21h14']),'Baixar documento'),
+          h('button',{onClick:()=>this.setState({leadDetalhe:null}),style:{background:'#0c3b37',color:'#fff',border:'none',borderRadius:10,padding:'10px 18px',font:'700 12.5px Manrope',cursor:'pointer'}},'Fechar'))));
   }
   leadsDoEvento(e){
     if(!e) return [];
@@ -1932,19 +1964,29 @@ class Component extends DCLogic {
             h('select',{value:fStatus,onChange:e=>this.setState({cashFStatus:e.target.value}),style:selStyle},[['todos','Todos os status'],['A resgatar','A resgatar'],['Resgatado','Resgatado']].map(o=>h('option',{key:o[0],value:o[0]},o[1]))))),
         vis.length?h('div',{style:{display:'flex',flexDirection:'column',gap:10}},vis.map(row))
           :h('div',{style:{padding:'40px 16px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94',border:'1px dashed rgba(12,59,55,.15)',borderRadius:14}},camps.length?'Nenhum cashback registrado ainda. Clique em “Registrar cashback”.':'Crie uma campanha com “Ação de cashback” ativa para começar a registrar.')]),
-      (this.state.cashTab==='leads')?(()=>{ const leads=this.cashbackLeads();
-        const lrow=l=>h('div',{key:l.id,style:{display:'flex',alignItems:'center',gap:12,padding:'13px 14px',background:'#fff',border:'1px solid rgba(12,59,55,.08)',borderRadius:13,flexWrap:'wrap'}},
+      (this.state.cashTab==='leads')?(()=>{ let leads=this.cashbackLeads();
+        const fStand=this.state.cashLeadStand||'todos';
+        if(fStand!=='todos') leads=leads.filter(l=>(l.standOrigem||'sbs')===fStand);
+        const nSbs=this.cashbackLeads().filter(l=>(l.standOrigem||'sbs')==='sbs').length;
+        const nParc=this.cashbackLeads().filter(l=>l.standOrigem==='parceiro').length;
+        const selStyle2={background:'#f4f7f5',border:'1px solid #d7e2dc',borderRadius:9,padding:'8px 11px',font:'600 12px Manrope',color:'#0c3b37',outline:'none',cursor:'pointer'};
+        const standBadge=l=>{ const p=l.standOrigem==='parceiro'; return h('span',{style:{flex:'none',font:'700 11px Manrope',color:p?'#c98a1e':'#00867f',background:p?'#fff5e9':'#e4f5ec',borderRadius:20,padding:'3px 9px'}},p?('Parceiro'+(l.canalVenda?(' · '+l.canalVenda):'')):'Estande SBS'); };
+        const lrow=l=>h('div',{key:l.id,onClick:()=>this.setState({leadDetalhe:l}),style:{display:'flex',alignItems:'center',gap:12,padding:'13px 14px',background:'#fff',border:'1px solid rgba(12,59,55,.08)',borderRadius:13,flexWrap:'wrap',cursor:'pointer'}},
           h('div',{style:{flex:1,minWidth:180}},h('div',{style:{font:'700 14px Manrope',color:'#0c3b37'}},l.cliente),
             h('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginTop:3}},[l.produto,l.cultura,(l.pedido&&('pedido '+l.pedido)),(l.valor?('R$ '+Number(l.valor).toLocaleString('pt-BR')):''),l.contato,(l.cidade&&(l.cidade+(l.uf?('/'+l.uf):''))),l.campanha].filter(Boolean).join(' · '))),
           h('div',{style:{flex:'none',font:'500 11.5px Manrope',color:'#8a9a94'}},l.criadoEm?new Date(l.criadoEm).toLocaleDateString('pt-BR'):''),
-          this.chip('Novo lead','#2b6fdb'),
-          h('button',{onClick:()=>this.excluirCashbackLead(l.id),title:'Excluir',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 10px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(I.trash)));
+          standBadge(l),
+          h('button',{onClick:e=>{e.stopPropagation();this.setState({leadDetalhe:l});},title:'Ver detalhes',style:{flex:'none',background:'#eef4ff',border:'none',borderRadius:9,padding:'8px 12px',color:'#2b6fdb',cursor:'pointer',font:'700 12px Manrope'}},'Ver'),
+          h('button',{onClick:e=>{e.stopPropagation();this.excluirCashbackLead(l.id);},title:'Excluir',style:{flex:'none',background:'#fff',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 10px',color:'#c2564b',cursor:'pointer',display:'flex',alignItems:'center'}},this.ic(I.trash)));
+        const fb=(k,lab)=>h('button',{key:k,onClick:()=>this.setState({cashLeadStand:k}),style:{background:fStand===k?'#0c3b37':'#eef1ee',color:fStand===k?'#fff':'#0c3b37',border:'none',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},lab);
         return this.card([
           h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:14}},
-            this.h('Leads captados no totem ('+leads.length+')','Produtor, produto comprado, contato e endereço — para prospecção futura'),
-            h('button',{onClick:()=>this.exportarCashbackLeads(),style:{display:'flex',alignItems:'center',gap:7,background:'#0c3b37',color:'#fff',border:'none',borderRadius:10,padding:'10px 15px',font:'700 12.5px Manrope',cursor:'pointer'}},this.ic(I.download||['M12 3v12','M7 10l5 5 5-5','M5 21h14']),'Exportar leads (CSV)')),
+            this.h('Leads captados no totem ('+leads.length+')','Clique em um lead para ver todos os dados. Filtre por estande antes de exportar.'),
+            h('button',{onClick:()=>this.exportarCashbackLeads(fStand),style:{display:'flex',alignItems:'center',gap:7,background:'#0c3b37',color:'#fff',border:'none',borderRadius:10,padding:'10px 15px',font:'700 12.5px Manrope',cursor:'pointer'}},this.ic(I.download||['M12 3v12','M7 10l5 5 5-5','M5 21h14']),'Exportar leads (CSV)')),
+          h('div',{style:{display:'flex',gap:9,marginBottom:14,flexWrap:'wrap'}}, fb('todos','Todos ('+this.cashbackLeads().length+')'), fb('sbs','Nosso estande ('+nSbs+')'), fb('parceiro','Estande parceiro ('+nParc+')')),
           leads.length?h('div',{style:{display:'flex',flexDirection:'column',gap:10}},leads.map(lrow))
-            :h('div',{style:{padding:'40px 16px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94',border:'1px dashed rgba(12,59,55,.15)',borderRadius:14}},'Nenhum lead captado ainda. Use “Abrir totem” no evento para os produtores se cadastrarem.')]); })():null,
+            :h('div',{style:{padding:'40px 16px',textAlign:'center',font:'500 13px Manrope',color:'#8a9a94',border:'1px dashed rgba(12,59,55,.15)',borderRadius:14}},'Nenhum lead neste filtro.')]); })():null,
+      this.leadDetalheModal(),
       this.cashTotemOverlay(),
     ]);
   }
