@@ -317,8 +317,8 @@ class Component extends DCLogic {
   componentDidMount(){
     // Limpeza única para go-live: descarta estado de exemplo/teste acumulado no navegador.
     try{ const DV='2026-07-10-limpo'; if(localStorage.getItem('sbs_dataver')!==DV){ localStorage.removeItem('sbs_estado'); localStorage.setItem('sbs_dataver',DV); } }catch(e){}
-    try{ const h=(location.hash||'').replace('#','').toLowerCase(); const mm=h.match(/^app(?:-(\d+))?$/); const tm=h.match(/^(?:totem|cadastro)(?:-(\d+))?$/);
-      if(tm){ const cid=tm[1]?+tm[1]:null; this.setState({totemPublic:true, totemOpen:true, totemCamp:cid, role:'marketing', prevRole:'marketing'}); try{ this.captarGeoTotem(); }catch(e){} }
+    try{ const h=(location.hash||'').replace('#','').toLowerCase(); const mm=h.match(/^app(?:-(\d+))?$/); const tm=h.match(/^(?:totem|cadastro)(?:-(\d+))?(?:-(parc))?$/);
+      if(tm){ const cid=tm[1]?+tm[1]:null; const stand=tm[2]==='parc'?'parceiro':'sbs'; this.setState({totemPublic:true, totemOpen:true, totemCamp:cid, totemStand:stand, role:'marketing', prevRole:'marketing'}); try{ this.captarGeoTotem(); }catch(e){} }
       else if(mm){ const pid=mm[1]?+mm[1]:null; const pt=pid?(this.state.partners.find(p=>p.id===pid)||null):null;
         let appPg='login', appNome=null;
         try{ const as=JSON.parse(localStorage.getItem('sbs_app_sessao')||'null'); if(as&&as.usuario){ appPg='home'; appNome=as.nome||null; } }catch(e){}
@@ -1616,7 +1616,7 @@ class Component extends DCLogic {
       h('canvas',{id:'tt-sig',ref:wire,style:{width:'100%',height:'160px',border:'2px dashed #b9ccc4',borderRadius:14,background:'#fbfdfc',touchAction:'none',display:'block',cursor:'crosshair'}}),
       h('div',{style:{font:'500 12.5px Manrope',color:'#8a9a94',marginTop:6}},'Assine no quadro acima com o dedo (tablet) ou mouse.'));
   }
-  totemLink(campId){ const base=(typeof location!=='undefined')?(location.origin+location.pathname):'https://painel-sbs.pages.dev/'; const id=campId||this.state.totemShareCamp||null; return base+'#totem'+(id?('-'+id):''); }
+  totemLink(campId,stand){ const base=(typeof location!=='undefined')?(location.origin+location.pathname):'https://painel-sbs.pages.dev/'; const id=campId||this.state.totemShareCamp||null; return base+'#totem'+(id?('-'+id):'')+(stand==='parceiro'?'-parc':''); }
   copiarTotemLink(){ const link=this.totemLink(); try{ if(navigator.clipboard) navigator.clipboard.writeText(link); }catch(e){} this.setState({totemCopied:true}); setTimeout(()=>{try{this.setState({totemCopied:false});}catch(e){}},1800); this.showToast('Link do totem copiado ✓'); }
   shareTotemWhats(){ const link=this.totemLink(); const wa='https://wa.me/?text='+encodeURIComponent('Cadastro de Cashback SBS — abra este link no tablet/totem do evento para cadastrar os produtores: '+link); try{ window.open(wa,'_blank','noopener'); }catch(e){} try{ if(navigator.clipboard) navigator.clipboard.writeText(link); }catch(e){} }
   fecharTotem(){ this.setState({totemOpen:false, totemDone:false}); }
@@ -1705,10 +1705,9 @@ class Component extends DCLogic {
     const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
     const nome=g('tt-nome'); if(!nome){ const e=document.getElementById('tt-nome'); if(e){e.style.borderColor='#c2564b';e.focus();} return; }
     const campId=this.state.totemCamp; const camp=this.allCampaigns().find(c=>String(c.id)===String(campId));
-    const origem=this.state.totemOrigem||'estande';
-    const geo=(origem==='produtor')?(this._totemGeo||null):null; // estande: ignora coord do tablet (envia vazio)
+    const stand=this.state.totemStand||'sbs';
     const lead={ id:Date.now(), kind:'lead', cliente:nome, matricula:g('tt-matricula'), cnpj:g('tt-cnpj'), produto:g('tt-produto'), cultura:g('tt-cultura'), areaHa:parseFloat((g('tt-ha')||'0').replace(/\./g,'').replace(',','.'))||0, quantidadeKg:parseFloat((g('tt-kg')||'0').replace(/\./g,'').replace(',','.'))||0, prazoPagamento:g('tt-prazo'), pedido:g('tt-pedido'), valor:parseFloat((g('tt-valor')||'0').replace(/\./g,'').replace(',','.'))||0, contato:g('tt-fone'),
-      endereco:g('tt-end'), cidade:g('tt-cidade'), uf:g('tt-uf'), lat:geo?geo.lat:null, lng:geo?geo.lng:null, coordOrigem:origem, assinatura:this._totemSig||null,
+      endereco:g('tt-end'), cidade:g('tt-cidade'), uf:g('tt-uf'), lat:null, lng:null, coordOrigem:'estande', standOrigem:stand, assinatura:this._totemSig||null,
       tipoVenda:camp?(camp.tipoVenda||'canal'):'canal', canalVenda:camp?(camp.canal||''):'',
       campanhaId:camp?camp.id:null, campanha:camp?camp.nome:'', evento:camp?(camp.evento||''):'',
       safra:this.safraAtual(), status:'Novo', criadoEm:new Date().toISOString() };
@@ -1717,7 +1716,7 @@ class Component extends DCLogic {
     // PUSH ao barramento → prospecção do SBS Green (contrato lead-prospeccao)
     try{ this.apiSend('integracao','POST',{ sistema:'painel-sbs', tipo:'lead-prospeccao', ref:String(lead.id), titulo:nome,
       resumo:[lead.cidade,lead.uf,lead.cultura].filter(Boolean).join(' · '),
-      payload:{ produtor:nome, matricula:lead.matricula, cnpj:lead.cnpj, produtoComprado:lead.produto, cultura:lead.cultura, areaHa:lead.areaHa, quantidadeKg:lead.quantidadeKg, prazoPagamento:lead.prazoPagamento, telefone:lead.contato, endereco:lead.endereco, cidade:lead.cidade, uf:lead.uf, lat:lead.lat, lng:lead.lng, coordOrigem:origem, tipoVenda:lead.tipoVenda, canalVenda:lead.canalVenda, numeroPedido:lead.pedido, valor:lead.valor, campanha:lead.campanha, evento:lead.evento, safra:lead.safra } }).catch(()=>{}); }catch(e){}
+      payload:{ produtor:nome, matricula:lead.matricula, cnpj:lead.cnpj, produtoComprado:lead.produto, cultura:lead.cultura, areaHa:lead.areaHa, quantidadeKg:lead.quantidadeKg, prazoPagamento:lead.prazoPagamento, telefone:lead.contato, endereco:lead.endereco, cidade:lead.cidade, uf:lead.uf, lat:null, lng:null, coordOrigem:'estande', standOrigem:stand, tipoVenda:lead.tipoVenda, canalVenda:lead.canalVenda, numeroPedido:lead.pedido, valor:lead.valor, campanha:lead.campanha, evento:lead.evento, safra:lead.safra } }).catch(()=>{}); }catch(e){}
     ['tt-nome','tt-matricula','tt-cnpj','tt-produto','tt-cultura','tt-ha','tt-kg','tt-pedido','tt-valor','tt-fone','tt-end','tt-cidade','tt-uf'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
     try{ const cv=document.getElementById('tt-sig'); if(cv&&cv._clear) cv._clear(); }catch(e){}
     this._totemGeo=null; this._totemSig=null; this.captarGeoTotem();
@@ -1781,9 +1780,10 @@ class Component extends DCLogic {
           h('button',{onClick:()=>this.setState({totemDone:false}),style:{display:'flex',alignItems:'center',gap:9,background:'rgba(255,255,255,.16)',color:'#fff',border:'none',borderRadius:14,padding:'16px 26px',font:'800 clamp(16px,1.6vw,20px) Archivo',cursor:'pointer'}},'Novo cadastro')))
       :h('div',{style:{flex:1,background:'#fff',borderRadius:24,padding:'clamp(24px,3.5vw,52px)',maxWidth:1000,margin:'0 auto',width:'100%',boxShadow:'0 30px 90px rgba(0,0,0,.35)'}},
         h('div',{style:{font:'500 clamp(16px,1.8vw,22px) Manrope',color:'#5c6b67',marginBottom:6}},'Preencha para receber seu cashback'),
-        (()=>{ const org=this.state.totemOrigem||'estande'; const b=(val,lab)=>h('button',{key:val,type:'button',onClick:()=>this.setState({totemOrigem:val}),style:{flex:1,border:'2px solid '+(org===val?'#2b6fdb':'#d7e2dc'),background:org===val?'#eef4ff':'#fff',color:'#0c3b37',borderRadius:12,padding:'10px 12px',font:'700 14px Manrope',cursor:'pointer'}},lab);
-          return h('div',{style:{marginBottom:16}},h('div',{style:{font:'700 13px Manrope',color:'#8a9a94',marginBottom:6}},'Cadastro feito no:'),h('div',{style:{display:'flex',gap:10}},b('estande','Totem do estande'),b('produtor','Celular do produtor'))); })(),
-        camps.length>1?h('select',{value:this.state.totemCamp||'',onChange:e=>this.setState({totemCamp:e.target.value}),style:{padding:'12px 14px',border:'1px solid #d7e2dc',borderRadius:10,font:'600 16px Manrope',marginBottom:18,background:'#fff'}},camps.map(c=>h('option',{key:c.id,value:String(c.id)},c.nome))):h('div',{style:{font:'800 clamp(20px,2.2vw,28px) Archivo',color:'#2b6fdb',marginBottom:20}},camp.nome||'Ação de cashback'),
+        (()=>{ const stand=this.state.totemStand==='parceiro'; const nomeStand=stand?((camp&&camp.canal)||'Parceiro'):'SBS Green'; 
+          return h('div',{style:{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',marginBottom:20}},
+            h('div',{style:{font:'800 clamp(20px,2.2vw,28px) Archivo',color:'#2b6fdb'}},camp.nome||'Ação de cashback'),
+            h('span',{style:{font:'700 13px Manrope',color:stand?'#0c3b37':'#00867f',background:stand?'#eef1ee':'#e4f5ec',borderRadius:20,padding:'5px 12px'}},'Estande: '+nomeStand)); })(),
         h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'clamp(14px,1.6vw,22px)'}},
           lbl('Nome do produtor',inp('tt-nome','Seu nome completo'),'1 / 3'),
           lbl('Matrícula do cooperado',inp('tt-matricula','Nº da matrícula na cooperativa')),
@@ -1887,25 +1887,30 @@ class Component extends DCLogic {
         h('button',{onClick:()=>this.abrirTotem(),style:{flex:'none',display:'flex',alignItems:'center',gap:7,background:'rgba(255,255,255,.14)',color:'#fff',border:'none',borderRadius:10,padding:'11px 16px',font:'800 13px Archivo',cursor:'pointer'}},this.ic(I.gauge||I.plus),'Abrir totem'),
         h('button',{onClick:()=>this.set({cashNew:true}),style:{flex:'none',display:'flex',alignItems:'center',gap:7,background:'#2b6fdb',color:'#fff',border:'none',borderRadius:10,padding:'11px 16px',font:'800 13px Archivo',cursor:'pointer'}},this.ic(I.plus),'Registrar cashback')),
       (()=>{ const camps2=this.campanhasComCashback();
-        const linkCopy=(id)=>{ const l=this.totemLink(id); try{ if(navigator.clipboard) navigator.clipboard.writeText(l); }catch(e){} this.setState({totemCopiedId:id}); setTimeout(()=>{try{this.setState({totemCopiedId:null});}catch(e){}},1800); this.showToast('Link do totem copiado ✓'); };
-        const linkRow=(c)=>{ const l=this.totemLink(c&&c.id); const cop=this.state.totemCopiedId===(c&&c.id);
-          return h('div',{key:c?c.id:'geral',style:{background:'#fff',border:'1px solid #c9dcff',borderRadius:12,padding:'13px 15px',display:'flex',flexDirection:'column',gap:9}},
+        const linkCopy=(key,url)=>{ try{ if(navigator.clipboard) navigator.clipboard.writeText(url); }catch(e){} this.setState({totemCopiedId:key}); setTimeout(()=>{try{this.setState({totemCopiedId:null});}catch(e){}},1800); this.showToast('Link do totem copiado ✓'); };
+        const linkLine=(c,stand,rotulo,cor)=>{ const url=this.totemLink(c&&c.id,stand); const key=(c?c.id:'g')+'-'+stand; const cop=this.state.totemCopiedId===key;
+          return h('div',{key:key,style:{background:'#f4f7fb',borderRadius:9,padding:'9px 11px',border:'1px solid #e2ecf7',display:'flex',flexDirection:'column',gap:7}},
+            h('div',{style:{display:'flex',alignItems:'center',gap:8}},h('span',{style:{font:'700 11px Manrope',color:cor,background:'#fff',border:'1px solid '+cor+'44',borderRadius:20,padding:'3px 10px',flex:'none'}},rotulo),
+              h('span',{style:{flex:1,minWidth:0,font:'600 12px ui-monospace,monospace',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},url)),
+            h('div',{style:{display:'flex',gap:8}},
+              h('button',{onClick:()=>linkCopy(key,url),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:cop?'#00867f':'#2b6fdb',color:'#fff',border:'none',borderRadius:8,padding:'7px 12px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(cop?I.check:(I.copy||['M9 9h10v10H9z','M5 15V5h10'])),cop?'Copiado':'Copiar'),
+              h('a',{href:'https://wa.me/?text='+encodeURIComponent('Cadastro de Cashback SBS'+(c?(' — '+c.nome):'')+' ('+rotulo+') — abra no tablet do evento: '+url),target:'_blank',rel:'noopener',onClick:()=>{try{if(navigator.clipboard)navigator.clipboard.writeText(url);}catch(e){}},style:{flex:'none',display:'flex',alignItems:'center',gap:7,background:'#25D366',color:'#fff',borderRadius:8,padding:'7px 12px',font:'700 12px Manrope',textDecoration:'none'}},this.ic(['M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.5A10 10 0 1 0 12 2z']),'WhatsApp'))); };
+        const linkRow=(c)=>{ const nomeParc=(c&&c.canal)||'Parceiro';
+          return h('div',{key:c?c.id:'geral',style:{background:'#fff',border:'1px solid #c9dcff',borderRadius:12,padding:'13px 15px',display:'flex',flexDirection:'column',gap:10}},
             h('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}},
               h('span',{style:{color:'#2b6fdb',flex:'none'}},this.ic(I.gift)),
               h('span',{style:{font:'800 14px Archivo',color:'#0c3b37',flex:1,minWidth:0}},c?c.nome:'Todas as campanhas (escolhe no totem)'),
               c&&c.cashback?h('span',{style:{flex:'none',font:'700 12px Manrope',color:'#2b6fdb',background:'#eef4ff',borderRadius:20,padding:'3px 10px'}},'Cashback '+(c.cashback.pct||0)+'%'):null,
               c&&c.evento?this.chip(c.evento,'#00867f'):null),
-            h('div',{style:{display:'flex',gap:9,alignItems:'center',background:'#f4f7fb',borderRadius:9,padding:'8px 11px',border:'1px solid #e2ecf7'}},
-              h('span',{style:{flex:1,minWidth:0,font:'600 12px ui-monospace,monospace',color:'#0c3b37',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},l),
-              h('button',{onClick:()=>linkCopy(c&&c.id),style:{flex:'none',display:'flex',alignItems:'center',gap:6,background:cop?'#00867f':'#2b6fdb',color:'#fff',border:'none',borderRadius:8,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(cop?I.check:(I.copy||['M9 9h10v10H9z','M5 15V5h10'])),cop?'Copiado':'Copiar')),
+            linkLine(c,'sbs','Nosso estande (SBS)','#00867f'),
+            linkLine(c,'parceiro','Estande '+nomeParc,'#c98a1e'),
             h('div',{style:{display:'flex',gap:9,flexWrap:'wrap'}},
-              h('a',{href:'https://wa.me/?text='+encodeURIComponent('Cadastro de Cashback SBS'+(c?(' — '+c.nome):'')+' — abra no tablet do evento: '+l),target:'_blank',rel:'noopener',onClick:()=>{try{if(navigator.clipboard)navigator.clipboard.writeText(l);}catch(e){}},style:{display:'flex',alignItems:'center',gap:7,background:'#25D366',color:'#fff',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',textDecoration:'none'}},this.ic(['M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.5A10 10 0 1 0 12 2z','M8.5 7.5c1 2.5 3.5 5 6 6l1.5-1.5 2 1v2c-4 .5-9-4.5-8.5-8.5h2z']),'WhatsApp'),
               h('button',{onClick:()=>this.abrirTotem(c&&c.id),style:{display:'flex',alignItems:'center',gap:7,background:'#0c3b37',color:'#fff',border:'none',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.gauge||I.plus),'Abrir totem'),
               c&&this.effStatus(c)==='Ativa'?h('button',{onClick:()=>this.encerrarCamp(c.id),style:{display:'flex',alignItems:'center',gap:7,background:'#fff5e9',color:'#c98a1e',border:'1px solid #f0dcb8',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.check||['M20 6 9 17l-5-5']),'Finalizar'):(c?h('span',{style:{display:'flex',alignItems:'center',gap:6,font:'700 12px Manrope',color:'#8a9a94',background:'#eef1ee',borderRadius:9,padding:'8px 13px'}},'Encerrada'):null),
               c?h('button',{onClick:()=>this.excluirCamp(c),title:'Excluir campanha',style:{display:'flex',alignItems:'center',gap:7,background:'#fff',color:'#c2564b',border:'1px solid #f0d2ca',borderRadius:9,padding:'8px 13px',font:'700 12px Manrope',cursor:'pointer'}},this.ic(I.trash),'Excluir'):null)); };
         return h('div',{style:{background:'#eef4ff',border:'1px solid #c9dcff',borderRadius:14,padding:'16px 18px'}},
           h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:4}},h('span',{style:{color:'#2b6fdb'}},this.ic(I.share||['M4 12v8h16v-8','M12 3v13','M8 7l4-4 4 4'])),h('span',{style:{font:'800 14px Archivo',color:'#0c3b37'}},'Links do totem por campanha')),
-          h('div',{style:{font:'500 12.5px Manrope',color:'#5c6b67',marginBottom:12}},'Nosso sistema não abre no tablet do evento — compartilhe apenas o link de cadastro. Cada campanha de cashback tem seu link: abre direto a tela de cadastro do produtor (sem login), pronta para o totem de 24".'),
+          h('div',{style:{font:'500 12.5px Manrope',color:'#5c6b67',marginBottom:12}},'Cada campanha tem DOIS links de cadastro que caem no mesmo lugar: um para o NOSSO estande (SBS) e outro para o estande do PARCEIRO (ex.: Coopercitrus). Compartilhe o link certo com cada equipe — abre direto a tela de cadastro (sem login), pronta para o totem de 24".'),
           camps2.length
             ? h('div',{style:{display:'flex',flexDirection:'column',gap:10}}, camps2.map(linkRow))
             : h('div',{style:{padding:'22px 16px',textAlign:'center',font:'500 13px Manrope',color:'#5c6b67',border:'1px dashed #c9dcff',borderRadius:12,background:'#fff'}},'Nenhuma campanha com cashback ainda. Em Campanhas, crie uma campanha e ative “Ação de cashback” para gerar o link do totem.')); })(),
