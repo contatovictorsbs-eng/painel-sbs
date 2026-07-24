@@ -318,7 +318,7 @@ class Component extends DCLogic {
     // Limpeza única para go-live: descarta estado de exemplo/teste acumulado no navegador.
     try{ const DV='2026-07-10-limpo'; if(localStorage.getItem('sbs_dataver')!==DV){ localStorage.removeItem('sbs_estado'); localStorage.setItem('sbs_dataver',DV); } }catch(e){}
     try{ const h=(location.hash||'').replace('#','').toLowerCase(); const mm=h.match(/^app(?:-(\d+))?$/); const tm=h.match(/^(?:totem|cadastro)(?:-(\d+))?$/);
-      if(tm){ const cid=tm[1]?+tm[1]:null; this.setState({totemPublic:true, totemOpen:true, totemCamp:cid, role:'marketing', prevRole:'marketing'}); }
+      if(tm){ const cid=tm[1]?+tm[1]:null; this.setState({totemPublic:true, totemOpen:true, totemCamp:cid, role:'marketing', prevRole:'marketing'}); try{ this.captarGeoTotem(); }catch(e){} }
       else if(mm){ const pid=mm[1]?+mm[1]:null; const pt=pid?(this.state.partners.find(p=>p.id===pid)||null):null;
         let appPg='login', appNome=null;
         try{ const as=JSON.parse(localStorage.getItem('sbs_app_sessao')||'null'); if(as&&as.usuario){ appPg='home'; appNome=as.nome||null; } }catch(e){}
@@ -1574,7 +1574,8 @@ class Component extends DCLogic {
   proximaSafra(){ const s=this.safraAtual(); const ini=parseInt(s.split('/')[0],10)+1; return ini+'/'+String(ini+1).slice(2); }
   cashbackList(){ return (this.state.cashback||[]).filter(r=>r.kind!=='lead'); }
   cashbackLeads(){ return (this.state.cashback||[]).filter(r=>r.kind==='lead'); }
-  abrirTotem(campId){ this.setState({totemCamp:campId||(this.campanhasComCashback()[0]||{}).id||null, totemDone:false, role:this.state.role}); this.setState({totemOpen:true}); }
+  abrirTotem(campId){ this.setState({totemCamp:campId||(this.campanhasComCashback()[0]||{}).id||null, totemDone:false, role:this.state.role}); this.setState({totemOpen:true}); this.captarGeoTotem(); }
+  captarGeoTotem(){ try{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(p=>{ try{ this._totemGeo={lat:p.coords.latitude, lng:p.coords.longitude}; }catch(e){} }, ()=>{ this._totemGeo=null; }, {enableHighAccuracy:true, timeout:8000, maximumAge:60000}); } }catch(e){} }
   totemLink(campId){ const base=(typeof location!=='undefined')?(location.origin+location.pathname):'https://painel-sbs.pages.dev/'; const id=campId||this.state.totemShareCamp||null; return base+'#totem'+(id?('-'+id):''); }
   copiarTotemLink(){ const link=this.totemLink(); try{ if(navigator.clipboard) navigator.clipboard.writeText(link); }catch(e){} this.setState({totemCopied:true}); setTimeout(()=>{try{this.setState({totemCopied:false});}catch(e){}},1800); this.showToast('Link do totem copiado ✓'); }
   shareTotemWhats(){ const link=this.totemLink(); const wa='https://wa.me/?text='+encodeURIComponent('Cadastro de Cashback SBS — abra este link no tablet/totem do evento para cadastrar os produtores: '+link); try{ window.open(wa,'_blank','noopener'); }catch(e){} try{ if(navigator.clipboard) navigator.clipboard.writeText(link); }catch(e){} }
@@ -1583,13 +1584,19 @@ class Component extends DCLogic {
     const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
     const nome=g('tt-nome'); if(!nome){ const e=document.getElementById('tt-nome'); if(e){e.style.borderColor='#c2564b';e.focus();} return; }
     const campId=this.state.totemCamp; const camp=this.allCampaigns().find(c=>String(c.id)===String(campId));
-    const lead={ id:Date.now(), kind:'lead', cliente:nome, produto:g('tt-produto'), cultura:g('tt-cultura'), pedido:g('tt-pedido'), valor:parseFloat((g('tt-valor')||'0').replace(/\./g,'').replace(',','.'))||0, contato:g('tt-fone'),
-      endereco:g('tt-end'), cidade:g('tt-cidade'), uf:g('tt-uf'),
+    const geo=this._totemGeo||null;
+    const lead={ id:Date.now(), kind:'lead', cliente:nome, cnpj:g('tt-cnpj'), produto:g('tt-produto'), cultura:g('tt-cultura'), areaHa:parseFloat((g('tt-ha')||'0').replace(/\./g,'').replace(',','.'))||0, pedido:g('tt-pedido'), valor:parseFloat((g('tt-valor')||'0').replace(/\./g,'').replace(',','.'))||0, contato:g('tt-fone'),
+      endereco:g('tt-end'), cidade:g('tt-cidade'), uf:g('tt-uf'), lat:geo?geo.lat:null, lng:geo?geo.lng:null,
       campanhaId:camp?camp.id:null, campanha:camp?camp.nome:'', evento:camp?(camp.evento||''):'',
       safra:this.safraAtual(), status:'Novo', criadoEm:new Date().toISOString() };
     this.setState({cashback:[lead,...(this.state.cashback||[])], totemDone:true});
     try{ this.apiSend('cashback','POST',lead).catch(()=>{}); }catch(e){}
-    ['tt-nome','tt-produto','tt-cultura','tt-pedido','tt-valor','tt-fone','tt-end','tt-cidade','tt-uf'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    // PUSH ao barramento → prospecção do SBS Green (contrato lead-prospeccao)
+    try{ this.apiSend('integracao','POST',{ sistema:'painel-sbs', tipo:'lead-prospeccao', ref:String(lead.id), titulo:nome,
+      resumo:[lead.cidade,lead.uf,lead.cultura].filter(Boolean).join(' · '),
+      payload:{ produtor:nome, cnpj:lead.cnpj, produtoComprado:lead.produto, cultura:lead.cultura, areaHa:lead.areaHa, telefone:lead.contato, endereco:lead.endereco, cidade:lead.cidade, uf:lead.uf, lat:lead.lat, lng:lead.lng, numeroPedido:lead.pedido, valor:lead.valor, campanha:lead.campanha, evento:lead.evento, safra:lead.safra } }).catch(()=>{}); }catch(e){}
+    ['tt-nome','tt-cnpj','tt-produto','tt-cultura','tt-ha','tt-pedido','tt-valor','tt-fone','tt-end','tt-cidade','tt-uf'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    this._totemGeo=null; this.captarGeoTotem();
     setTimeout(()=>{ try{ this.setState({totemDone:false}); }catch(e){} }, 3500);
   }
   exportarCashbackLeads(){
@@ -1608,8 +1615,8 @@ class Component extends DCLogic {
   }
   _exportLeadsCsv(leads,fname){
     if(!leads||!leads.length){ this.showToast('Nenhum lead para exportar'); return; }
-    const head=['Produtor','Produto comprado','Cultura','Nº do pedido','Valor (R$)','Telefone','Endereço','Cidade','UF','Campanha','Evento','Safra','Cadastro'];
-    const linhas=leads.map(l=>[l.cliente,l.produto,l.cultura,l.pedido,(l.valor?Number(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2}):''),l.contato,l.endereco,l.cidade,l.uf,l.campanha,l.evento,l.safra,(l.criadoEm?new Date(l.criadoEm).toLocaleString('pt-BR'):'')]
+    const head=['Produtor','CPF/CNPJ','Produto comprado','Cultura','Hectares','Nº do pedido','Valor (R$)','Telefone','Endereço','Cidade','UF','Lat','Lng','Campanha','Evento','Safra','Cadastro'];
+    const linhas=leads.map(l=>[l.cliente,l.cnpj,l.produto,l.cultura,(l.areaHa||''),l.pedido,(l.valor?Number(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2}):''),l.contato,l.endereco,l.cidade,l.uf,(l.lat==null?'':l.lat),(l.lng==null?'':l.lng),l.campanha,l.evento,l.safra,(l.criadoEm?new Date(l.criadoEm).toLocaleString('pt-BR'):'')]
       .map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(';'));
     const csv='\ufeff'+head.join(';')+'\n'+linhas.join('\n')+'\n';
     try{ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
@@ -1649,6 +1656,8 @@ class Component extends DCLogic {
         camps.length>1?h('select',{value:this.state.totemCamp||'',onChange:e=>this.setState({totemCamp:e.target.value}),style:{padding:'12px 14px',border:'1px solid #d7e2dc',borderRadius:10,font:'600 16px Manrope',marginBottom:18,background:'#fff'}},camps.map(c=>h('option',{key:c.id,value:String(c.id)},c.nome))):h('div',{style:{font:'800 clamp(20px,2.2vw,28px) Archivo',color:'#2b6fdb',marginBottom:20}},camp.nome||'Ação de cashback'),
         h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'clamp(14px,1.6vw,22px)'}},
           lbl('Nome do produtor',inp('tt-nome','Seu nome completo'),'1 / 3'),
+          lbl('CPF / CNPJ',inp('tt-cnpj','000.000.000-00')),
+          lbl('Hectares de área (aprox.)',inp('tt-ha','ex: 120',{inputMode:'decimal'})),
           lbl('Produto que comprou', prodOpts.length?h('select',{id:'tt-produto',style:{padding:'18px 20px',border:'2px solid #d7e2dc',borderRadius:14,font:'600 22px Manrope',background:'#fff',width:'100%'}},[h('option',{key:'_',value:''},'Selecione…')].concat(prodOpts.map((n,i)=>h('option',{key:i,value:n},n)))):inp('tt-produto','Produto comprado'),'1 / 3'),
           lbl('Cultura',inp('tt-cultura','ex: Soja, Milho, Pastagem')),
           lbl('Número do pedido',inp('tt-pedido','Nº do pedido SBS')),
