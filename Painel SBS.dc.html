@@ -1404,7 +1404,7 @@ class Component extends DCLogic {
       campEvento:c.evento||'',
       campDestino:c.destino||'evento', campPublico:c.publico||'todos',
       campDraftProds:draft,
-      campCashAtivo:!!(c.cashback&&c.cashback.ativo), campTipoVenda:c.tipoVenda||'canal',
+      campCashAtivo:!!(c.cashback&&c.cashback.ativo), campTipoVenda:c.tipoVenda||'canal', campPrazos:(c.prazos&&c.prazos.length)?c.prazos:['À vista','30 dias','60 dias'],
       campPrizes:prizes.length?prizes:[{pos:'1º lugar',premio:'',bonus:''}]
     });
   }
@@ -1421,7 +1421,7 @@ class Component extends DCLogic {
       meta, canal:g('camp-canal'), premios:(this.state.campPrizes||[]).map(p=>[p.pos,p.premio+(p.bonus?(' + R$ '+p.bonus):'')]),
       produtos:(this.state.campDraftProds||[]).map(x=>({produtoId:x.id,preco:x.preco})), periodo:(g('camp-ini')||'')+(g('camp-fim')?(' – '+g('camp-fim')):''),
       fat:ed?(ed.fat||0):0, pedidos:ed?(ed.pedidos||0):0, roi:ed?(ed.roi||0):0, status:ed?(ed.status||'Ativa'):'Ativa',
-      cashback:{ ativo:!!this.state.campCashAtivo, pct:parseFloat((g('camp-cash-pct')||'0').replace(',','.'))||0 }, tipoVenda:this.state.campTipoVenda||'canal' };
+      cashback:{ ativo:!!this.state.campCashAtivo, pct:parseFloat((g('camp-cash-pct')||'0').replace(',','.'))||0 }, tipoVenda:this.state.campTipoVenda||'canal', prazos:(this.state.campPrazos&&this.state.campPrazos.length)?this.state.campPrazos:['À vista','30 dias','60 dias'] };
     if(ed){
       this.setState(s=>({campaigns:(s.campaigns||[]).map(x=>x.id===ed.id?camp:x),campNew:false,campEdit:null,campDraftProds:[],campEvento:'',campDestino:'evento',campPublico:'todos'}));
       try{ this.apiSend('campanhas','POST',camp).catch(()=>{}); }catch(e){}
@@ -1520,6 +1520,15 @@ class Component extends DCLogic {
             React.createElement('div',{style:{display:'flex',gap:12}},
               opt('direta','Venda direta (cliente final)','A SBS vende ao cliente final — gera contrato de compra com assinatura (ex.: Beef Day).'),
               opt('canal','Venda por canal (cooperativa/parceiro)','A cooperativa/parceiro faz a venda — só captamos o comprador e geramos o comprovante de cashback (ex.: Coopercitrus).'))); })(),
+        (()=>{ const base=['À vista','30 dias','60 dias','90 dias','120 dias','Safra','Barter/Troca']; const sel=this.state.campPrazos||['À vista','30 dias','60 dias']; const all=base.concat(sel.filter(p=>base.indexOf(p)<0));
+          const chip=(p)=>{ const on=sel.indexOf(p)>=0; return React.createElement('button',{key:p,type:'button',onClick:()=>{ const s=(this.state.campPrazos||sel).slice(); const i=s.indexOf(p); if(i>=0)s.splice(i,1); else s.push(p); this.setState({campPrazos:s}); },style:{border:'1px solid '+(on?'#12b39a':'rgba(12,59,55,.18)'),background:on?'#12b39a':'#fff',color:on?'#fff':'#0c3b37',borderRadius:20,padding:'8px 14px',font:'700 12px Manrope',cursor:'pointer'}},p); };
+          return React.createElement('div',{style:{marginTop:20,paddingTop:18,borderTop:'1px solid rgba(12,59,55,.1)'}},
+            React.createElement('div',{style:{font:'800 14px Archivo',color:'#0c3b37',marginBottom:4}},'Prazos de pagamento aceitos'),
+            React.createElement('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginBottom:12}},'Só estes prazos aparecem para o cliente escolher no totem. Clique para ativar/desativar; adicione outros no campo abaixo.'),
+            React.createElement('div',{style:{display:'flex',flexWrap:'wrap',gap:8,marginBottom:12}},all.map(chip)),
+            React.createElement('div',{style:{display:'flex',gap:8}},
+              React.createElement('input',{id:'camp-prazo-novo',placeholder:'Outro prazo (ex: 180 dias, Entrada + 3x)',style:{flex:1,padding:'10px 13px',border:'1px solid rgba(12,59,55,.15)',borderRadius:10,font:'500 13px Manrope',outline:'none'}}),
+              React.createElement('button',{type:'button',onClick:()=>{ const e=document.getElementById('camp-prazo-novo'); const v=e&&e.value.trim(); if(!v)return; const s=(this.state.campPrazos||sel).slice(); if(s.indexOf(v)<0)s.push(v); this.setState({campPrazos:s}); if(e)e.value=''; },style:{background:'#eef1ee',border:'none',borderRadius:10,padding:'10px 16px',font:'700 12px Manrope',color:'#0c3b37',cursor:'pointer'}},'Adicionar'))); })(),
         React.createElement('div',{style:{marginTop:20,paddingTop:18,borderTop:'1px solid rgba(12,59,55,.1)'}},
           React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:4}},React.createElement('span',{style:{color:'#2b6fdb'}},this.ic(this.icons().gift||['M20 12v10H4V12','M2 7h20v5H2z','M12 22V7','M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z','M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z'])),React.createElement('span',{style:{font:'800 14px Archivo',color:'#0c3b37'}},'Ação de cashback')),
           React.createElement('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginBottom:12}},'O cliente compra no evento com um cupom e ganha % de cashback para usar como desconto na próxima safra. O cadastro é feito no estande da SBS.'),
@@ -1546,7 +1555,7 @@ class Component extends DCLogic {
         React.createElement('div',{style:{font:'700 15px Archivo',color:'#0c3b37',flex:1}},camps.length+' campanhas'),
         camps.length>this.shownCount('campanhas')?React.createElement('button',{onClick:()=>this.carregarMais('campanhas'),style:{background:'#e7efe9',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer'}},'+ '+(camps.length-this.shownCount('campanhas'))+' — carregar mais'):null,
         React.createElement('button',{onClick:()=>this.sincronizarCampanhasVendedor(),title:'Remove do painel do vendedor as campanhas que não existem mais aqui',style:{background:'#eef1ee',color:'#0c3b37',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().history),'Sincronizar vendedor'),
-        React.createElement('button',{onClick:()=>this.set({campNew:true,campEdit:null,campDraftProds:[],campEvento:'',campDestino:'evento',campPublico:'todos',campCashAtivo:false,campTipoVenda:'canal',campPrizes:[{pos:'1º lugar',premio:'',bonus:''}]}),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().plus),'Criar campanha')),
+        React.createElement('button',{onClick:()=>this.set({campNew:true,campEdit:null,campDraftProds:[],campEvento:'',campDestino:'evento',campPublico:'todos',campCashAtivo:false,campTipoVenda:'canal',campPrazos:['À vista','30 dias','60 dias'],campPrizes:[{pos:'1º lugar',premio:'',bonus:''}]}),style:{background:'#12b39a',color:'#fff',border:'none',borderRadius:10,padding:'10px 16px',font:'700 13px Manrope',cursor:'pointer',display:'flex',alignItems:'center',gap:7}},this.ic(this.icons().plus),'Criar campanha')),
       this.grid(2,18,camps.slice(0,this.shownCount('campanhas')).map(c=>this.card([
         React.createElement('div',{style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}},
           React.createElement('div',null,React.createElement('div',{style:{font:'700 15px Archivo',color:'#0c3b37'}},c.nome),React.createElement('div',{style:{font:'500 12px Manrope',color:'#5c6b67',marginTop:2}},c.periodo+' · '+c.canal),
@@ -1614,12 +1623,6 @@ class Component extends DCLogic {
   _comprovanteCanvas(lead){
     const camp=this.allCampaigns().find(c=>String(c.id)===String(lead.campanhaId));
     const contrato = !!(camp && camp.tipoVenda==='direta');
-    const W=1080, cv=document.createElement('canvas'); cv.width=W; cv.height=contrato?1560:1400;
-    const ctx=cv.getContext('2d');
-    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cv.width,cv.height);
-    ctx.fillStyle='#0c3b37'; ctx.fillRect(0,0,W,150);
-    ctx.fillStyle='#fff'; ctx.font='800 44px Archivo, sans-serif'; ctx.fillText(contrato?'Contrato de Compra':'Comprovante de Cashback', 48, 70);
-    ctx.fillStyle='#a8e06b'; ctx.font='700 26px Manrope, sans-serif'; ctx.fillText('SBS Green Seeds', 48, 112);
     const brl=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     const linhas=[
       ['Campanha', lead.campanha||'—'],
@@ -1638,23 +1641,39 @@ class Component extends DCLogic {
       ['Cidade/UF', [lead.cidade,lead.uf].filter(Boolean).join('/')||'—']
     ];
     if(!contrato) linhas.push(['Safra resgate', this.proximaSafra()]);
-    let y=210; ctx.textBaseline='alphabetic';
+    const W=1080, cv=document.createElement('canvas'); cv.width=W; cv.height=10;
+    let ctx=cv.getContext('2d');
+    // 1) pré-quebra da cláusula (precisa da fonte para medir)
+    let clauseLines=[];
+    if(contrato){
+      const termo='O comprador declara adquirir os produtos acima nas condições e valores indicados, autorizando a SBS Green Seeds a processar seus dados para fins desta compra (LGPD). A assinatura abaixo confirma o aceite do pedido.';
+      ctx.font='500 20px Manrope, sans-serif'; let linha='';
+      termo.split(' ').forEach(p=>{ const t=linha+p+' '; if(ctx.measureText(t).width>W-96){ clauseLines.push(linha); linha=p+' '; } else linha=t; });
+      if(linha) clauseLines.push(linha);
+    }
+    // 2) altura dinâmica: header + linhas + cláusula + bloco de assinatura
+    const yStart=210, lineH=76, sigBlock=230;
+    const H = yStart + linhas.length*lineH + (contrato?(clauseLines.length*30+40):0) + sigBlock;
+    cv.height=H; ctx=cv.getContext('2d');
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#0c3b37'; ctx.fillRect(0,0,W,150);
+    ctx.fillStyle='#fff'; ctx.font='800 44px Archivo, sans-serif'; ctx.fillText(contrato?'Contrato de Compra':'Comprovante de Cashback', 48, 70);
+    ctx.fillStyle='#a8e06b'; ctx.font='700 26px Manrope, sans-serif'; ctx.fillText('SBS Green Seeds', 48, 112);
+    let y=yStart; ctx.textBaseline='alphabetic';
     linhas.forEach(([k,v])=>{
       ctx.fillStyle='#8a9a94'; ctx.font='600 22px Manrope, sans-serif'; ctx.fillText(k, 48, y);
       ctx.fillStyle='#12211e'; ctx.font='700 28px Manrope, sans-serif'; ctx.fillText(String(v), 48, y+32);
-      y+=76; ctx.strokeStyle='#eef1ee'; ctx.beginPath(); ctx.moveTo(48,y-18); ctx.lineTo(W-48,y-18); ctx.stroke();
+      y+=lineH; ctx.strokeStyle='#eef1ee'; ctx.beginPath(); ctx.moveTo(48,y-18); ctx.lineTo(W-48,y-18); ctx.stroke();
     });
     if(contrato){
-      const termo='O comprador declara adquirir os produtos acima nas condições e valores indicados, autorizando a SBS Green Seeds a processar seus dados para fins desta compra (LGPD). A assinatura abaixo confirma o aceite do pedido.';
-      ctx.fillStyle='#5c6b67'; ctx.font='500 20px Manrope, sans-serif';
-      const palavras=termo.split(' '); let linha='', ly=y+8;
-      palavras.forEach(p=>{ const t=linha+p+' '; if(ctx.measureText(t).width>W-96){ ctx.fillText(linha,48,ly); linha=p+' '; ly+=30; } else linha=t; });
-      ctx.fillText(linha,48,ly); y=ly+24;
+      ctx.fillStyle='#5c6b67'; ctx.font='500 20px Manrope, sans-serif'; let ly=y+8;
+      clauseLines.forEach(l=>{ ctx.fillText(l,48,ly); ly+=30; });
+      y=ly+16;
     }
     ctx.fillStyle='#8a9a94'; ctx.font='600 22px Manrope, sans-serif'; ctx.fillText(contrato?'Assinatura do comprador':'Assinatura do cooperado', 48, y+16);
     return new Promise(res=>{
       const finish=()=>{ ctx.strokeStyle='#0c3b37'; ctx.beginPath(); ctx.moveTo(48,y+150); ctx.lineTo(W-48,y+150); ctx.stroke(); res(cv); };
-      if(lead.assinatura){ const im=new Image(); im.onload=()=>{ const iw=Math.min(560, im.width); const ih=im.height*(iw/im.width); ctx.drawImage(im,48,y+30,iw,ih); finish(); }; im.onerror=finish; im.src=lead.assinatura; }
+      if(lead.assinatura){ const im=new Image(); im.onload=()=>{ const iw=Math.min(520, im.width||520); const ih=(im.height&&im.width)?im.height*(iw/im.width):120; ctx.drawImage(im,48,y+28,iw,Math.min(ih,120)); finish(); }; im.onerror=finish; im.src=lead.assinatura; }
       else finish();
     });
   }
@@ -1686,9 +1705,11 @@ class Component extends DCLogic {
     const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
     const nome=g('tt-nome'); if(!nome){ const e=document.getElementById('tt-nome'); if(e){e.style.borderColor='#c2564b';e.focus();} return; }
     const campId=this.state.totemCamp; const camp=this.allCampaigns().find(c=>String(c.id)===String(campId));
-    const geo=this._totemGeo||null;
+    const origem=this.state.totemOrigem||'estande';
+    const geo=(origem==='produtor')?(this._totemGeo||null):null; // estande: ignora coord do tablet (envia vazio)
     const lead={ id:Date.now(), kind:'lead', cliente:nome, matricula:g('tt-matricula'), cnpj:g('tt-cnpj'), produto:g('tt-produto'), cultura:g('tt-cultura'), areaHa:parseFloat((g('tt-ha')||'0').replace(/\./g,'').replace(',','.'))||0, quantidadeKg:parseFloat((g('tt-kg')||'0').replace(/\./g,'').replace(',','.'))||0, prazoPagamento:g('tt-prazo'), pedido:g('tt-pedido'), valor:parseFloat((g('tt-valor')||'0').replace(/\./g,'').replace(',','.'))||0, contato:g('tt-fone'),
-      endereco:g('tt-end'), cidade:g('tt-cidade'), uf:g('tt-uf'), lat:geo?geo.lat:null, lng:geo?geo.lng:null, assinatura:this._totemSig||null,
+      endereco:g('tt-end'), cidade:g('tt-cidade'), uf:g('tt-uf'), lat:geo?geo.lat:null, lng:geo?geo.lng:null, coordOrigem:origem, assinatura:this._totemSig||null,
+      tipoVenda:camp?(camp.tipoVenda||'canal'):'canal', canalVenda:camp?(camp.canal||''):'',
       campanhaId:camp?camp.id:null, campanha:camp?camp.nome:'', evento:camp?(camp.evento||''):'',
       safra:this.safraAtual(), status:'Novo', criadoEm:new Date().toISOString() };
     this.setState({cashback:[lead,...(this.state.cashback||[])], totemDone:true, totemUltimo:lead});
@@ -1696,7 +1717,7 @@ class Component extends DCLogic {
     // PUSH ao barramento → prospecção do SBS Green (contrato lead-prospeccao)
     try{ this.apiSend('integracao','POST',{ sistema:'painel-sbs', tipo:'lead-prospeccao', ref:String(lead.id), titulo:nome,
       resumo:[lead.cidade,lead.uf,lead.cultura].filter(Boolean).join(' · '),
-      payload:{ produtor:nome, matricula:lead.matricula, cnpj:lead.cnpj, produtoComprado:lead.produto, cultura:lead.cultura, areaHa:lead.areaHa, quantidadeKg:lead.quantidadeKg, prazoPagamento:lead.prazoPagamento, telefone:lead.contato, endereco:lead.endereco, cidade:lead.cidade, uf:lead.uf, lat:lead.lat, lng:lead.lng, numeroPedido:lead.pedido, valor:lead.valor, campanha:lead.campanha, evento:lead.evento, safra:lead.safra } }).catch(()=>{}); }catch(e){}
+      payload:{ produtor:nome, matricula:lead.matricula, cnpj:lead.cnpj, produtoComprado:lead.produto, cultura:lead.cultura, areaHa:lead.areaHa, quantidadeKg:lead.quantidadeKg, prazoPagamento:lead.prazoPagamento, telefone:lead.contato, endereco:lead.endereco, cidade:lead.cidade, uf:lead.uf, lat:lead.lat, lng:lead.lng, coordOrigem:origem, tipoVenda:lead.tipoVenda, canalVenda:lead.canalVenda, numeroPedido:lead.pedido, valor:lead.valor, campanha:lead.campanha, evento:lead.evento, safra:lead.safra } }).catch(()=>{}); }catch(e){}
     ['tt-nome','tt-matricula','tt-cnpj','tt-produto','tt-cultura','tt-ha','tt-kg','tt-pedido','tt-valor','tt-fone','tt-end','tt-cidade','tt-uf'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
     try{ const cv=document.getElementById('tt-sig'); if(cv&&cv._clear) cv._clear(); }catch(e){}
     this._totemGeo=null; this._totemSig=null; this.captarGeoTotem();
@@ -1718,8 +1739,8 @@ class Component extends DCLogic {
   }
   _exportLeadsCsv(leads,fname){
     if(!leads||!leads.length){ this.showToast('Nenhum lead para exportar'); return; }
-    const head=['Produtor','CPF/CNPJ','Produto comprado','Cultura','Hectares','Nº do pedido','Valor (R$)','Telefone','Endereço','Cidade','UF','Lat','Lng','Campanha','Evento','Safra','Cadastro'];
-    const linhas=leads.map(l=>[l.cliente,l.cnpj,l.produto,l.cultura,(l.areaHa||''),l.pedido,(l.valor?Number(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2}):''),l.contato,l.endereco,l.cidade,l.uf,(l.lat==null?'':l.lat),(l.lng==null?'':l.lng),l.campanha,l.evento,l.safra,(l.criadoEm?new Date(l.criadoEm).toLocaleString('pt-BR'):'')]
+    const head=['Produtor','CPF/CNPJ','Matrícula','Produto comprado','Cultura','Hectares','Qtd (kg)','Prazo','Nº do pedido','Valor (R$)','Telefone','Endereço','Cidade','UF','Lat','Lng','Origem coord','Tipo venda','Canal','Campanha','Evento','Safra','Cadastro'];
+    const linhas=leads.map(l=>[l.cliente,l.cnpj,l.matricula,l.produto,l.cultura,(l.areaHa||''),(l.quantidadeKg||''),l.prazoPagamento,l.pedido,(l.valor?Number(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2}):''),l.contato,l.endereco,l.cidade,l.uf,(l.lat==null?'':l.lat),(l.lng==null?'':l.lng),l.coordOrigem,l.tipoVenda,l.canalVenda,l.campanha,l.evento,l.safra,(l.criadoEm?new Date(l.criadoEm).toLocaleString('pt-BR'):'')]
       .map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(';'));
     const csv='\ufeff'+head.join(';')+'\n'+linhas.join('\n')+'\n';
     try{ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
@@ -1760,6 +1781,8 @@ class Component extends DCLogic {
           h('button',{onClick:()=>this.setState({totemDone:false}),style:{display:'flex',alignItems:'center',gap:9,background:'rgba(255,255,255,.16)',color:'#fff',border:'none',borderRadius:14,padding:'16px 26px',font:'800 clamp(16px,1.6vw,20px) Archivo',cursor:'pointer'}},'Novo cadastro')))
       :h('div',{style:{flex:1,background:'#fff',borderRadius:24,padding:'clamp(24px,3.5vw,52px)',maxWidth:1000,margin:'0 auto',width:'100%',boxShadow:'0 30px 90px rgba(0,0,0,.35)'}},
         h('div',{style:{font:'500 clamp(16px,1.8vw,22px) Manrope',color:'#5c6b67',marginBottom:6}},'Preencha para receber seu cashback'),
+        (()=>{ const org=this.state.totemOrigem||'estande'; const b=(val,lab)=>h('button',{key:val,type:'button',onClick:()=>this.setState({totemOrigem:val}),style:{flex:1,border:'2px solid '+(org===val?'#2b6fdb':'#d7e2dc'),background:org===val?'#eef4ff':'#fff',color:'#0c3b37',borderRadius:12,padding:'10px 12px',font:'700 14px Manrope',cursor:'pointer'}},lab);
+          return h('div',{style:{marginBottom:16}},h('div',{style:{font:'700 13px Manrope',color:'#8a9a94',marginBottom:6}},'Cadastro feito no:'),h('div',{style:{display:'flex',gap:10}},b('estande','Totem do estande'),b('produtor','Celular do produtor'))); })(),
         camps.length>1?h('select',{value:this.state.totemCamp||'',onChange:e=>this.setState({totemCamp:e.target.value}),style:{padding:'12px 14px',border:'1px solid #d7e2dc',borderRadius:10,font:'600 16px Manrope',marginBottom:18,background:'#fff'}},camps.map(c=>h('option',{key:c.id,value:String(c.id)},c.nome))):h('div',{style:{font:'800 clamp(20px,2.2vw,28px) Archivo',color:'#2b6fdb',marginBottom:20}},camp.nome||'Ação de cashback'),
         h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'clamp(14px,1.6vw,22px)'}},
           lbl('Nome do produtor',inp('tt-nome','Seu nome completo'),'1 / 3'),
@@ -1771,7 +1794,7 @@ class Component extends DCLogic {
           lbl('Cultura',inp('tt-cultura','ex: Soja, Milho, Pastagem')),
           lbl('Número do pedido',inp('tt-pedido','Nº do pedido SBS')),
           lbl('Valor do pedido (R$) — se tiver',inp('tt-valor','ex: 50.000',{inputMode:'decimal'})),
-          lbl('Prazo de pagamento',h('select',{id:'tt-prazo',style:{padding:'18px 20px',border:'2px solid #d7e2dc',borderRadius:14,font:'600 22px Manrope',background:'#fff',width:'100%'}},['','À vista','30 dias','60 dias','90 dias','120 dias','Safra','Barter/Troca'].map((o,i)=>h('option',{key:i,value:o},o||'Selecione…')))),
+          lbl('Prazo de pagamento',h('select',{id:'tt-prazo',style:{padding:'18px 20px',border:'2px solid #d7e2dc',borderRadius:14,font:'600 22px Manrope',background:'#fff',width:'100%'}},[''].concat((camp&&camp.prazos&&camp.prazos.length)?camp.prazos:['À vista','30 dias','60 dias','90 dias','120 dias','Safra','Barter/Troca']).map((o,i)=>h('option',{key:i,value:o},o||'Selecione…')))),
           lbl('Telefone / WhatsApp',inp('tt-fone','(00) 00000-0000',{inputMode:'tel'})),
           lbl('Cidade',inp('tt-cidade','Cidade')),
           lbl('Endereço',inp('tt-end','Rua, nº, bairro / fazenda'),'1 / 2'),
